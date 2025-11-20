@@ -1,0 +1,18 @@
+@'
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"></head>
+  <body>
+    <h3>WS Test</h3>
+    <p>Open DevTools Console to see messages.</p>
+
+    <script>
+      const ws = new WebSocket("ws://localhost:8080/ws");
+      ws.onopen = () => console.log("WS connected");
+      ws.onmessage = (e) => console.log("WS message:", JSON.parse(e.data));
+      ws.onerror = (e) => console.log("WS error:", e);
+      ws.onclose = () => console.log("WS closed");
+    </script>
+  </body>
+</html>
+'@ | Set-Content ws-test.html
