@@ -1,0 +1,37 @@
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Go
+services/**/bin/
+services/**/tmp/
+services/**/vendor/
+*.test
+*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+services/**/.pytest_cache/
+services/**/.mypy_cache/
+
+# Node / React
+node_modules/
+dist/
+services/**/npm-debug.log*
+services/**/yarn-error.log*
+
+# Data / Models / Checkpoints
+data/raw/*
+data/processed/*
+services/rl-py/nano_rl/checkpoints/*
+!data/raw/.keep
+!data/processed/.keep
+
+# Docker
+*.log
