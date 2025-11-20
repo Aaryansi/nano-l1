@@ -1,0 +1,7 @@
+ts,symbol,price,side,qty
+1,TEST,100.00,buy,5
+2,TEST,100.05,sell,5
+3,TEST,100.02,buy,3
+4,TEST,100.07,sell,2
+5,TEST,100.01,buy,4
+6,TEST,100.06,sell,4

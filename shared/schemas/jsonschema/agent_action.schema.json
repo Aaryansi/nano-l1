@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nano-l1/agent_action.schema.json",
+  "title": "AgentAction",
+  "type": "object",
+  "required": ["ts", "agentId", "symbol", "actionType"],
+  "properties": {
+    "ts": { "type": "integer" },
+    "agentId": { "type": "string" },
+    "symbol": { "type": "string" },
+    "actionType": {
+      "type": "string",
+      "enum": ["place_limit", "place_market", "cancel", "hold"]
+    },
+    "side": { "type": "string", "enum": ["buy", "sell"] },
+    "price": { "type": "number" },
+    "qty": { "type": "number" }
+  },
+  "additionalProperties": false
+}

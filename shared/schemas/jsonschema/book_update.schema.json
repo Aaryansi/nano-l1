@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nano-l1/book_update.schema.json",
+  "title": "BookUpdate",
+  "type": "object",
+  "required": ["ts", "symbol", "bestBid", "bestAsk"],
+  "properties": {
+    "ts": { "type": "integer" },
+    "symbol": { "type": "string" },
+    "bestBid": {
+      "type": "object",
+      "required": ["price", "qty"],
+      "properties": {
+        "price": { "type": "number" },
+        "qty": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "bestAsk": {
+      "type": "object",
+      "required": ["price", "qty"],
+      "properties": {
+        "price": { "type": "number" },
+        "qty": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "lastTradePrice": { "type": "number" }
+  },
+  "additionalProperties": false
+}

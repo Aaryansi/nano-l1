@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nano-l1/order.schema.json",
+  "title": "Order",
+  "type": "object",
+  "required": ["id", "ts", "symbol", "side", "type", "qty"],
+  "properties": {
+    "id": { "type": "string" },
+    "ts": { "type": "integer" },
+    "symbol": { "type": "string" },
+    "side": { "type": "string", "enum": ["buy", "sell"] },
+    "type": { "type": "string", "enum": ["limit", "market", "cancel"] },
+    "price": { "type": "number", "description": "required for limit orders" },
+    "qty": { "type": "number" }
+  },
+  "additionalProperties": false
+}

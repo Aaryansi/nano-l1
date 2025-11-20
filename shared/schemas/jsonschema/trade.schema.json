@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nano-l1/trade.schema.json",
+  "title": "Trade",
+  "type": "object",
+  "required": ["ts", "symbol", "price", "qty", "aggressorSide"],
+  "properties": {
+    "ts": { "type": "integer" },
+    "symbol": { "type": "string" },
+    "price": { "type": "number" },
+    "qty": { "type": "number" },
+    "aggressorSide": { "type": "string", "enum": ["buy", "sell"] },
+    "makerOrderId": { "type": "string" },
+    "takerOrderId": { "type": "string" }
+  },
+  "additionalProperties": false
+}

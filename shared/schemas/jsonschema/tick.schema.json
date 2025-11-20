@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nano-l1/tick.schema.json",
+  "title": "Tick",
+  "type": "object",
+  "required": ["ts", "symbol", "price", "qty", "side"],
+  "properties": {
+    "ts": { "type": "integer", "description": "nanoseconds since epoch" },
+    "symbol": { "type": "string" },
+    "price": { "type": "number" },
+    "qty": { "type": "number" },
+    "side": { "type": "string", "enum": ["buy", "sell"] },
+    "exchange": { "type": "string" }
+  },
+  "additionalProperties": false
+}
