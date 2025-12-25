@@ -3,6 +3,10 @@ import { connectWS } from "../lib/wsClient.js";
 import Depth from "../components/Depth.jsx";
 import Trades from "../components/Trades.jsx";
 import PnL from "../components/PnL.jsx";
+import OrderPanel from "../components/OrderPanel";
+import PersistedTrades from "../components/PersistedTrades.jsx";
+
+
 
 const WS_URL =
   import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
@@ -53,6 +57,10 @@ export default function App() {
     <div className="wrap">
       <header className="header">
         <h1>Nano-L1 Trading Sandbox</h1>
+
+        <OrderPanel />
+
+
         <div className="sub">WS: {WS_URL}</div>
       </header>
 
@@ -63,6 +71,7 @@ export default function App() {
           <Depth book={book} />
           <Trades trades={lastTrades} />
           <PnL pnl={pnl} pos={pos} />
+          <PersistedTrades />
         </div>
       )}
     </div>

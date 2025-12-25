@@ -1,4 +1,3 @@
-@'
 CREATE TABLE IF NOT EXISTS trades (
   id SERIAL PRIMARY KEY,
   ts BIGINT NOT NULL,
@@ -16,7 +15,6 @@ CREATE TABLE IF NOT EXISTS runs (
   started_at TIMESTAMP DEFAULT NOW()
 );
 
--- Optional for later: store normalized ticks
 CREATE TABLE IF NOT EXISTS ticks (
   id SERIAL PRIMARY KEY,
   ts BIGINT NOT NULL,
@@ -28,4 +26,3 @@ CREATE TABLE IF NOT EXISTS ticks (
 
 CREATE INDEX IF NOT EXISTS idx_trades_ts ON trades(ts);
 CREATE INDEX IF NOT EXISTS idx_ticks_ts ON ticks(ts);
-'@ | Set-Content infra/postgres/init.sql
