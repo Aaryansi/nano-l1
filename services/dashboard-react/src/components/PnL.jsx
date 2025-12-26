@@ -1,3 +1,4 @@
+// src/components/PnL.jsx
 import React, { useEffect, useState } from "react";
 
 const ENGINE_HTTP_URL =
@@ -59,53 +60,73 @@ export default function PnL({ symbol = "TEST" }) {
     pnl > 0 ? "pnl-positive" : pnl < 0 ? "pnl-negative" : "pnl-flat";
 
   return (
-    <div className="card card-pnl">
-      <div className="card-header">
-        <div className="card-title">P&amp;L (from DB)</div>
-        <div className="card-subtitle">
-          {symbol} ·{" "}
-          {status === "loading" && "Loading..."}
-          {status === "refreshing" && "Refreshing..."}
-          {status === "loaded" && "Live"}
-          {status === "error" && "Error"}
+    <div className="panel">
+      <div className="panel-header">
+        <div>
+          <div className="panel-title">P&amp;L (from DB)</div>
+          <div className="panel-subtitle">
+            {symbol} ·{" "}
+            {status === "loading" && "Loading…"}
+            {status === "refreshing" && "Refreshing…"}
+            {status === "loaded" && "Live"}
+            {status === "error" && "Error"}
+          </div>
         </div>
       </div>
 
-      {error ? (
-        <div className="error">{error}</div>
-      ) : (
-        <div className="pnl-body">
-          <div className={`pnl-value ${pnlClass}`}>
-            {pnl.toFixed(2)}
-          </div>
+      <div className="panel-body panel-body-tight">
+        {error ? (
+          <div className="pnl-error muted-small">{error}</div>
+        ) : (
+          <>
+            {/* Big headline number */}
+            <div className={`pnl-total ${pnlClass}`}>
+              <span className="metric-label">Total P&amp;L</span>
+              <span className="pnl-total-value">
+                {pnl.toFixed(2)}
+              </span>
+            </div>
 
-          <div className="pnl-row">
-            <span>Position</span>
-            <span>{position.toFixed(2)}</span>
-          </div>
-          <div className="pnl-row">
-            <span>Last Price</span>
-            <span>{lastPrice ? lastPrice.toFixed(2) : "-"}</span>
-          </div>
-          <div className="pnl-row">
-            <span>Cash (realized)</span>
-            <span>{cash.toFixed(2)}</span>
-          </div>
-          <div className="pnl-row">
-            <span>Unrealized</span>
-            <span>{unrealized.toFixed(2)}</span>
-          </div>
-          <div className="pnl-row">
-            <span>Trades counted</span>
-            <span>{tradeCount}</span>
-          </div>
+            {/* 2×3 metric grid */}
+            <div className="pnl-metrics-grid">
+              <div className="pnl-metric">
+                <div className="metric-label">Position</div>
+                <div className="metric-value">
+                  {position.toFixed(2)}
+                </div>
+              </div>
+              <div className="pnl-metric">
+                <div className="metric-label">Last price</div>
+                <div className="metric-value">
+                  {lastPrice ? lastPrice.toFixed(2) : "-"}
+                </div>
+              </div>
+              <div className="pnl-metric">
+                <div className="metric-label">Cash (realized)</div>
+                <div className="metric-value">
+                  {cash.toFixed(2)}
+                </div>
+              </div>
+              <div className="pnl-metric">
+                <div className="metric-label">Unrealized</div>
+                <div className="metric-value">
+                  {unrealized.toFixed(2)}
+                </div>
+              </div>
+              <div className="pnl-metric">
+                <div className="metric-label">Trades counted</div>
+                <div className="metric-value">{tradeCount}</div>
+              </div>
+            </div>
 
-          <div className="pnl-note">
-            Note: P&amp;L is computed from <code>engine_trades</code>  
-            (assumes all trades are yours for now).
-          </div>
-        </div>
-      )}
+            <div className="pnl-note muted-small">
+              P&amp;L is derived from trades for {symbol} in{" "}
+              <code>engine_trades</code> (assumes all trades are yours
+              for now).
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

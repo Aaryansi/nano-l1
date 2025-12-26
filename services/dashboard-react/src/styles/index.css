@@ -1,299 +1,751 @@
-:root {
-  color-scheme: dark;
-  --bg: #0b0b0b;
-  --panel: #151515;
-  --text: #eaeaea;
-  --muted: #a0a0a0;
-  --bid: #6ee7b7;
-  --ask: #fca5a5;
+/* ---------- Base reset ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* ---------- App shell ---------- */
 
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.wrap { padding: 18px; }
-.header { margin-bottom: 12px; }
-.sub { color: var(--muted); font-size: 12px; }
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.card {
-  background: var(--panel);
-  padding: 12px;
-  border-radius: 14px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.5);
-}
-
-h1 { margin: 0 0 4px; font-size: 22px; }
-h2 { margin: 0 0 8px; font-size: 16px; }
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.col { flex: 1; }
-.label { font-size: 12px; color: var(--muted); }
-.small { font-size: 13px; }
-.muted { color: var(--muted); }
-
-.big { font-size: 28px; font-weight: 800; margin: 2px 0; }
-.big.bid { color: var(--bid); }
-.big.ask { color: var(--ask); }
-
-.spread { margin-top: 8px; font-size: 14px; }
-
-.tape {
-  max-height: 280px;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.trade {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  padding: 4px 6px;
-  border-radius: 8px;
-  background: #101010;
-}
-
-.trade.buy { color: var(--bid); }
-.trade.sell { color: var(--ask); }
-.side { font-weight: 700; }
-
-.mini {
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.loading {
-  padding: 20px;
-  color: var(--muted);
-}
-
-
-.app {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  padding: 1.5rem;
-  max-width: 980px;
-  margin: 0 auto;
-}
-
-.order-panel {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  background: #fafafa;
-  margin-bottom: 1.5rem;
-}
-
-.order-panel h2 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-}
-
-.order-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.field-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.field-row label {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.field-row input,
-.field-row select {
-  padding: 0.35rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-.button-row {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.button-row button {
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-}
-
-.button-row button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.order-error {
-  color: #b00020;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.order-response {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.order-response pre {
-  background: #111;
-  color: #0f0;
-  padding: 0.5rem;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-
-.card-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.card.stats .stat-label {
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-.card.stats .stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-top: 0.2rem;
-}
-
-.card.stats .stat-note {
-  margin-top: 0.4rem;
-  opacity: 0.7;
-}
-
-.card-error {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-}
-
-.card-pnl .pnl-body {
-  margin-top: 0.75rem;
-}
-
-.pnl-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-}
-
-.pnl-positive {
-  color: #22c55e;
-}
-
-.pnl-negative {
-  color: #ef4444;
-}
-
-.pnl-flat {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  background: radial-gradient(120% 160% at top, #151826 0%, #050509 55%, #020207 100%);
   color: #e5e7eb;
 }
 
-.pnl-row {
+.App {
+  min-height: 100vh;
+  padding: 20px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Top title bar (if you have one) */
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.app-subtitle {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+/* ---------- Layout grid ---------- */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* First row: manual order + last response */
+.order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 18px;
+}
+
+/* Second / third rows: existing cards */
+.app-row-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px;
+}
+
+.app-row-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+/* Collapse grid on small screens */
+@media (max-width: 1100px) {
+  .order-row,
+  .app-row-3,
+  .app-row-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Generic card style ---------- */
+
+.card,
+.panel {
+  background: radial-gradient(circle at top left, #151827 0%, #05060b 50%, #030308 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 14px 16px 16px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
+}
+
+/* For your existing card containers (Top of Book, Trades, PnL, etc.) */
+.dashboard-card {
+  composes: card;
+}
+
+/* Card headers */
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+/* ---------- Form elements (Manual Order Entry) ---------- */
+
+label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  display: block;
+  margin-bottom: 4px;
+}
+
+input,
+select {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #4b5563;
+  background: #020617;
+  color: #f9fafb;
+  padding: 7px 9px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+input:focus,
+select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+  background: #020617;
+}
+
+button {
+  border-radius: 9999px;
+  border: 1px solid #4b5563;
+  background: linear-gradient(135deg, #0f172a, #020617);
+  color: #f9fafb;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+  background: linear-gradient(135deg, #1f2937, #020617);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* Primary action button */
+.btn-primary {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: linear-gradient(135deg, #16a34a, #022c22);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #22c55e, #022c22);
+}
+
+/* Small utility buttons */
+.btn-muted {
+  border-color: #4b5563;
+  background: #020617;
+  color: #e5e7eb;
+}
+
+/* ---------- Last Response JSON block ---------- */
+
+.last-response-card {
+  background: radial-gradient(circle at top left, #020617 0%, #020308 60%);
+}
+
+.last-response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.last-response-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+/* Style *all* pre blocks so the big white box disappears */
+pre {
+  margin: 0;
+  background: #020617;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  padding: 10px 12px;
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #bbf7d0; /* soft neon green */
+}
+
+/* If you already use a specific class, this will enhance it */
+.json-viewer {
+  background: radial-gradient(circle at top left, #020617 0%, #020308 70%);
+}
+
+/* ---------- Top-of-book & stats text tweaks ---------- */
+
+.metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.metric-value-lg {
+  font-size: 1.7rem;
+  font-weight: 600;
+}
+
+.metric-positive {
+  color: #4ade80;
+}
+
+.metric-negative {
+  color: #f97373;
+}
+
+.metric-muted {
+  color: #9ca3af;
+}
+
+/* ---------- Table (Persisted Trades, etc.) ---------- */
+
+.table-wrapper {
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  overflow: hidden;
+  background: #020617;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+thead {
+  background: #020617;
+}
+
+th,
+td {
+  padding: 6px 10px;
+  text-align: left;
+}
+
+th {
+  font-weight: 500;
+  color: #9ca3af;
+  border-bottom: 1px solid #1f2937;
+}
+
+tbody tr:nth-child(even) {
+  background: #020617;
+}
+
+tbody tr:nth-child(odd) {
+  background: #020814;
+}
+
+/* ---------- WS status pill ---------- */
+
+.ws-status {
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-pill {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid #4b5563;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ws-pill.ws-open {
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.ws-pill.ws-closed {
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+
+/* === Layout shell =================================================== */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, #141b2a 0, #050811 45%, #02040a 100%);
+  color: #e5ecff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
+
+.app-header {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
+  align-items: flex-end;
+  padding: 18px 28px 10px;
+  border-bottom: 1px solid rgba(120, 160, 255, 0.15);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.app-title {
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.app-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(201, 215, 255, 0.75);
+}
+
+.app-header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(113, 141, 255, 0.4);
+  background: rgba(12, 18, 35, 0.9);
+}
+
+.badge-live {
+  border-color: rgba(0, 214, 111, 0.8);
+  color: #00e38a;
+  box-shadow: 0 0 12px rgba(1, 243, 135, 0.35);
+}
+
+.badge-outline {
+  border-style: dashed;
+}
+
+.dashboard-grid {
+  padding: 16px 24px 24px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.3fr) minmax(0, 1.3fr);
+  grid-auto-rows: minmax(0, auto);
+
+  /* explicit areas so it feels tight + intentional */
+  grid-template-areas:
+    "order order depth"
+    "trades trades pnl"
+    "persisted stats chart"
+    "rl rl rl";
+}
+
+.grid-item {
+  min-width: 0;
+}
+
+/* Map sections to areas */
+.order-area {
+  grid-area: order;
+}
+
+.depth-area {
+  grid-area: depth;
+}
+
+.pnl-area {
+  grid-area: pnl;
+}
+
+/* === PnL card layout ==================================== */
+
+.pnl-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pnl-total-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.pnl-positive .pnl-total-value {
+  color: #00e38a;
+}
+
+.pnl-negative .pnl-total-value {
+  color: #ff5b7b;
+}
+
+.pnl-flat .pnl-total-value {
+  color: rgba(208, 220, 255, 0.9);
+}
+
+.pnl-metrics-grid {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.pnl-metric .metric-value {
+  font-size: 0.95rem;
 }
 
 .pnl-note {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  opacity: 0.7;
+  margin-top: 10px;
+}
+
+.pnl-error {
+  color: #ff5b7b;
 }
 
 
+.trades-area {
+  grid-area: trades;
+}
 
-.table-wrap {
-  max-height: 260px;
+.persisted-area {
+  grid-area: persisted;
+}
+
+.stats-area {
+  grid-area: stats;
+}
+
+.chart-area {
+  grid-area: chart;
+}
+
+.rl-area {
+  grid-area: rl;
+}
+
+/* Responsive: stack everything on narrow screens */
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "order"
+      "depth"
+      "pnl"
+      "trades"
+      "persisted"
+      "stats"
+      "chart"
+      "rl";
+  }
+}
+
+
+.app-footer {
+  margin-top: auto;
+  padding: 10px 24px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(120, 160, 255, 0.12);
+  font-size: 11px;
+  color: rgba(170, 190, 230, 0.65);
+}
+
+/* === Panel tweaks (works with your existing panel styles) ========= */
+
+.panel {
+  background: radial-gradient(circle at top left, #10172a 0, #050915 52%, #020309 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(112, 147, 255, 0.28);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+.panel-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(73, 102, 180, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f5f7ff;
+}
+
+.panel-subtitle {
+  font-size: 11px;
+  color: rgba(170, 190, 230, 0.7);
+}
+
+.panel-body {
+  padding: 10px 14px 12px;
+}
+
+.panel-body-tight {
+  padding-top: 6px;
+}
+
+.panel-tight {
+  padding: 10px 12px 10px;
+}
+
+.panel-scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-body-tight {
+  padding-top: 6px;
+}
+
+/* Scrollable table area so cards don't grow forever */
+.table-wrapper-scroll {
+  max-height: 260px; /* adjust 220–320px if you want */
   overflow-y: auto;
 }
 
-.trades-table {
+/* Optional: nicer refresh button */
+.btn-muted {
+  border-radius: 9999px;
+  border: 1px solid #4b5563;
+  background: #020617;
+  color: #e5e7eb;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-muted:hover {
+  background: #030712;
+}
+
+
+/* Price history card bits */
+
+.chart-wrapper {
+  width: 100%;
+  height: 180px;
+}
+
+.price-history-current {
+  text-align: right;
+}
+
+.metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(180, 199, 240, 0.8);
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.metric-chip {
+  font-size: 11px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.metric-chip.up {
+  color: #00e38a;
+  border-color: rgba(0, 227, 138, 0.7);
+}
+
+.metric-chip.down {
+  color: #ff5b7b;
+  border-color: rgba(255, 91, 123, 0.75);
+}
+
+.roadmap-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: rgba(208, 220, 255, 0.9);
+}
+
+.muted {
+  font-size: 12px;
+  color: rgba(173, 188, 222, 0.85);
+}
+
+.muted-small {
+  font-size: 11px;
+  color: rgba(150, 168, 210, 0.75);
+}
+.top-of-book-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.table-compact {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 12px;
 }
 
-.trades-table th,
-.trades-table td {
-  padding: 0.35rem 0.5rem;
+.table-compact th,
+.table-compact td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(60, 80, 140, 0.6);
+}
+
+.table-compact th {
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: rgba(180, 199, 240, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.side-buy {
-  color: #4ade80; /* green-ish */
+.green {
+  color: #00e38a;
+}
+
+.red {
+  color: #ff5b7b;
+}
+
+.metric-qty {
+  font-size: 12px;
+  color: rgba(200, 215, 245, 0.8);
+  margin-left: 4px;
+}
+.price-history-chart {
+  margin-top: 0.75rem;
+}
+
+.price-history-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.price-history-last {
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
-.side-sell {
-  color: #f97373; /* red-ish */
-  font-weight: 600;
-}
-
-.btn.btn-small {
-  font-size: 0.8rem;
-  padding: 0.25rem 0.6rem;
-}
-
-
-.ws-status {
-  font-size: 0.8rem;
+.price-history-change {
+  font-size: 0.75rem;
   opacity: 0.8;
 }
 
-.ws-status-open {
-  color: #4ade80; /* green-ish */
+.price-history-change--up {
+  color: #19c37d;
 }
 
-.ws-status-connecting,
-.ws-status-reconnecting {
-  color: #facc15; /* yellow-ish */
+.price-history-change--down {
+  color: #ff5c5c;
 }
 
-.ws-status-error,
-.ws-status-closed {
-  color: #f97373; /* red-ish */
+.price-history-path {
+  stroke: #13b0ff;
+  stroke-width: 2;
 }
-.stats-refresh-btn {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0;
+
+.price-history-baseline {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+}
+
+
+/* --- Compact layout tweaks for trades / persisted trades --- */
+
+.panel-body--scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* inner container so table scrolls, not the whole card */
+.table-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Slightly tighter global spacing so more fits above the fold */
+.dashboard-grid {
+  padding: 12px 20px 18px;
+  gap: 12px;
+}
+
+.panel-header {
+  padding: 10px 12px 6px;
+}
+
+.panel-body {
+  padding: 8px 12px 10px;
 }

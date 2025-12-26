@@ -14,7 +14,7 @@ export default function PersistedTrades() {
 
     try {
       const resp = await fetch(
-        `${ENGINE_HTTP}/api/trades/recent?limit=20`
+        `${ENGINE_HTTP}/api/trades/recent?limit=200` // bigger window for DB view
       );
 
       if (!resp.ok) {
@@ -22,7 +22,6 @@ export default function PersistedTrades() {
       }
 
       const data = await resp.json();
-      // console.log("[PersistedTrades] recent trades response:", data);
 
       // API shape is { trades: [...] }
       let trades = Array.isArray(data.trades) ? data.trades : null;
@@ -32,9 +31,7 @@ export default function PersistedTrades() {
         trades = data;
       }
 
-      if (!trades) {
-        trades = [];
-      }
+      if (!trades) trades = [];
 
       setRows(trades);
     } catch (err) {
@@ -52,60 +49,67 @@ export default function PersistedTrades() {
   }, []);
 
   return (
-    <div className="card card--persisted">
-      <div className="card__header">
-        <div className="card__title">Persisted Trades (DB)</div>
-        <button
-          className="btn btn--secondary"
-          onClick={fetchTrades}
-          disabled={loading}
-        >
-          {loading ? "Loading…" : "Refresh"}
-        </button>
-      </div>
-
-      {error && (
-        <div className="card__error">
-          Failed to load DB trades: {error}
-        </div>
-      )}
-
-      {!error && !loading && rows.length === 0 && (
-        <div className="card__empty">
-          No trades stored yet. Send some orders and refresh.
-        </div>
-      )}
-
-      {!error && rows.length > 0 && (
-        <table className="table table--persisted">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Side</th>
-              <th>Symbol</th>
-              <th>Price</th>
-              <th>Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((t) => {
-              const side = (t.aggressor_side || t.aggressorSide || "").toUpperCase();
-              const isBuy = side === "BUY";
-              return (
-                <tr key={t.id}>
-                  <td>{t.id}</td>
-                  <td className={isBuy ? "txt-buy" : "txt-sell"}>
-                    {side || "-"}
-                  </td>
-                  <td>{t.symbol}</td>
-                  <td>{t.price?.toFixed ? t.price.toFixed(2) : t.price}</td>
-                  <td>{t.qty}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+  <div className="card card--persisted">
+    <div className="card__header">
+      <div className="card__title">Persisted Trades (DB)</div>
+      <button
+        className="btn btn--secondary"
+        onClick={fetchTrades}
+        disabled={loading}
+      >
+        {loading ? "Loading…" : "Refresh"}
+      </button>
     </div>
-  );
+
+    {error && (
+      <div className="card__error">Failed to load DB trades: {error}</div>
+    )}
+
+    {!error && !loading && rows.length === 0 && (
+      <div className="card__empty">
+        No trades stored yet. Send some orders and refresh.
+      </div>
+    )}
+
+    {!error && rows.length > 0 && (
+      <div className="panel-body panel-body--scroll">
+        <div className="table-scroll">
+          <table className="table-compact">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Side</th>
+                <th>Symbol</th>
+                <th>Price</th>
+                <th>Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((t) => {
+                const side = (
+                  t.aggressor_side ||
+                  t.aggressorSide ||
+                  ""
+                ).toUpperCase();
+                const isBuy = side === "BUY";
+                return (
+                  <tr key={t.id}>
+                    <td>{t.id}</td>
+                    <td className={isBuy ? "green" : "red"}>{side || "-"}</td>
+                    <td>{t.symbol}</td>
+                    <td>
+                      {t.price?.toFixed ? t.price.toFixed(2) : t.price}
+                    </td>
+                    <td>{t.qty}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 }

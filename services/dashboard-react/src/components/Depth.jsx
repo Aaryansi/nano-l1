@@ -1,36 +1,97 @@
-import React from "react";
+import { useEffect, useState } from "react";
 
-export default function Depth({ book }) {
-  const bid = book.bestBid || { price: 0, qty: 0 };
-  const ask = book.bestAsk || { price: 0, qty: 0 };
+const API_BASE = "http://localhost:8080";
 
-  const spread =
-    bid.price > 0 && ask.price > 0 ? ask.price - bid.price : 0;
+export default function Depth() {
+  const [book, setBook] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Poll the REST endpoint for best bid/ask + last trade
+  async function fetchDepth() {
+    try {
+      const res = await fetch(`${API_BASE}/api/trades/recent?limit=1`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const body = await res.json();
+      const trades = Array.isArray(body) ? body : body.trades || [];
+      const last = trades[0];
+
+      if (!last) {
+        setBook(null);
+        return;
+      }
+
+      // For now, we approximate top of book from last trade.
+      // Later you can wire a dedicated depth endpoint / WS feed.
+      setBook({
+        bestBid: { price: last.price, qty: last.qty },
+        bestAsk: { price: last.price, qty: last.qty },
+        lastTradePrice: last.price,
+      });
+      setError(null);
+    } catch (err) {
+      console.error("[Depth] fetch error", err);
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
+    fetchDepth(); // first load
+    const id = setInterval(fetchDepth, 3000); // refresh every 3s
+    return () => clearInterval(id);
+  }, []);
+
+  const bestBid = book?.bestBid || { price: 0, qty: 0 };
+  const bestAsk = book?.bestAsk || { price: 0, qty: 0 };
+  const lastTradePrice =
+    book?.lastTradePrice !== undefined ? book.lastTradePrice : null;
 
   return (
-    <div className="card">
-      <h2>Top of Book</h2>
-
-      <div className="row">
-        <div className="col">
-          <div className="label">Best Bid</div>
-          <div className="big bid">{bid.price.toFixed(2)}</div>
-          <div className="small">Qty: {bid.qty.toFixed(2)}</div>
-        </div>
-
-        <div className="col">
-          <div className="label">Best Ask</div>
-          <div className="big ask">{ask.price.toFixed(2)}</div>
-          <div className="small">Qty: {ask.qty.toFixed(2)}</div>
+    <div className="panel">
+      <div className="panel-header">
+        <div className="panel-title">Top of Book</div>
+        <div className="panel-subtitle">
+          Approximated from latest trade (engine_trades)
         </div>
       </div>
+      <div className="panel-body">
+        {error && (
+          <div className="muted-small" style={{ color: "#ff5b7b" }}>
+            Failed to load depth: {error}
+          </div>
+        )}
 
-      <div className="spread">
-        Spread: {spread.toFixed(2)}
-      </div>
+        {!book && !error && (
+          <div className="muted">No trades yet – send an order to see data.</div>
+        )}
 
-      <div className="small muted">
-        Last Trade: {book.lastTradePrice?.toFixed(2) ?? "-"}
+        {book && (
+          <div className="top-of-book-grid">
+            <div>
+              <div className="metric-label">Best Bid</div>
+              <div className="metric-value green">
+                {bestBid.price.toFixed(2)}
+                <span className="metric-qty">× {bestBid.qty.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="metric-label">Best Ask</div>
+              <div className="metric-value red">
+                {bestAsk.price.toFixed(2)}
+                <span className="metric-qty">× {bestAsk.qty.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="metric-label">Last Trade</div>
+              <div className="metric-value">
+                {lastTradePrice != null ? lastTradePrice.toFixed(2) : "--"}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

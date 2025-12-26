@@ -117,27 +117,29 @@ func (e *Engine) persistTrades(trades []book.Trade) {
 // ---------------------------------------------------------------------
 
 func withCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "http://localhost:5173"
-		}
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        origin := r.Header.Get("Origin")
 
-		if strings.HasPrefix(origin, "http://localhost:5173") {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
+        // For dev, just reflect whatever origin hit us (if any).
+        if origin != "" {
+            w.Header().Set("Access-Control-Allow-Origin", origin)
+        } else {
+            // Fallback – useful for curl, etc.
+            w.Header().Set("Access-Control-Allow-Origin", "*")
+        }
 
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+        if r.Method == http.MethodOptions {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
 
-		next.ServeHTTP(w, r)
-	})
+        next.ServeHTTP(w, r)
+    })
 }
+
 
 // ---------------------------------------------------------------------
 // main

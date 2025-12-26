@@ -1,3 +1,4 @@
+// src/components/Stats.jsx
 import React, { useEffect, useState } from "react";
 
 const API_BASE =
@@ -23,15 +24,14 @@ export default function Stats() {
         }
       } catch (err) {
         if (isMounted) {
+          console.error("[Stats] fetch error", err);
           setError("Failed to load stats");
         }
       }
     }
 
-    // initial + poll every 5s
     fetchStats();
     const id = setInterval(fetchStats, 5000);
-
     return () => {
       isMounted = false;
       clearInterval(id);
@@ -39,21 +39,30 @@ export default function Stats() {
   }, []);
 
   return (
-    <div className="card stats">
-      <div className="card-title">DB Stats</div>
-      {error ? (
-        <div className="card-error">{error}</div>
-      ) : tradesInDB === null ? (
-        <div className="card-body small">Loading…</div>
-      ) : (
-        <div className="card-body">
-          <div className="stat-label">Persisted trades</div>
-          <div className="stat-value">{tradesInDB}</div>
-          <div className="stat-note small">
-            Count from <code>engine_trades</code> (Postgres).
+    <div className="panel">
+      <div className="panel-header">
+        <div className="panel-title">DB Stats</div>
+      </div>
+
+      <div className="panel-body panel-body-tight">
+        {error ? (
+          <div className="muted-small" style={{ color: "#ff5b7b" }}>
+            {error}
           </div>
-        </div>
-      )}
+        ) : tradesInDB === null ? (
+          <div className="muted-small">Loading…</div>
+        ) : (
+          <>
+            <div className="metric-label">Persisted trades</div>
+            <div className="metric-value" style={{ marginTop: 4 }}>
+              {tradesInDB}
+            </div>
+            <div className="muted-small" style={{ marginTop: 8 }}>
+              Counting rows in <code>engine_trades</code> (Postgres).
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

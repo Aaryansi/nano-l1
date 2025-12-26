@@ -12,7 +12,7 @@ export default function OrderPanel() {
 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [lastResp, setLastResp] = useState(null);
+  // const [lastResp, setLastResp] = useState(null);
 
   // helper to generate a reasonably unique order id
   const makeOrderId = () => `o-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -202,12 +202,12 @@ export default function OrderPanel() {
         {error && <div className="error">Error: {error}</div>}
       </form>
 
-      <div className="last-response">
+      {/* <div className="last-response">
         <div className="last-response-title">Last Response</div>
         <pre className="last-response-body">
           {lastResp ? JSON.stringify(lastResp, null, 2) : "// no response yet"}
         </pre>
-      </div>
+      </div> */}
     </section>
   );
 }

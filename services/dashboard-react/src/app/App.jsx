@@ -1,90 +1,109 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { connectWS } from "../lib/wsClient.js";
+import "../styles/index.css";
+
+import OrderPanel from "../components/OrderPanel.jsx";
 import Depth from "../components/Depth.jsx";
 import Trades from "../components/Trades.jsx";
 import PnL from "../components/PnL.jsx";
-import OrderPanel from "../components/OrderPanel";
-import PersistedTrades from "../components/PersistedTrades.jsx";
-
 import Stats from "../components/Stats.jsx";
+import PersistedTrades from "../components/PersistedTrades.jsx";
+import PriceHistory from "../components/PriceHistory.jsx";
 
-
-const WS_URL =
-  import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+function RLComingSoon() {
+  return (
+    <div className="panel">
+      <div className="panel-header">
+        <div className="panel-title">RL Agent (coming soon)</div>
+        <div className="panel-subtitle">“AutoTrader” roadmap</div>
+      </div>
+      <div className="panel-body">
+        <p className="muted">
+          Planned next step: a reinforcement-learning agent that consumes live
+          ticks (Kafka), learns a policy, and sends orders into the same Go
+          engine.
+        </p>
+        <ul className="roadmap-list">
+          <li>Stream ticks → feature pipeline</li>
+          <li>Policy network → action (buy / sell / hold)</li>
+          <li>Reward from P&amp;L, risk limits, and position constraints</li>
+        </ul>
+        <p className="muted-small">
+          This card is here so recruiters / users see the ML angle without
+          blocking on a full implementation.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [book, setBook] = useState(null);
-  const [trades, setTrades] = useState([]);
-  const [pos, setPos] = useState(0);
-  const [pnl, setPnl] = useState([0]);
-  const [wsStatus, setWsStatus] = useState("connecting");
-
-  useEffect(() => {
-    const handleMsg = (msg) => {
-      if (msg.eventType === "book_update") {
-        setBook(msg.data);
-      }
-
-      if (msg.eventType === "trades") {
-        const newTrades = msg.data || [];
-        setTrades((prev) => [...prev, ...newTrades].slice(-200));
-
-        // naive PnL for MVP: assume all trades are ours
-        if (newTrades.length) {
-          let p = pnl[pnl.length - 1];
-          let position = pos;
-
-          for (const tr of newTrades) {
-            if (tr.aggressorSide === "buy") {
-              position += tr.qty;
-              p -= tr.price * tr.qty;
-            } else {
-              position -= tr.qty;
-              p += tr.price * tr.qty;
-            }
-          }
-          setPos(position);
-          setPnl((prev) => [...prev, p]);
-        }
-      }
-    };
-
-    const wsHandle = connectWS(WS_URL, handleMsg, setWsStatus);
-
-    return () => {
-      wsHandle.close();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [WS_URL]);
-
-  const lastTrades = useMemo(() => trades.slice(-30).reverse(), [trades]);
-
   return (
-    <div className="wrap">
-      <header className="header">
-        <h1>Nano-L1 Trading Sandbox</h1>
-
-        <OrderPanel />
-
-        <div className={`sub ws-status ws-status-${wsStatus}`}>
-          WS: {WS_URL} &nbsp; <span>({wsStatus})</span>
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1 className="app-title">Nano-L1 Trading Sandbox</h1>
+          <p className="app-subtitle">
+            Go engine · WebSockets · Postgres · Python backtester
+          </p>
         </div>
-
-
-        <div className="sub">WS: {WS_URL}</div>
+        <div className="app-header-right">
+          <div className="badge badge-live">LIVE</div>
+          <div className="badge badge-outline">Symbol: TEST</div>
+        </div>
       </header>
 
-      {!book ? (
-        <div className="loading">Waiting for stream…</div>
-      ) : (
-        <div className="grid">
-          <Depth book={book} />
-          <Trades trades={lastTrades} />
-          <PnL symbol={book?.symbol || "TEST"} />
+      <main className="dashboard-grid">
+        {/* Row 1: order + top of book + PnL */}
+        <section className="grid-item order-area">
+          <div className="panel">
+            <div className="panel-header">
+              <div className="panel-title">Manual Order Entry</div>
+              <div className="panel-subtitle">
+                Send limit / market orders into the Go engine
+              </div>
+            </div>
+            <div className="panel-body">
+              <OrderPanel />
+            </div>
+          </div>
+        </section>
+
+        <section className="grid-item depth-area">
+          <Depth />
+        </section>
+
+        <section className="grid-item pnl-area">
+          <PnL />
+        </section>
+
+        {/* Row 2: tape + DB trades + DB stats */}
+        <section className="grid-item trades-area">
+          <Trades />
+        </section>
+
+        <section className="grid-item persisted-area">
           <PersistedTrades />
+        </section>
+
+        <section className="grid-item stats-area">
           <Stats />
-        </div>
-      )}
+        </section>
+
+        {/* Row 3: price chart + RL card */}
+        <section className="grid-item chart-area">
+          <PriceHistory />
+        </section>
+
+        <section className="grid-item rl-area">
+          <RLComingSoon />
+        </section>
+      </main>
+
+      <footer className="app-footer">
+        <span className="muted-small">WS: ws://localhost:8080/ws</span>
+        <span className="muted-small">
+          Nano-L1 · Go matching engine · Postgres · Python backtester
+        </span>
+      </footer>
     </div>
   );
 }
