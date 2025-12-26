@@ -1,148 +1,227 @@
-#!/usr/bin/env python3
-"""
-Nano-L1 CSV backtester (standalone)
-
-Offline backtest that replays a CSV of ticks and runs a tiny toy strategy.
-
-Expected CSV format (header row required):
-
-    ts,symbol,price,side,qty
-
-- ts:     integer timestamp (ns / ms / whatever; we treat as opaque)
-- symbol: string, e.g. "TEST"
-- price:  float
-- side:   "buy" or "sell"  (side of the *tick*, not our trade)
-- qty:    float quantity
-
-Strategy (simple demo, just for benchmarking + showing P&L):
------------------------------------------------------------
-- Track last trade price.
-- If price ticks DOWN -> we buy `qty`.
-- If price ticks UP   -> we sell `qty`.
-
-We compute:
-- cash (P&L ledger),
-- position (net qty),
-- mark-to-market P&L at last price,
-- total ticks processed,
-- elapsed wall-clock time,
-- ticks/second.
-
-Usage (host):
--------------
-    python backtest.py --file /path/to/ticks.csv --max-ticks 2000000
-
-In Docker (once wired into docker-compose):
--------------------------------------------
-    docker compose run --rm backtest-py
-
-You can override the CSV path via:
-- CLI:  --file path
-- or env: TICKS_CSV=/path/to/ticks.csv  (default inside container: /data/ticks.csv)
-"""
-
 import argparse
 import csv
 import os
+import random
 import time
 from dataclasses import dataclass
+from typing import Iterator, Optional
 
+
+# ---------------------------------------------------------------------
+# Data model
+# ---------------------------------------------------------------------
 
 @dataclass
 class Tick:
     ts: int
     symbol: str
     price: float
-    side: str
+    side: str   # "buy" | "sell"
     qty: float
 
 
-def parse_tick(row: dict) -> Tick:
-    return Tick(
-        ts=int(row["ts"]),
-        symbol=row["symbol"],
-        price=float(row["price"]),
-        side=row["side"].strip().lower(),
-        qty=float(row["qty"]),
+# ---------------------------------------------------------------------
+# Tick sources
+# ---------------------------------------------------------------------
+
+def iter_csv_ticks(path: str, max_ticks: Optional[int] = None) -> Iterator[Tick]:
+    """
+    Stream ticks from a CSV file.
+    Expected header: ts,symbol,price,side,qty
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"ticks CSV not found at: {path}")
+
+    with open(path, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        count = 0
+        for row in reader:
+            try:
+                ts = int(row["ts"])
+                symbol = row.get("symbol", "TEST")
+                price = float(row["price"])
+                side = row["side"].strip().lower()
+                qty = float(row["qty"])
+            except Exception as e:
+                # skip bad rows
+                print(f"[backtest] skipping bad row: {row} (err={e})")
+                continue
+
+            yield Tick(ts=ts, symbol=symbol, price=price, side=side, qty=qty)
+            count += 1
+            if max_ticks is not None and count >= max_ticks:
+                break
+
+
+def iter_synthetic_ticks(
+    n: int,
+    symbol: str = "TEST",
+    start_price: float = 100.0,
+    vol: float = 0.02,
+) -> Iterator[Tick]:
+    """
+    Generate synthetic ticks: simple random walk prices, random side/qty.
+    This is what we'll use for 2M+ tick performance benchmarks.
+    """
+    price = start_price
+    ts = 0
+
+    for _ in range(n):
+        ts += 1
+
+        # Gaussian bump around 0; clamp to > 0
+        bump = random.gauss(0.0, vol)
+        price = max(0.01, price + bump)
+
+        side = "buy" if random.random() < 0.5 else "sell"
+        qty = random.randint(1, 5)
+
+        yield Tick(ts=ts, symbol=symbol, price=price, side=side, qty=qty)
+
+
+# ---------------------------------------------------------------------
+# Strategy & PnL
+# ---------------------------------------------------------------------
+
+@dataclass
+class BacktestResult:
+    ticks_processed: int
+    elapsed_sec: float
+    final_position: float
+    last_price: float
+    cash_pnl: float
+    mtm_pnl: float
+
+
+def run_strategy(ticks: Iterator[Tick], max_ticks: Optional[int] = None) -> BacktestResult:
+    """
+    Very simple toy strategy:
+    - We always take the opposite side of the flow:
+      * if tick is 'buy' => we sell
+      * if tick is 'sell' => we buy
+    - Position is bounded only by data; this is just to exercise the engine.
+    """
+    position = 0.0
+    cash = 0.0
+    last_price = 0.0
+    count = 0
+
+    t0 = time.perf_counter()
+
+    for t in ticks:
+        price = t.price
+        qty = t.qty
+        last_price = price
+
+        if t.side == "buy":
+            # market wants to buy; we sell
+            position -= qty
+            cash += price * qty
+        else:
+            # market wants to sell; we buy
+            position += qty
+            cash -= price * qty
+
+        count += 1
+        if max_ticks is not None and count >= max_ticks:
+            break
+
+    t1 = time.perf_counter()
+    elapsed = t1 - t0
+
+    mtm = position * last_price if count > 0 else 0.0
+
+    return BacktestResult(
+        ticks_processed=count,
+        elapsed_sec=elapsed,
+        final_position=position,
+        last_price=last_price,
+        cash_pnl=cash,
+        mtm_pnl=mtm,
     )
 
 
-def backtest(csv_path: str, max_ticks: int | None = None) -> None:
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"ticks CSV not found at: {csv_path}")
-
-    print(f"[backtest] loading from: {csv_path}")
-    start = time.perf_counter()
-
-    cash = 0.0         # + when we sell, - when we buy
-    position = 0.0     # net quantity
-    last_price = 0.0
-    prev_price: float | None = None
-    n_ticks = 0
-
-    # Super simple "fade the last move" strategy
-    with open(csv_path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            tick = parse_tick(row)
-            n_ticks += 1
-
-            if prev_price is not None:
-                if tick.price < prev_price:
-                    # Buy qty
-                    cash -= tick.price * tick.qty
-                    position += tick.qty
-                elif tick.price > prev_price:
-                    # Sell qty
-                    cash += tick.price * tick.qty
-                    position -= tick.qty
-
-            prev_price = tick.price
-            last_price = tick.price
-
-            if max_ticks is not None and n_ticks >= max_ticks:
-                break
-
-    end = time.perf_counter()
-    elapsed = end - start if end > start else 0.0
-
-    # Mark-to-market P&L
-    mtm = cash + position * last_price if last_price > 0 else cash
-    ticks_per_sec = n_ticks / elapsed if elapsed > 0 else 0.0
+def print_report(result: BacktestResult) -> None:
+    if result.elapsed_sec > 0:
+        tps = result.ticks_processed / result.elapsed_sec
+    else:
+        tps = 0.0
 
     print("\n[backtest] done")
-    print(f"  ticks processed : {n_ticks:,}")
-    print(f"  elapsed time    : {elapsed:.4f} s")
-    print(f"  ticks / second  : {ticks_per_sec:,.0f} / s")
-    print("")
-    print("  final position  :", position)
-    print("  last price      :", last_price)
-    print("  cash PnL        :", round(cash, 4))
-    print("  MTM PnL         :", round(mtm, 4))
+    print(f"  ticks processed : {result.ticks_processed}")
+    print(f"  elapsed time    : {result.elapsed_sec:.4f} s")
+    print(f"  ticks / second  : {int(tps):,} / s\n")
+    print(f"  final position  : {result.final_position:.2f}")
+    print(f"  last price      : {result.last_price:.2f}")
+    print(f"  cash PnL        : {result.cash_pnl:.2f}")
+    print(f"  MTM PnL         : {result.mtm_pnl:.2f}")
 
+
+# ---------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Nano-L1 CSV backtester")
+    parser = argparse.ArgumentParser(
+        description="Nano-L1 Python backtester (file or synthetic ticks)"
+    )
     parser.add_argument(
         "--file",
-        "-f",
-        dest="file",
-        default=None,
-        help="Path to ticks CSV (default: env TICKS_CSV or /data/ticks.csv)",
+        type=str,
+        help="Path to tick CSV (ts,symbol,price,side,qty)",
+    )
+    parser.add_argument(
+        "--synthetic",
+        type=int,
+        default=0,
+        help="If >0, generate this many synthetic ticks instead of reading a file",
+    )
+    parser.add_argument(
+        "--symbol",
+        type=str,
+        default="TEST",
+        help="Symbol for synthetic ticks (default: TEST)",
     )
     parser.add_argument(
         "--max-ticks",
-        "-n",
-        dest="max_ticks",
         type=int,
         default=None,
-        help="Optional max number of ticks to process (for quick tests)",
+        help="Optional cap on number of ticks to process",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for synthetic mode (default: 42)",
     )
 
     args = parser.parse_args()
-    csv_path = args.file or os.environ.get("TICKS_CSV", "/data/ticks.csv")
 
-    backtest(csv_path, max_ticks=args.max_ticks)
+    # Decide mode: synthetic vs file
+    use_synth = args.synthetic and args.synthetic > 0
+
+    if use_synth:
+        # Synthetic mode
+        n = args.synthetic
+        random.seed(args.seed)
+        print(
+            f"[backtest] synthetic mode: n={n}, symbol={args.symbol}, seed={args.seed}"
+        )
+        ticks_iter = iter_synthetic_ticks(n=n, symbol=args.symbol)
+        result = run_strategy(ticks_iter, max_ticks=args.max_ticks)
+        print_report(result)
+        return
+
+    # File mode (backwards-compatible with what you ran before)
+    if not args.file:
+        raise SystemExit("Either --synthetic N or --file PATH must be provided")
+
+    csv_path = args.file
+    print(f"[backtest] loading from: {csv_path}")
+
+    ticks_iter = iter_csv_ticks(csv_path, max_ticks=args.max_ticks)
+    result = run_strategy(ticks_iter, max_ticks=args.max_ticks)
+    print_report(result)
 
 
 if __name__ == "__main__":
