@@ -71,14 +71,15 @@ services:
 
   # -------------------- Backtest --------------------
   backtest:
-    build: ../../services/backtest-py
-    environment:
-      ENGINE_URL: "http://engine:8080/order"
-      DATA_PATH: "/data/sample/sample_ticks.csv"
+    build:
+      context: ../../services/backtest-py
+      dockerfile: Dockerfile
     volumes:
-      - ../../data:/data
-    depends_on:
-      - engine
+      # map repo CSV → container /data/ticks.csv
+      - ../../data/sample_ticks.csv:/data/ticks.csv:ro
+    environment:
+      - TICKS_CSV=/data/ticks.csv
+    command: ["python", "backtest.py", "--max-ticks", "2000000"]
 
   # -------------------- Feed Simulator --------------------
   feed-sim:

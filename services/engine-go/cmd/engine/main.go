@@ -1,21 +1,27 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"strconv"
 
 	_ "github.com/lib/pq"
 
 	"nano-l1/engine-go/internal/book"
 	"nano-l1/engine-go/internal/server"
+	"nano-l1/engine-go/internal/stream"
 )
+
+// ---------------------------------------------------------------------
+// Request / response types
+// ---------------------------------------------------------------------
 
 type OrderReq struct {
 	ID     string  `json:"id"`
@@ -32,18 +38,40 @@ type OrderResp struct {
 	Trades     []book.Trade    `json:"trades"`
 }
 
+type StatsResp struct {
+	TradesInDB int64 `json:"tradesInDB"`
+}
+
+// DB-backed PnL response
+type PnLResp struct {
+	Symbol      string  `json:"symbol"`
+	TradeCount  int64   `json:"tradeCount"`
+	Position    float64 `json:"position"`
+	AvgEntry    float64 `json:"avgEntryPrice"`
+	LastPrice   float64 `json:"lastPrice"`
+	RealizedPnL float64 `json:"realizedPnL"`
+	Unrealized  float64 `json:"unrealizedPnL"`
+	TotalPnL    float64 `json:"totalPnL"`
+}
+
+// ---------------------------------------------------------------------
+// Engine
+// ---------------------------------------------------------------------
+
 type Engine struct {
 	mu    sync.Mutex
 	books map[string]*book.Book
 	hub   *server.Hub
 	db    *sql.DB
+	bus   *stream.Bus // Kafka bus (optional)
 }
 
-func NewEngine(hub *server.Hub, db *sql.DB) *Engine {
+func NewEngine(hub *server.Hub, db *sql.DB, bus *stream.Bus) *Engine {
 	return &Engine{
 		books: map[string]*book.Book{},
 		hub:   hub,
 		db:    db,
+		bus:   bus,
 	}
 }
 
@@ -84,6 +112,10 @@ func (e *Engine) persistTrades(trades []book.Trade) {
 	}
 }
 
+// ---------------------------------------------------------------------
+// CORS wrapper
+// ---------------------------------------------------------------------
+
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
@@ -91,7 +123,6 @@ func withCORS(next http.Handler) http.Handler {
 			origin = "http://localhost:5173"
 		}
 
-		// allow dev front-end
 		if strings.HasPrefix(origin, "http://localhost:5173") {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
@@ -108,68 +139,9 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-func mustInitDB() *sql.DB {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		log.Println("[db] no DATABASE_URL set, running without DB")
-		return nil
-	}
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatalf("[db] open: %v", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		log.Fatalf("[db] ping: %v", err)
-	}
-
-	// Create a simple table just for engine-emitted trades
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS engine_trades (
-            id SERIAL PRIMARY KEY,
-            ts BIGINT NOT NULL,
-            symbol TEXT NOT NULL,
-            price DOUBLE PRECISION NOT NULL,
-            qty DOUBLE PRECISION NOT NULL,
-            aggressor_side TEXT NOT NULL,
-            maker_order_id TEXT NOT NULL,
-            taker_order_id TEXT NOT NULL
-        );
-    `)
-	if err != nil {
-		log.Fatalf("[db] create engine_trades: %v", err)
-	}
-
-	log.Println("[db] connected and ensured engine_trades table")
-	return db
-}
-
-// helper to write trades
-func (e *Engine) saveTrades(trades []book.Trade) {
-	if e.db == nil || len(trades) == 0 {
-		return
-	}
-
-	for _, t := range trades {
-		_, err := e.db.Exec(
-			`INSERT INTO engine_trades
-                (ts, symbol, price, qty, aggressor_side, maker_order_id, taker_order_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			t.Ts,
-			t.Symbol,
-			t.Price,
-			t.Qty,
-			t.AggressorSide,
-			t.MakerOrderID,
-			t.TakerOrderID,
-		)
-		if err != nil {
-			log.Println("[db] insert trade:", err)
-			return
-		}
-	}
-}
+// ---------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------
 
 func main() {
 	port := os.Getenv("ENGINE_PORT")
@@ -177,7 +149,6 @@ func main() {
 		port = "8080"
 	}
 
-	// ---- DB setup --------------------------------------------------------
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL not set")
@@ -192,7 +163,7 @@ func main() {
 	}
 	log.Println("[db] connected")
 
-	// create engine_trades table if it doesn't exist
+	// Ensure engine_trades table
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS engine_trades (
 			id BIGSERIAL PRIMARY KEY,
@@ -211,16 +182,74 @@ func main() {
 	}
 	log.Println("[db] ensured engine_trades table exists")
 
-	// ---- Engine + WS hub -------------------------------------------------
+	// -----------------------------------------------------------------
+	// Kafka bus init (feed-sim ↔ engine ↔ trades topic)
+	// -----------------------------------------------------------------
+
+	var bus *stream.Bus
+
+	brokersCSV := os.Getenv("KAFKA_BROKERS")
+	if brokersCSV == "" {
+		// default docker-compose host
+		brokersCSV = "kafka:9092"
+	}
+	bus = stream.NewBus(brokersCSV)
+	if bus != nil {
+		log.Printf("[kafka] bus initialised with brokers: %s", brokersCSV)
+	}
+
+	// context for background Kafka consumers
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Consume ticks from Kafka (feed-sim → Kafka → engine)
+	if bus != nil {
+		go bus.ConsumeTicks(ctx, func(t stream.Tick) {
+			log.Printf("[kafka] tick: %+v", t)
+			// later: you can push ticks into a symbol book or strategy engine here
+		})
+	}
+
 	hub := server.NewHub()
-	eng := NewEngine(hub, db)
+	eng := NewEngine(hub, db, bus)
+
+	// -----------------------------------------------------------------
+	// WS + health
+	// -----------------------------------------------------------------
 
 	http.HandleFunc("/ws", hub.HandleWS)
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	// -----------------------------------------------------------------
+	// /stats – simple count of trades
+	// -----------------------------------------------------------------
+
+	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if eng.db == nil {
+			_ = json.NewEncoder(w).Encode(StatsResp{TradesInDB: 0})
+			return
+		}
+
+		var count int64
+		err := eng.db.QueryRow(`SELECT COUNT(*) FROM engine_trades`).Scan(&count)
+		if err != nil {
+			log.Printf("[db] stats error: %v", err)
+			_ = json.NewEncoder(w).Encode(StatsResp{TradesInDB: 0})
+			return
+		}
+
+		_ = json.NewEncoder(w).Encode(StatsResp{TradesInDB: count})
+	})
+
+	// -----------------------------------------------------------------
+	// /order – manual order entry
+	// -----------------------------------------------------------------
 
 	http.HandleFunc("/order", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -304,19 +333,26 @@ func main() {
 			eng.hub.BroadcastTrades(trades)
 		}
 
+		// publish to Kafka trades topic (fire-and-forget)
+		if eng.bus != nil && len(trades) > 0 {
+			go eng.bus.PublishTrades(context.Background(), trades)
+		}
+
 		resp := OrderResp{BookUpdate: update, Trades: trades}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
+	// -----------------------------------------------------------------
+	// /api/trades/recent – last N trades from engine_trades
+	// -----------------------------------------------------------------
+
 	http.HandleFunc("/api/trades/recent", func(w http.ResponseWriter, r *http.Request) {
-		// we only support GET
 		if r.Method != http.MethodGet {
 			http.Error(w, "GET only", http.StatusMethodNotAllowed)
 			return
 		}
 
-		// default limit = 50, allow ?limit=... override
 		limit := 50
 		if v := r.URL.Query().Get("limit"); v != "" {
 			if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 500 {
@@ -330,9 +366,9 @@ func main() {
 			Symbol        string  `json:"symbol"`
 			Price         float64 `json:"price"`
 			Qty           float64 `json:"qty"`
-			AggressorSide string  `json:"aggressorSide"`
-			MakerOrderID  string  `json:"makerOrderId"`
-			TakerOrderID  string  `json:"takerOrderId"`
+			AggressorSide string  `json:"aggressor_side"`
+			MakerOrderID  string  `json:"maker_order_id"`
+			TakerOrderID  string  `json:"taker_order_id"`
 		}
 
 		rows, err := db.Query(`
@@ -369,7 +405,94 @@ func main() {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"trades": out,
+		})
+	})
+
+	// -----------------------------------------------------------------
+	// /pnl – simple P&L aggregation from engine_trades
+	// -----------------------------------------------------------------
+
+	http.HandleFunc("/pnl", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "GET only", http.StatusMethodNotAllowed)
+			return
+		}
+
+		symbol := r.URL.Query().Get("symbol")
+		if symbol == "" {
+			symbol = "TEST"
+		}
+
+		rows, err := db.Query(`
+			SELECT price, qty, aggressor_side
+			  FROM engine_trades
+			 WHERE symbol = $1
+			 ORDER BY id ASC
+		`, symbol)
+		if err != nil {
+			log.Println("[db] pnl query error:", err)
+			http.Error(w, "db error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var (
+			buyQty, buyNotional   float64
+			sellQty, sellNotional float64
+			lastPrice             float64
+			count                 int64
+		)
+
+		for rows.Next() {
+			var p, q float64
+			var side string
+			if err := rows.Scan(&p, &q, &side); err != nil {
+				log.Println("[db] scan pnl row:", err)
+				http.Error(w, "db error", http.StatusInternalServerError)
+				return
+			}
+			side = strings.ToLower(side)
+
+			if side == "buy" {
+				buyQty += q
+				buyNotional += p * q
+			} else if side == "sell" {
+				sellQty += q
+				sellNotional += p * q
+			}
+			lastPrice = p
+			count++
+		}
+
+		position := buyQty - sellQty
+		totalPnL := sellNotional - buyNotional
+
+		var avgEntry float64
+		if buyQty > 0 {
+			avgEntry = buyNotional / buyQty
+		}
+
+		var unrealized float64
+		if position != 0 && lastPrice != 0 && avgEntry != 0 {
+			unrealized = position * (lastPrice - avgEntry)
+		}
+		realized := totalPnL - unrealized
+
+		resp := PnLResp{
+			Symbol:      symbol,
+			TradeCount:  count,
+			Position:    position,
+			AvgEntry:    avgEntry,
+			LastPrice:   lastPrice,
+			RealizedPnL: realized,
+			Unrealized:  unrealized,
+			TotalPnL:    totalPnL,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 
 	log.Println("engine listening on :" + port)

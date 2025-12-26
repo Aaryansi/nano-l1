@@ -1,9 +1,15 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
+
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
+# Copy everything so nano_backtest/ is available too
 COPY . .
 
-CMD ["python", "backtest.py"]
+# Install deps if/when you add them
+RUN pip install --no-cache-dir -r requirements.txt || true
+
+# Default CSV path inside the container
+ENV TICKS_CSV=/data/ticks.csv
+
+# Run the backtester by default
+ENTRYPOINT ["python", "backtest.py"]

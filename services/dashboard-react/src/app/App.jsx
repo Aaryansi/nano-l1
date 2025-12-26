@@ -6,6 +6,7 @@ import PnL from "../components/PnL.jsx";
 import OrderPanel from "../components/OrderPanel";
 import PersistedTrades from "../components/PersistedTrades.jsx";
 
+import Stats from "../components/Stats.jsx";
 
 
 const WS_URL =
@@ -16,9 +17,10 @@ export default function App() {
   const [trades, setTrades] = useState([]);
   const [pos, setPos] = useState(0);
   const [pnl, setPnl] = useState([0]);
+  const [wsStatus, setWsStatus] = useState("connecting");
 
   useEffect(() => {
-    const ws = connectWS(WS_URL, (msg) => {
+    const handleMsg = (msg) => {
       if (msg.eventType === "book_update") {
         setBook(msg.data);
       }
@@ -45,9 +47,13 @@ export default function App() {
           setPnl((prev) => [...prev, p]);
         }
       }
-    });
+    };
 
-    return () => ws.close();
+    const wsHandle = connectWS(WS_URL, handleMsg, setWsStatus);
+
+    return () => {
+      wsHandle.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [WS_URL]);
 
@@ -60,6 +66,10 @@ export default function App() {
 
         <OrderPanel />
 
+        <div className={`sub ws-status ws-status-${wsStatus}`}>
+          WS: {WS_URL} &nbsp; <span>({wsStatus})</span>
+        </div>
+
 
         <div className="sub">WS: {WS_URL}</div>
       </header>
@@ -70,8 +80,9 @@ export default function App() {
         <div className="grid">
           <Depth book={book} />
           <Trades trades={lastTrades} />
-          <PnL pnl={pnl} pos={pos} />
+          <PnL symbol={book?.symbol || "TEST"} />
           <PersistedTrades />
+          <Stats />
         </div>
       )}
     </div>

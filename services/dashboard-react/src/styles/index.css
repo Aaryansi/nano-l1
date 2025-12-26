@@ -179,6 +179,64 @@ h2 { margin: 0 0 8px; font-size: 16px; }
   margin-bottom: 0.5rem;
 }
 
+.card.stats .stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.card.stats .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.card.stats .stat-note {
+  margin-top: 0.4rem;
+  opacity: 0.7;
+}
+
+.card-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+.card-pnl .pnl-body {
+  margin-top: 0.75rem;
+}
+
+.pnl-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.pnl-positive {
+  color: #22c55e;
+}
+
+.pnl-negative {
+  color: #ef4444;
+}
+
+.pnl-flat {
+  color: #e5e7eb;
+}
+
+.pnl-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.pnl-note {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+
+
 .table-wrap {
   max-height: 260px;
   overflow-y: auto;
@@ -210,4 +268,32 @@ h2 { margin: 0 0 8px; font-size: 16px; }
 .btn.btn-small {
   font-size: 0.8rem;
   padding: 0.25rem 0.6rem;
+}
+
+
+.ws-status {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.ws-status-open {
+  color: #4ade80; /* green-ish */
+}
+
+.ws-status-connecting,
+.ws-status-reconnecting {
+  color: #facc15; /* yellow-ish */
+}
+
+.ws-status-error,
+.ws-status-closed {
+  color: #f97373; /* red-ish */
+}
+.stats-refresh-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
 }
