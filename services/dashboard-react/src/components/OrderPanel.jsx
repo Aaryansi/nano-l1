@@ -41,8 +41,16 @@ export default function OrderPanel() {
         throw new Error(msg);
       }
 
-      const data = text ? JSON.parse(text) : null;
-      setLastResp(data);
+      if (text) {
+        try {
+          const data = JSON.parse(text);
+          console.log("[order] success:", data);
+        } catch {
+          console.log("[order] success (non-JSON):", text);
+        }
+      } else {
+        console.log("[order] success: empty body");
+      }
     } catch (err) {
       console.error("send order failed:", err);
       setError(err.message || "Failed to send order");
