@@ -25,10 +25,7 @@ class Tick:
 # ---------------------------------------------------------------------
 
 def iter_csv_ticks(path: str, max_ticks: Optional[int] = None) -> Iterator[Tick]:
-    """
-    Stream ticks from a CSV file.
-    Expected header: ts,symbol,price,side,qty
-    """
+    """stream ticks from csv (ts,symbol,price,side,qty)"""
     if not os.path.exists(path):
         raise FileNotFoundError(f"ticks CSV not found at: {path}")
 
@@ -59,10 +56,7 @@ def iter_synthetic_ticks(
     start_price: float = 100.0,
     vol: float = 0.02,
 ) -> Iterator[Tick]:
-    """
-    Generate synthetic ticks: simple random walk prices, random side/qty.
-    This is what we'll use for 2M+ tick performance benchmarks.
-    """
+    """random walk price generator for benchmarks"""
     price = start_price
     ts = 0
 
@@ -94,13 +88,7 @@ class BacktestResult:
 
 
 def run_strategy(ticks: Iterator[Tick], max_ticks: Optional[int] = None) -> BacktestResult:
-    """
-    Very simple toy strategy:
-    - We always take the opposite side of the flow:
-      * if tick is 'buy' => we sell
-      * if tick is 'sell' => we buy
-    - Position is bounded only by data; this is just to exercise the engine.
-    """
+    """takes opposite side of each tick - simple market making sim"""
     position = 0.0
     cash = 0.0
     last_price = 0.0

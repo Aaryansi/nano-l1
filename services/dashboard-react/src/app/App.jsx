@@ -8,27 +8,23 @@ import Stats from "../components/Stats.jsx";
 import PersistedTrades from "../components/PersistedTrades.jsx";
 import PriceHistory from "../components/PriceHistory.jsx";
 
-function RLComingSoon() {
+function AutoTraderStatus() {
   return (
     <div className="panel">
       <div className="panel-header">
-        <div className="panel-title">RL Agent (coming soon)</div>
-        <div className="panel-subtitle">“AutoTrader” roadmap</div>
+        <div className="panel-title">AutoTrader</div>
+        <div className="panel-subtitle">python agent</div>
       </div>
       <div className="panel-body">
         <p className="muted">
-          Planned next step: a reinforcement-learning agent that consumes live
-          ticks (Kafka), learns a policy, and sends orders into the same Go
-          engine.
+          Polls engine for trades, runs policy, submits orders.
         </p>
         <ul className="roadmap-list">
-          <li>Stream ticks → feature pipeline</li>
-          <li>Policy network → action (buy / sell / hold)</li>
-          <li>Reward from P&amp;L, risk limits, and position constraints</li>
+          <li>mean reversion - buys dips, sells rips</li>
+          <li>ml policy - sklearn model on binance data</li>
         </ul>
         <p className="muted-small">
-          This card is here so recruiters / users see the ML angle without
-          blocking on a full implementation.
+          python agent.py --model-path model.pkl
         </p>
       </div>
     </div>
@@ -94,7 +90,7 @@ export default function App() {
         </section>
 
         <section className="grid-item rl-area">
-          <RLComingSoon />
+          <AutoTraderStatus />
         </section>
       </main>
 

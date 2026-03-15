@@ -6,12 +6,7 @@ Action = Literal["BUY", "SELL", "HOLD"]
 
 
 class MLPolicy:
-    """
-    Wraps a scikit-learn model trained by train_binance_trades_model.py.
-
-    The model expects features: [last, mean, std, z_score]
-    and outputs labels in {-1, 0, 1}.
-    """
+    """sklearn model wrapper using [last, mean, std, z_score] features"""
 
     def __init__(self, model_path: str, window: int = 50):
         self.model = joblib.load(model_path)

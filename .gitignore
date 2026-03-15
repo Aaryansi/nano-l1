@@ -29,9 +29,15 @@ services/**/yarn-error.log*
 # Data / Models / Checkpoints
 data/raw/*
 data/processed/*
+data/binance/*.csv
 services/rl-py/nano_rl/checkpoints/*
+services/agent-py/*.pkl
 !data/raw/.keep
 !data/processed/.keep
+!data/sample/*.csv
 
 # Docker
 *.log
+
+# Misc
+ws-test.html

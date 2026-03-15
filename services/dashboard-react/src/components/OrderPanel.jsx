@@ -14,7 +14,6 @@ export default function OrderPanel() {
   const [error, setError] = useState("");
   // const [lastResp, setLastResp] = useState(null);
 
-  // helper to generate a reasonably unique order id
   const makeOrderId = () => `o-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
   async function postOrder(payload) {
@@ -30,14 +29,11 @@ export default function OrderPanel() {
 
       const text = await res.text();
       if (!res.ok) {
-        // try to parse JSON error, fall back to plain text
         let msg = text || `HTTP ${res.status}`;
         try {
           const j = JSON.parse(text);
           if (j.error) msg = j.error;
-        } catch (_) {
-          // ignore parse error
-        }
+        } catch (_) {}
         throw new Error(msg);
       }
 
@@ -62,7 +58,6 @@ export default function OrderPanel() {
   async function handleSendSingle(e) {
     e.preventDefault();
 
-    // basic front-end validation
     if (!symbol.trim()) {
       setError("Symbol is required");
       return;
@@ -91,7 +86,6 @@ export default function OrderPanel() {
   }
 
   async function handleSampleCrossing() {
-    // creates a bid and an ask that will cross and generate a trade
     const q = Number(qty) || 5;
     const p = Number(price) || 100.1;
 

@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 import argparse
 import os
+import pickle
 import time
 from collections import deque
 from dataclasses import dataclass
 from typing import Deque, List, Literal, Optional
 
-import pickle
 import numpy as np
-from collections import deque
-from dataclasses import dataclass
-from typing import Deque, Optional
-
 import requests
-
-from ml_policy import MLPolicy
 
 Action = Literal["BUY", "SELL", "HOLD"]
 
@@ -30,25 +24,14 @@ class Trade:
 
 
 class MeanReversionPolicy:
-    """
-    Simple placeholder policy with an RL-style interface.
-
-    You can later replace this with a trained RL model that implements:
-        act(self, state: List[float]) -> Action
-    """
+    """mean reversion with random exploration"""
 
     def __init__(
         self,
         window: int = 20,
         threshold_bp: float = 5.0,
-        epsilon: float = 0.25,  # 25% random exploration so we SEE trades
+        epsilon: float = 0.25,
     ):
-        """
-        window        : how many prices to use for the moving average
-        threshold_bp  : how many basis points (0.01%) away from mean to trigger
-                        a trade, e.g. 5 bp = 0.05%
-        epsilon       : probability of taking a random BUY/SELL when flat
-        """
         import random
 
         self.window = window
@@ -93,40 +76,57 @@ class MeanReversionPolicy:
     
 
 class BinanceMLPolicy:
-    """
-    Policy that uses a trained sklearn model on a rolling price window.
+    """sklearn model wrapper - uses [rel_move, last, volatility, window_len] features"""
 
-    Model expects features:
-      [rel_move, last, volatility, length]
-    where:
-      rel_move = (last - mean) / mean
-      volatility = max(window) - min(window)
-      length = window size (constant)
-    """
-
-    def __init__(self, model, window: int):
+    def __init__(self, model, window: int = 50, prob_threshold: float = 0.45):
         self.model = model
         self.window = window
+        self.prob_threshold = prob_threshold
 
-    def decide(self, prices: Deque[float]) -> str:
+    def act(self, prices: List[float]) -> Action:
         if len(prices) < self.window:
             return "HOLD"
 
-        w = np.array(list(prices)[-self.window:])
+        w = np.array(prices[-self.window:])
         last = w[-1]
-        mean = w.mean() if len(w) > 0 else last
+        mean = w.mean() if w.size > 0 else last
+
         rel_move = (last - mean) / mean if mean != 0 else 0.0
-        volatility = w.max() - w.min()
-        length = self.window
+        volatility = float(w.max() - w.min())
+        length = float(self.window)
 
         X = np.array([[rel_move, last, volatility, length]], dtype=float)
-        pred = self.model.predict(X)[0]
 
-        if pred == 1:
-            return "BUY"
-        elif pred == -1:
-            return "SELL"
-        return "HOLD"
+        if hasattr(self.model, "predict_proba"):
+            proba = self.model.predict_proba(X)[0]
+            classes = list(self.model.classes_)  # e.g. [-1, 0, 1]
+
+            def p_for(label):
+                return float(proba[classes.index(label)]) if label in classes else 0.0
+
+            p_sell = p_for(-1)
+            p_hold = p_for(0)
+            p_buy = p_for(1)
+
+            if p_buy > self.prob_threshold and p_buy > p_sell and p_buy > p_hold:
+                return "BUY"
+            if p_sell > self.prob_threshold and p_sell > p_buy and p_sell > p_hold:
+                return "SELL"
+
+            # fallback momentum if model is unsure
+            if rel_move > 0.0002:
+                return "SELL"
+            if rel_move < -0.0002:
+                return "BUY"
+
+            return "HOLD"
+        else:
+            pred = self.model.predict(X)[0]
+            if pred == 1:
+                return "BUY"
+            elif pred == -1:
+                return "SELL"
+            return "HOLD"
 
 
 class EngineClient:
@@ -135,8 +135,6 @@ class EngineClient:
         self.symbol = symbol
         self.order_qty = order_qty
 
-        # IMPORTANT: must match your dashboard OrderPanel
-        # which posts to `${API_BASE}/order`.
         self.order_endpoint = f"{self.base_url}/order"
 
     def fetch_last_trade(self) -> Optional[Trade]:
@@ -162,10 +160,6 @@ class EngineClient:
         )
 
     def submit_order(self, side: Action, price: float) -> dict:
-        """
-        Sends a *simple* limit order identical in shape to what your front-end
-        sends. Adjust fields to match your engine's API if needed.
-        """
         body = {
             "id": f"agent-{int(time.time() * 1000)}",
             "symbol": self.symbol,
@@ -194,7 +188,6 @@ class TradingAgent:
         self.client = EngineClient(cfg.engine_url, cfg.symbol, cfg.qty)
         self.prices: Deque[float] = deque(maxlen=cfg.history_len)
 
-        # --- choose policy ---
         if cfg.model_path:
             try:
                 with open(cfg.model_path, "rb") as f:
@@ -222,7 +215,6 @@ class TradingAgent:
 
 
     def step(self):
-        # 1) Pull latest trade from engine
         trade = self.client.fetch_last_trade()
         if not trade:
             print("[agent] no trades yet, skipping")
@@ -241,7 +233,6 @@ class TradingAgent:
             f"action={action}"
         )
 
-        # 2) Send order if BUY/SELL
         if action in ("BUY", "SELL"):
             try:
                 print(
@@ -252,7 +243,7 @@ class TradingAgent:
             except Exception as exc:
                 print("[agent] order error:", exc)
 
-        # 3) Very rough local PnL accounting assuming we got filled at trade.price.
+        # local pnl tracking (assumes fill at last price)
         if action == "BUY":
             self.position += self.cfg.qty
             self.cash -= self.cfg.qty * trade.price
@@ -318,86 +309,21 @@ def parse_args() -> AgentConfig:
     )
 
     parser.add_argument(
-    "--model-path",
-    type=str,
-    default=None,
-    help="Path to pickled sklearn model (optional)",
-)
-    
-    
+        "--model-path",
+        type=str,
+        default=None,
+        help="Path to pickled sklearn model (optional)",
+    )
 
     args = parser.parse_args()
     return AgentConfig(
-    engine_url=args.engine_url,
-    symbol=args.symbol,
-    qty=args.qty,
-    poll_interval=args.poll_interval,
-    history_len=args.history_len,
-    model_path=args.model_path,
-)
-
-class BinanceMLPolicy:
-    """
-    Policy that uses a trained sklearn model on a rolling price window.
-
-    Model expects features: [rel_move, last, volatility, length]
-      rel_move   = (last - mean) / mean
-      volatility = max(window) - min(window)
-      length     = window size (constant)
-    """
-
-    def __init__(self, model, window: int = 50, prob_threshold: float = 0.45):
-        self.model = model
-        self.window = window
-        self.prob_threshold = prob_threshold
-
-    def act(self, last_price: float, mean_price: float, prices: Deque[float]) -> str:
-        """
-        This matches how TradingAgent calls policy.act(...).
-        last_price / mean_price are passed in but we also
-        use the full `prices` deque to build features.
-        """
-        # Not enough history yet → do nothing
-        if len(prices) < self.window:
-            return "HOLD"
-
-        # Take last `window` prices
-        w = np.array(list(prices)[-self.window:])
-        last = w[-1]
-        mean = w.mean() if w.size > 0 else last
-
-        # Features
-        rel_move = (last - mean) / mean if mean != 0 else 0.0
-        volatility = float(w.max() - w.min())
-        length = float(self.window)
-
-        X = np.array([[rel_move, last, volatility, length]], dtype=float)
-
-        # Probabilities for each class
-        proba = self.model.predict_proba(X)[0]
-        classes = list(self.model.classes_)  # e.g. [-1, 0, 1]
-
-        def p_for(label):
-            return float(proba[classes.index(label)]) if label in classes else 0.0
-
-        p_sell = p_for(-1)
-        p_hold = p_for(0)
-        p_buy = p_for(1)
-
-        # Confident ML decisions
-        if p_buy > self.prob_threshold and p_buy > p_sell and p_buy > p_hold:
-            return "BUY"
-        if p_sell > self.prob_threshold and p_sell > p_buy and p_sell > p_hold:
-            return "SELL"
-
-        # Fallback: tiny momentum rule so it actually trades sometimes
-        if rel_move > 0.0002:
-            return "SELL"
-        if rel_move < -0.0002:
-            return "BUY"
-
-        return "HOLD"
-
+        engine_url=args.engine_url,
+        symbol=args.symbol,
+        qty=args.qty,
+        poll_interval=args.poll_interval,
+        history_len=args.history_len,
+        model_path=args.model_path,
+    )
 
 
 def main():

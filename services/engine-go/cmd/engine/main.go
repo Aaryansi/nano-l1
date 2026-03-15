@@ -119,12 +119,9 @@ func (e *Engine) persistTrades(trades []book.Trade) {
 func withCORS(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         origin := r.Header.Get("Origin")
-
-        // For dev, just reflect whatever origin hit us (if any).
         if origin != "" {
             w.Header().Set("Access-Control-Allow-Origin", origin)
         } else {
-            // Fallback – useful for curl, etc.
             w.Header().Set("Access-Control-Allow-Origin", "*")
         }
 
@@ -204,11 +201,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Consume ticks from Kafka (feed-sim → Kafka → engine)
 	if bus != nil {
 		go bus.ConsumeTicks(ctx, func(t stream.Tick) {
 			log.Printf("[kafka] tick: %+v", t)
-			// later: you can push ticks into a symbol book or strategy engine here
 		})
 	}
 

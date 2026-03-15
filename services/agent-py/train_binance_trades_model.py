@@ -11,20 +11,7 @@ from sklearn.metrics import classification_report
 
 
 def build_dataset(df: pd.DataFrame, window: int, horizon: int):
-    """
-    Turn a price series into supervised features/labels.
-
-    Features (per window):
-      - rel_move: (last - mean) / mean
-      - last: last price
-      - volatility: max(window) - min(window)
-      - length: window size (constant)
-
-    Labels:
-      - +1 if price horizon steps ahead is up > +0.05%
-      - -1 if down < -0.05%
-      -  0 otherwise
-    """
+    """builds feature matrix and labels from price series"""
     prices = df["price"].astype(float).values
     X, y = [], []
 
@@ -77,10 +64,7 @@ def main():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    clf = LogisticRegression(
-        max_iter=200,
-        # keep it simple/compatible
-    )
+    clf = LogisticRegression(max_iter=200)
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
@@ -89,7 +73,7 @@ def main():
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("wb") as f:        # IMPORTANT: binary mode
+    with out_path.open("wb") as f:
         pickle.dump(clf, f)
 
     print(f"[train] saved model to {out_path.resolve()}")
