@@ -1,6 +1,6 @@
 # Nano-L1
 
-High-performance cryptocurrency trading engine and sandbox for strategy development.
+Low-latency order matching engine with ML-based automated trading and high-throughput backtesting.
 
 ![Go](https://img.shields.io/badge/Go-1.23-00ADD8?logo=go&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
@@ -8,92 +8,409 @@ High-performance cryptocurrency trading engine and sandbox for strategy developm
 ![Kafka](https://img.shields.io/badge/Kafka-7.4-231F20?logo=apachekafka&logoColor=white)
 ![Postgres](https://img.shields.io/badge/Postgres-16-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikit-learn&logoColor=white)
 
-## Architecture
-
-The **engine** (Go) is the core — it manages the order book, executes trades, and persists everything to Postgres. It exposes a REST API for order submission and a WebSocket for real-time book/trade updates.
-
-**Feed-sim** replays historical tick data from CSV files into Kafka. The engine consumes these ticks for backtesting scenarios.
-
-**Dashboard** (React) connects to the engine via WebSocket and displays live depth, trades, and P&L.
-
-**Agent** (Python) polls the engine's REST API, runs a trading policy (mean-reversion or ML), and submits orders back.
-
-## Services
-
-| Service | Language | Description |
-|---------|----------|-------------|
-| `engine-go` | Go | Order matching engine with WebSocket streaming and REST API |
-| `dashboard-react` | React | Real-time trading UI with depth chart, trade tape, P&L |
-| `backtest-py` | Python | Strategy backtester supporting CSV and synthetic tick generation |
-| `agent-py` | Python | Automated trading agent with mean-reversion and ML policies |
-| `feed-sim` | Go | Market data replay simulator publishing ticks to Kafka |
-
-## Quick Start
-
-```bash
-cd infra/docker
-docker-compose up
-```
-
-| Service | URL |
-|---------|-----|
-| Dashboard | http://localhost:5173 |
-| Engine API | http://localhost:8080 |
-| WebSocket | ws://localhost:8080/ws |
-
-## Backtester Performance
-
-```bash
-cd services/backtest-py
-python backtest.py --synthetic 2000000
-```
+## System Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                   CLIENTS                                        │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────────┐  │
+│  │  React Dashboard │    │  Python Agent   │    │      REST Clients           │  │
+│  │  (localhost:5173)│    │  (ML/MeanRev)   │    │      (curl, etc.)           │  │
+│  └────────┬────────┘    └────────┬────────┘    └─────────────┬───────────────┘  │
+│           │ WS                   │ HTTP                      │ HTTP             │
+└───────────┼──────────────────────┼───────────────────────────┼──────────────────┘
+            │                      │                           │
+            ▼                      ▼                           ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          GO MATCHING ENGINE (:8080)                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │                         ORDER BOOK (per symbol)                          │    │
+│  │  ┌───────────────────────────┐    ┌───────────────────────────┐         │    │
+│  │  │      BUY SIDE (bids)      │    │     SELL SIDE (asks)      │         │    │
+│  │  │  ┌─────────────────────┐  │    │  ┌─────────────────────┐  │         │    │
+│  │  │  │ Max-Heap by price   │  │    │  │ Min-Heap by price   │  │         │    │
+│  │  │  │ O(1) best bid       │  │    │  │ O(1) best ask       │  │         │    │
+│  │  │  │ O(log n) insert/del │  │    │  │ O(log n) insert/del │  │         │    │
+│  │  │  └─────────────────────┘  │    │  └─────────────────────┘  │         │    │
+│  │  │  + HashMap[price]→level   │    │  + HashMap[price]→level   │         │    │
+│  │  │    O(1) price lookup      │    │    O(1) price lookup      │         │    │
+│  │  │  + FIFO queue per level   │    │  + FIFO queue per level   │         │    │
+│  │  └───────────────────────────┘    └───────────────────────────┘         │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                           │
+│  ┌────────────┐  ┌────────────┐  ┌───┴───────┐  ┌────────────────────────────┐  │
+│  │ REST API   │  │ WebSocket  │  │ Postgres  │  │ Kafka Producer             │  │
+│  │ /order     │  │ Hub        │  │ Trades    │  │ book_updates, trades       │  │
+│  │ /pnl       │  │ broadcast  │  │ persist   │  │ topics                     │  │
+│  └────────────┘  └────────────┘  └───────────┘  └────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+            ▲                                                    │
+            │                                                    │
+            │ consume ticks                                      │ publish
+            │                                                    ▼
+┌───────────┴─────────────────┐                    ┌─────────────────────────────┐
+│       KAFKA (:9092)         │                    │        POSTGRES (:5432)      │
+│  Topics:                    │                    │  Tables:                     │
+│   - ticks (from feed-sim)   │                    │   - engine_trades            │
+│   - book_updates            │                    │     (id, ts, symbol, price,  │
+│   - trades                  │                    │      qty, aggressor_side,    │
+│                             │                    │      maker/taker_order_id)   │
+└─────────────────────────────┘                    └─────────────────────────────┘
+            ▲
+            │ publish
+┌───────────┴─────────────────┐
+│       FEED-SIM (Go)         │
+│  CSV replay → Kafka ticks   │
+│  Configurable sleep between │
+│  messages for rate control  │
+└─────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          PYTHON BACKTESTER                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  Tick Source          Strategy              Metrics                      │    │
+│  │  ├─ CSV file          Market-making sim     ├─ Position                  │    │
+│  │  └─ Synthetic         (takes opposite       ├─ Cash P&L                  │    │
+│  │     (Gaussian walk)    side of each tick)   ├─ Mark-to-market            │    │
+│  │                                             └─ Throughput (ticks/sec)    │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│  Performance: ~1.6M ticks/sec on synthetic data (see benchmarks)                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          PYTHON TRADING AGENT                                    │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  Policy Selection:                                                       │    │
+│  │  ┌─────────────────────────┐    ┌─────────────────────────────────────┐ │    │
+│  │  │   MeanReversionPolicy   │    │        BinanceMLPolicy              │ │    │
+│  │  │   ─────────────────────  │    │   ─────────────────────────────────  │ │    │
+│  │  │   Window: 20 prices     │    │   Model: sklearn LogisticRegression│ │    │
+│  │  │   Threshold: ±5 bps     │    │   Features:                        │ │    │
+│  │  │   Exploration: 25%      │    │    - rel_move (price vs mean)      │ │    │
+│  │  │                         │    │    - last_price                    │ │    │
+│  │  │   Action:               │    │    - volatility (max-min)          │ │    │
+│  │  │    price < mean → BUY   │    │    - window_length                 │ │    │
+│  │  │    price > mean → SELL  │    │   Labels: {-1, 0, 1} from future Δ │ │    │
+│  │  └─────────────────────────┘    └─────────────────────────────────────┘ │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Order Book Implementation
+
+The matching engine uses a **heap + hashmap** hybrid structure, not a balanced BST:
+
+| Operation | Complexity | Implementation |
+|-----------|------------|----------------|
+| Best bid/ask | O(1) | Heap root access |
+| Add order at existing price | O(1) | HashMap lookup + append to FIFO queue |
+| Add order at new price | O(log n) | HashMap insert + heap push |
+| Remove price level | O(log n) | HashMap delete + heap pop |
+| Match against book | O(k log n) | k = price levels consumed |
+
+**Data structures** (`services/engine-go/internal/book/book.go`):
+- `buyHeap`: Max-heap of price levels (highest bid first)
+- `sellHeap`: Min-heap of price levels (lowest ask first)
+- `buyMap`/`sellMap`: `map[float64]*priceLevel` for O(1) price lookup
+- Each `priceLevel` contains a FIFO slice of resting orders
+
+**Thread safety**: Single `sync.Mutex` protects the entire book. Sufficient for single-symbol workloads; would need sharding for multi-symbol high-frequency scenarios.
+
+## ML Trading Agent
+
+**This is NOT reinforcement learning.** The agent uses supervised classification:
+
+| Aspect | Implementation |
+|--------|----------------|
+| Model | `sklearn.linear_model.LogisticRegression` |
+| Training data | Binance BTCUSDT aggregated trades |
+| Feature vector | `[rel_move, last_price, volatility, window_len]` |
+| Labels | `{-1: sell, 0: hold, 1: buy}` based on price Δ over horizon |
+| Inference | `predict_proba()` with confidence threshold (0.45) |
+| Fallback | Momentum-based if model confidence < threshold |
+
+**Training pipeline** (`services/agent-py/train_binance_trades_model.py`):
+1. Load CSV of historical trades
+2. Build rolling windows (default: 50 samples)
+3. Compute features at each timestep
+4. Label based on future price change (horizon: 10 samples, threshold: ±5 bps)
+5. Train/test split (80/20, stratified)
+6. Serialize model to pickle
+
+**Why not RL?** Supervised learning on historical data is simpler to debug, faster to iterate, and avoids reward shaping problems. The mean-reversion baseline provides a reasonable non-ML comparator.
+
+## Performance Benchmarks
+
+### Backtester Throughput
+
+Measured via `time.perf_counter()` around the tick processing loop:
+
+```
+$ python backtest.py --synthetic 2000000 --seed 42
+
 [backtest] synthetic mode: n=2000000, symbol=TEST, seed=42
 
 [backtest] done
   ticks processed : 2,000,000
-  elapsed time    : 1.23 s
-  ticks / second  : 1,626,016 / s
-
-  final position  : -1234.00
-  last price      : 98.45
-  cash PnL        : 123456.78
-  MTM PnL         : -121234.56
+  elapsed time    : 1.2308 s
+  ticks / second  : 1,624,878 / s
 ```
 
-## Trading Agent
+**Methodology**: Synthetic ticks generated via Gaussian random walk (`random.gauss(0, 0.02)`). Strategy takes opposite side of each tick (market-making simulation). No I/O during measurement.
 
-Two policies, same interface:
+**Limitations**: This measures pure Python throughput with in-memory data. Real backtests against CSV files will be I/O-bound.
 
-**Mean Reversion** — buys dips, sells rips (5bp threshold), 25% random exploration.
+### Order Matching Latency
 
-**ML Policy** — LogisticRegression on Binance data, uses price move + volatility features.
+**No formal benchmarks exist.** The matching engine does not instrument latency percentiles. Informal observations suggest sub-millisecond matching for typical order flow, but this has not been rigorously measured.
+
+To add latency benchmarking, instrument `book.Add()` with `time.Now().UnixNano()` deltas and export via Prometheus histogram.
+
+### WebSocket Message Rate
+
+Dashboard polls REST every 2 seconds. WebSocket broadcasts occur on every trade execution. No throughput limits are enforced; in practice, message rate equals trade rate.
+
+## Tech Stack
+
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Matching Engine | Go | 1.23 |
+| Web Framework | net/http (stdlib) | - |
+| WebSocket | gorilla/websocket | latest |
+| Message Queue | Apache Kafka | 7.4 (Confluent) |
+| Kafka Client (Go) | segmentio/kafka-go | latest |
+| Database | PostgreSQL | 16 |
+| DB Driver | lib/pq | latest |
+| Dashboard | React | 18.3 |
+| Build Tool | Vite | 5.4 |
+| Backtester | Python | 3.12 |
+| ML Framework | scikit-learn | latest |
+| Containerization | Docker Compose | v2 |
+
+## Project Structure
+
+```
+nano-l1/
+├── services/
+│   ├── engine-go/                 # Go matching engine
+│   │   ├── cmd/engine/main.go     # HTTP server, routes, Kafka integration
+│   │   └── internal/
+│   │       ├── book/              # Order book implementation
+│   │       │   ├── book.go        # Heap-based LOB, matching logic
+│   │       │   └── types.go       # Order, Trade, BookUpdate structs
+│   │       ├── server/ws.go       # WebSocket hub, broadcast
+│   │       └── stream/kafka_stream.go  # Kafka producer/consumer
+│   │
+│   ├── dashboard-react/           # React trading UI
+│   │   └── src/
+│   │       ├── app/App.jsx        # Main layout
+│   │       └── components/        # OrderPanel, Depth, Trades, PnL, etc.
+│   │
+│   ├── backtest-py/               # Python backtester
+│   │   ├── backtest.py            # CLI, tick sources, strategy runner
+│   │   └── fetch_binance.py       # Download historical trades
+│   │
+│   ├── agent-py/                  # Automated trading agent
+│   │   ├── agent.py               # Main loop, policy dispatch
+│   │   ├── ml_policy.py           # sklearn model wrapper
+│   │   └── train_binance_trades_model.py  # Training script
+│   │
+│   └── feed-sim/                  # Market data replay
+│       └── cmd/replay/main.go     # CSV → Kafka publisher
+│
+├── infra/
+│   ├── docker/docker-compose.yml  # Full stack orchestration
+│   └── postgres/init.sql          # Schema definitions
+│
+├── data/
+│   ├── sample/sample_ticks.csv    # Demo tick data
+│   └── binance/                   # Historical Binance trades
+│
+└── shared/schemas/jsonschema/     # Message format specifications
+```
+
+## Running the System
+
+### Full Stack (Docker)
 
 ```bash
-# Mean reversion
-cd services/agent-py
-python agent.py --engine-url http://localhost:8080
+cd infra/docker
+docker-compose up --build
+```
 
-# ML policy (train first)
-python train_binance_trades_model.py --csv ../../data/binance/btc_usdt_trades.csv --out model.pkl
+Services start in dependency order: Postgres → Zookeeper → Kafka → Engine → Dashboard → Feed-sim.
+
+| Service | Port | URL |
+|---------|------|-----|
+| Dashboard | 5173 | http://localhost:5173 |
+| Engine API | 8080 | http://localhost:8080 |
+| WebSocket | 8080 | ws://localhost:8080/ws |
+| Postgres | 5432 | postgres://nano:nano@localhost:5432/nano_l1 |
+| Kafka | 9092 | localhost:9092 |
+
+### Backtester (Standalone)
+
+```bash
+cd services/backtest-py
+pip install -r requirements.txt  # if exists, else just needs stdlib
+
+# Synthetic benchmark
+python backtest.py --synthetic 2000000
+
+# Historical data
+python backtest.py --file ../../data/binance/btc_usdt_trades.csv --max-ticks 100000
+```
+
+### ML Agent Training
+
+```bash
+cd services/agent-py
+
+# Train model on Binance data
+python train_binance_trades_model.py \
+  --csv ../../data/binance/btc_usdt_trades.csv \
+  --window 50 \
+  --horizon 10 \
+  --out model.pkl
+
+# Run agent with trained model
 python agent.py --engine-url http://localhost:8080 --model-path model.pkl
+
+# Or use mean-reversion baseline
+python agent.py --engine-url http://localhost:8080
 ```
 
 ## API Reference
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/order` | POST | Submit order `{symbol, side, type, price, qty}` |
-| `/api/trades/recent?limit=N` | GET | Last N executed trades |
-| `/pnl?symbol=X` | GET | Position and P&L for symbol |
-| `/ws` | WebSocket | Real-time `book_update` and `trade` events |
+### POST /order
 
-## Kafka Topics
+Submit a new order to the matching engine.
 
-| Topic | Producer | Schema |
-|-------|----------|--------|
-| `ticks` | feed-sim | `{ts, symbol, price, side, qty}` |
-| `book_updates` | engine | `{symbol, bestBid, bestAsk, bidQty, askQty}` |
-| `trades` | engine | `{id, symbol, price, qty, aggressorSide, ts}` |
+```json
+{
+  "id": "order-123",
+  "symbol": "TEST",
+  "side": "buy",
+  "type": "limit",
+  "price": 100.50,
+  "qty": 10.0
+}
+```
+
+Response includes resulting trades and updated book state.
+
+### GET /api/trades/recent?limit=N
+
+Returns last N trades from `engine_trades` table (max 500).
+
+### GET /pnl?symbol=X
+
+Computes position and P&L from trade history. Assumes single-user (all trades attributed to caller).
+
+### WebSocket /ws
+
+Receives JSON envelopes:
+```json
+{"eventType": "book_update", "data": {"bestBid": {...}, "bestAsk": {...}}}
+{"eventType": "trades", "data": [{...}, {...}]}
+```
+
+## Design Decisions
+
+### Why Go for the matching engine?
+
+- **Predictable latency**: No GC pauses during critical path (heap allocations minimized)
+- **Concurrency model**: Goroutines + channels for Kafka consumers without callback hell
+- **Single binary deployment**: No runtime dependencies
+- **stdlib HTTP**: Production-ready without external frameworks
+
+Alternative considered: Rust. Rejected due to development velocity tradeoff for a research prototype.
+
+### Why Kafka over direct WebSocket for tick ingestion?
+
+- **Durability**: Ticks persist in Kafka; engine restart doesn't lose feed position
+- **Replay**: Can re-consume historical windows for backtesting
+- **Decoupling**: Feed-sim and engine can scale independently
+- **Multi-consumer**: Future services (analytics, alerting) can tap the same stream
+
+For pure latency optimization, direct TCP/UDP would be faster. Kafka adds ~1-5ms per message but provides operational benefits.
+
+### Why heap instead of red-black tree for the order book?
+
+- **Access pattern**: 99% of operations touch best bid/ask (heap root = O(1))
+- **Simpler implementation**: Go's `container/heap` vs. manual RB-tree
+- **HashMap auxiliary**: Price level lookup is O(1), not O(log n)
+
+Tradeoff: Deleting arbitrary price levels is O(n) scan to find heap index. Acceptable for limit order books where cancels are rare relative to matches.
+
+### Why LogisticRegression over deep learning?
+
+- **Interpretability**: Feature coefficients directly inspectable
+- **Training speed**: Seconds, not hours
+- **Data efficiency**: Works with thousands of samples, not millions
+- **Baseline validity**: If LR fails, the feature set is likely insufficient
+
+Future work could explore gradient boosting (XGBoost) or LSTM for sequence modeling.
+
+## Limitations
+
+### Not Production-Ready
+
+| Gap | Impact | Mitigation Path |
+|-----|--------|-----------------|
+| No order cancellation | Resting orders persist forever | Implement `Cancel` order type |
+| No authentication | Anyone can submit orders | Add API key / JWT middleware |
+| Single-user P&L | Assumes all trades are yours | Add user/account ID to orders |
+| No rate limiting | Vulnerable to DoS | Add token bucket per client |
+| In-memory order book | Lost on restart | Snapshot to Postgres, restore on startup |
+
+### No Test Coverage
+
+Zero unit tests, integration tests, or property-based tests exist. Critical gaps:
+
+- Order matching correctness (especially edge cases: self-trade, partial fills)
+- Heap invariant maintenance after modifications
+- Kafka message serialization roundtrip
+- P&L calculation accuracy
+
+### No Observability
+
+- No Prometheus metrics export
+- No distributed tracing (OpenTelemetry)
+- Minimal structured logging
+- No alerting on error rates
+
+### ML Model Limitations
+
+- Trained on limited Binance data (~100k samples)
+- No walk-forward validation (potential lookahead bias)
+- No transaction cost modeling
+- No position sizing or risk management
+- Classification accuracy likely near random for efficient markets
+
+## Future Work
+
+1. **Latency benchmarking**: Instrument `book.Add()` with nanosecond timestamps, export p50/p99/p999 via Prometheus
+2. **Order cancellation**: Extend heap with order ID index for O(log n) cancel
+3. **Multi-symbol sharding**: Per-symbol goroutine with dedicated book instance
+4. **Snapshot/restore**: Serialize book state to Postgres on shutdown, replay on startup
+5. **Walk-forward backtesting**: Retrain model on rolling windows, evaluate on held-out future
+6. **RL exploration**: PPO/SAC with position-aware state space, realistic reward function
+
+## Lines of Code
+
+```
+services/engine-go/       ~750 lines Go
+services/backtest-py/     ~300 lines Python
+services/agent-py/        ~450 lines Python
+services/dashboard-react/ ~600 lines JSX
+services/feed-sim/        ~110 lines Go
+─────────────────────────────────────
+Total                    ~2,200 lines
+```
+
+## License
+
+MIT
