@@ -1,0 +1,324 @@
+"""figures for docs/REPORT.md.
+
+design constraints applied throughout, rather than left to per-plot taste:
+
+  - categorical hues are assigned in fixed order and never cycled. the three
+    used here validated all-pairs in light mode (worst CVD deltaE 9.2, worst
+    normal-vision deltaE 24.0), so series stay distinguishable under deuteran
+    and tritan vision.
+  - one y-axis per panel, never two. two measures of different scale get two
+    panels.
+  - lines are direct-labelled as well as legended, so identity is never carried
+    by colour alone. this also discharges the contrast relief rule for the aqua
+    slot, which sits below 3:1 on a light surface.
+  - grid and axes are recessive; text wears ink colours, never the series
+    colour.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")  # no display needed; write files
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+# validated categorical slots (light mode, all-pairs)
+C1 = "#2a78d6"  # blue
+C2 = "#eb6834"  # orange
+C3 = "#1baf7a"  # aqua
+
+SURFACE = "#fcfcfb"
+INK = "#0b0b0b"
+INK_MUTED = "#52514e"
+GRID = "#e3e2df"
+
+# a fourth, deliberately neutral, for reference lines that are not a series
+REFERENCE = "#9a9894"
+
+
+def _style_axes(
+    ax: plt.Axes,
+    title: str = "",
+    xlabel: str = "",
+    ylabel: str = "",
+    pad: float = 10,
+) -> None:
+    """recessive chrome: the data should be the only assertive thing."""
+    ax.set_facecolor(SURFACE)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    for spine in ("left", "bottom"):
+        ax.spines[spine].set_color(GRID)
+        ax.spines[spine].set_linewidth(1.0)
+    ax.grid(True, color=GRID, linewidth=0.8, alpha=0.9)
+    ax.set_axisbelow(True)
+    ax.tick_params(colors=INK_MUTED, labelsize=9, length=0)
+    if title:
+        ax.set_title(title, color=INK, fontsize=11, loc="left", pad=pad)
+    if xlabel:
+        ax.set_xlabel(xlabel, color=INK_MUTED, fontsize=9)
+    if ylabel:
+        ax.set_ylabel(ylabel, color=INK_MUTED, fontsize=9)
+
+
+def _new_fig(w: float = 8.0, h: float = 4.5):
+    fig, ax = plt.subplots(figsize=(w, h), facecolor=SURFACE)
+    return fig, ax
+
+
+def _save(fig: plt.Figure, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(path, dpi=160, facecolor=SURFACE, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  wrote {path}")
+
+
+def equity_curves(
+    series: dict[str, np.ndarray],
+    path: Path,
+    title: str = "cumulative pnl on the held-out test split",
+    band: tuple[np.ndarray, np.ndarray] | None = None,
+    band_label: str = "",
+) -> None:
+    """cumulative pnl per episode, at most three series.
+
+    args:
+        series: name -> per-episode pnl array. cumulative sums are taken here
+            so callers cannot accidentally pass one already cumulated.
+        band: optional (lower, upper) cumulative band, for across-seed spread.
+    """
+    fig, ax = _new_fig()
+    colors = [C1, C2, C3]
+
+    if band is not None:
+        ax.fill_between(
+            np.arange(len(band[0])),
+            band[0],
+            band[1],
+            color=C1,
+            alpha=0.15,
+            linewidth=0,
+            label=band_label or None,
+        )
+
+    for i, (name, pnl) in enumerate(series.items()):
+        cum = np.cumsum(pnl)
+        x = np.arange(len(cum))
+        ax.plot(x, cum, color=colors[i % 3], linewidth=2.0, label=name, zorder=3)
+        # direct label at the line end, so identity is not colour-alone
+        ax.annotate(
+            f"{name}  {cum[-1]:+,.0f}",
+            xy=(x[-1], cum[-1]),
+            xytext=(6, 0),
+            textcoords="offset points",
+            color=INK,
+            fontsize=9,
+            va="center",
+            fontweight="medium",
+        )
+
+    ax.axhline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=2)
+    _style_axes(ax, title, "test episode", "cumulative pnl (dollars)")
+    # legend below the axes: an in-plot legend collided with the series here,
+    # and the lines are already direct-labelled, so the box only needs to
+    # exist, not to compete for space.
+    ax.legend(
+        frameon=False, fontsize=9, labelcolor=INK_MUTED,
+        loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=3,
+    )
+    # headroom for the end labels
+    ax.set_xlim(0, len(next(iter(series.values()))) * 1.30)
+    _save(fig, path)
+
+
+def policy_comparison(
+    names: list[str],
+    means: list[float],
+    errs: list[float],
+    path: Path,
+    title: str = "mean pnl per episode, test split",
+) -> None:
+    """horizontal bars with error bars. one measure, so one axis.
+
+    bars are coloured by sign rather than by identity: this is a magnitude
+    chart with a meaningful zero, not a categorical one, so a status-style
+    encoding is the honest choice and the names carry identity.
+    """
+    fig, ax = _new_fig(8.0, 0.55 * len(names) + 1.8)
+
+    y = np.arange(len(names))
+    colors = [C1 if m >= 0 else C2 for m in means]
+
+    ax.barh(y, means, height=0.62, color=colors, zorder=3)
+    ax.errorbar(
+        means, y, xerr=errs, fmt="none", ecolor=INK_MUTED,
+        elinewidth=1.2, capsize=3, zorder=4,
+    )
+
+    for yi, (m, e) in enumerate(zip(means, errs)):
+        offset = 6 if m >= 0 else -6
+        ax.annotate(
+            f"{m:+.3f}" + (f" ± {e:.3f}" if e > 0 else ""),
+            xy=(m, yi),
+            xytext=(offset, 0),
+            textcoords="offset points",
+            color=INK,
+            fontsize=9,
+            va="center",
+            ha="left" if m >= 0 else "right",
+        )
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=2)
+    ax.set_yticks(y)
+    ax.set_yticklabels(names, color=INK, fontsize=9)
+    ax.invert_yaxis()
+    _style_axes(ax, title, "mean pnl per episode (dollars)", "")
+    ax.grid(axis="y", visible=False)
+    span = max(max(np.abs(means)) if len(means) else 1.0, 1e-6)
+    ax.set_xlim(-span * 1.45, span * 1.45)
+    _save(fig, path)
+
+
+def learning_curves(logs: list[dict], path: Path) -> None:
+    """three panels: return, entropy, critic explained variance.
+
+    three separate panels rather than three lines on shared axes, because the
+    quantities have unrelated scales and a dual axis would be a lie.
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(13.0, 3.8), facecolor=SURFACE)
+
+    panels = [
+        ("mean_return", "episode return during training", "dollars", C1),
+        ("entropy", "policy entropy", "nats", C2),
+        ("explained_var", "critic explained variance", "fraction", C3),
+    ]
+
+    for ax, (key, title, ylabel, color) in zip(axes, panels):
+        stacked = np.array([lg[key] for lg in logs], dtype=float)
+        x = np.arange(stacked.shape[1])
+        # individual seeds, recessive; the mean carries the message
+        for row in stacked:
+            ax.plot(x, row, color=color, linewidth=0.8, alpha=0.28, zorder=2)
+        ax.plot(x, stacked.mean(axis=0), color=color, linewidth=2.0, zorder=3)
+
+        if key == "entropy":
+            ax.axhline(
+                np.log(3), color=REFERENCE, linewidth=1.2, linestyle="--", zorder=2
+            )
+            ax.annotate(
+                "uniform (ln 3)",
+                xy=(x[-1], np.log(3)),
+                xytext=(-4, 5),
+                textcoords="offset points",
+                color=INK_MUTED,
+                fontsize=8,
+                ha="right",
+            )
+        if key in ("mean_return", "explained_var"):
+            ax.axhline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=2)
+
+        _style_axes(ax, title, "ppo update", ylabel)
+
+    fig.suptitle(
+        f"training diagnostics, {len(logs)} seeds (thin lines) and their mean (thick)",
+        color=INK,
+        fontsize=11,
+        x=0.008,
+        ha="left",
+    )
+    _save(fig, path)
+
+
+def value_calibration(
+    bins: list[tuple[float, float, int]],
+    path: Path,
+    title: str = "critic calibration against realised settlement",
+    subtitle: str = "",
+) -> None:
+    """reliability diagram: predicted value against realised frequency.
+
+    this figure is only possible because every episode resolves to a known 0/1
+    (docs/MDP.md section 1.2). the diagonal is perfect calibration.
+    """
+    fig, ax = _new_fig(6.2, 5.4)
+
+    ax.plot(
+        [0, 1], [0, 1], color=REFERENCE, linewidth=1.4, linestyle="--", zorder=2,
+    )
+    ax.annotate(
+        "perfect calibration",
+        xy=(0.62, 0.62),
+        xytext=(4, -14),
+        textcoords="offset points",
+        color=INK_MUTED,
+        fontsize=8.5,
+        rotation=38,
+    )
+
+    if bins:
+        pred = [b[0] for b in bins]
+        real = [b[1] for b in bins]
+        n = np.array([b[2] for b in bins], dtype=float)
+        # marker area carries sample count; minimum 8px per the mark spec
+        sizes = 40 + 320 * (n / n.max())
+        ax.plot(pred, real, color=C1, linewidth=2.0, zorder=3)
+        ax.scatter(
+            pred, real, s=sizes, color=C1, zorder=4,
+            edgecolors=SURFACE, linewidths=2.0,
+        )
+
+    ax.set_xlim(-0.03, 1.03)
+    ax.set_ylim(-0.03, 1.03)
+    _style_axes(
+        ax,
+        title,
+        "predicted probability of yes",
+        "realised frequency of yes",
+        pad=26 if subtitle else 10,
+    )
+    if subtitle:
+        # sits under the title, not on top of it
+        ax.annotate(
+            subtitle,
+            xy=(0, 1.035),
+            xycoords="axes fraction",
+            color=INK_MUTED,
+            fontsize=9,
+            va="bottom",
+        )
+    _save(fig, path)
+
+
+def cost_ablation(
+    with_costs: np.ndarray,
+    without_costs: np.ndarray,
+    path: Path,
+    title: str = "what frictions cost each policy",
+    labels: list[str] | None = None,
+) -> None:
+    """paired bars: the same policies with frictions on and off.
+
+    this is the figure that separates "cannot predict" from "predicts but
+    cannot cover costs" (docs/MDP.md section 9.4).
+    """
+    fig, ax = _new_fig(8.0, 0.62 * len(with_costs) + 1.8)
+    y = np.arange(len(with_costs))
+    h = 0.36
+    # 2px surface gap between adjacent bars, per the mark spec
+    ax.barh(y - h / 2 - 0.012, without_costs, height=h, color=C3,
+            label="frictionless", zorder=3)
+    ax.barh(y + h / 2 + 0.012, with_costs, height=h, color=C1,
+            label="with fees and spread", zorder=3)
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=2)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels or [f"policy {i}" for i in y], color=INK, fontsize=9)
+    ax.invert_yaxis()
+    _style_axes(ax, title, "mean pnl per episode (dollars)", "")
+    ax.grid(axis="y", visible=False)
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED, loc="lower right")
+    _save(fig, path)

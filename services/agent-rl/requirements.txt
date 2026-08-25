@@ -14,7 +14,7 @@ gymnasium==1.0.0
 torch==2.5.1
 
 # baselines (shared with the existing agent-py logistic-regression model)
-scikit-learn==1.5.2
+scikit-learn==1.8.0
 
 # plots
 matplotlib==3.9.2

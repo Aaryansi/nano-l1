@@ -1,0 +1,191 @@
+{
+  "test_episodes": 1285,
+  "split": {
+    "train": 3855,
+    "val": 1284,
+    "test": 1285,
+    "purged": 4
+  },
+  "baselines": {
+    "always-flat": {
+      "n_episodes": 1285,
+      "total_pnl": 0.0,
+      "mean_pnl": 0.0,
+      "std_pnl": 0.0,
+      "sharpe": 0.0,
+      "sharpe_annualised": 0.0,
+      "max_drawdown": 0.0,
+      "hit_rate": 0.0,
+      "zero_rate": 1.0,
+      "mean_trades": 0.0,
+      "turnover": 0.0,
+      "mean_fees": 0.0
+    },
+    "buy-and-hold": {
+      "n_episodes": 1285,
+      "total_pnl": 87.40017082691173,
+      "mean_pnl": 0.06801569714156555,
+      "std_pnl": 49.33021837363784,
+      "sharpe": 0.0013787836215603145,
+      "sharpe_annualised": 0.25809415219819976,
+      "max_drawdown": 1666.7199079704296,
+      "hit_rate": 0.5229571984435798,
+      "zero_rate": 0.0,
+      "mean_trades": 1.0,
+      "turnover": 100.0,
+      "mean_fees": 1.6627237354085607
+    },
+    "random": {
+      "n_episodes": 1285,
+      "total_pnl": -21707.139977414496,
+      "mean_pnl": -16.892715935731125,
+      "std_pnl": 39.62834380927253,
+      "sharpe": -0.42627862564820196,
+      "sharpe_annualised": -79.79498651309854,
+      "max_drawdown": 21886.30996859003,
+      "hit_rate": 0.31361867704280155,
+      "zero_rate": 0.0,
+      "mean_trades": 9.329182879377433,
+      "turnover": 932.9182879377432,
+      "mean_fees": 13.498552529182879
+    },
+    "mean-reversion": {
+      "n_episodes": 1285,
+      "total_pnl": -14042.999546244646,
+      "mean_pnl": -10.928404316143693,
+      "std_pnl": 31.698627061601563,
+      "sharpe": -0.3447595473111806,
+      "sharpe_annualised": -64.53545116442469,
+      "max_drawdown": 14063.739554562471,
+      "hit_rate": 0.29027237354085605,
+      "zero_rate": 0.029571984435797664,
+      "mean_trades": 5.119066147859922,
+      "turnover": 511.9066147859922,
+      "mean_fees": 8.038210116731516
+    },
+    "logistic-shipped": {
+      "n_episodes": 1285,
+      "total_pnl": 87.40017082691173,
+      "mean_pnl": 0.06801569714156555,
+      "std_pnl": 49.33021837363784,
+      "sharpe": 0.0013787836215603145,
+      "sharpe_annualised": 0.25809415219819976,
+      "max_drawdown": 1666.7199079704296,
+      "hit_rate": 0.5229571984435798,
+      "zero_rate": 0.0,
+      "mean_trades": 1.0,
+      "turnover": 100.0,
+      "mean_fees": 1.6627237354085607
+    },
+    "logistic-refit": {
+      "n_episodes": 1285,
+      "total_pnl": -11695.44047920309,
+      "mean_pnl": -9.10151010054715,
+      "std_pnl": 51.780488388817815,
+      "sharpe": -0.17577103622901816,
+      "sharpe_annualised": -32.90253515282492,
+      "max_drawdown": 11833.650475555267,
+      "hit_rate": 0.48715953307392995,
+      "zero_rate": 0.0,
+      "mean_trades": 2.580544747081712,
+      "turnover": 258.0544747081712,
+      "mean_fees": 6.070070038910506
+    }
+  },
+  "ppo_per_seed": [
+    {
+      "n_episodes": 1285,
+      "total_pnl": -1111.480111779571,
+      "mean_pnl": -0.86496506753274,
+      "std_pnl": 16.43312923990771,
+      "sharpe": -0.052635444832514304,
+      "sharpe_annualised": -9.852815407140827,
+      "max_drawdown": 1417.3401483782193,
+      "hit_rate": 0.7408560311284047,
+      "zero_rate": 0.12840466926070038,
+      "mean_trades": 1.8910505836575875,
+      "turnover": 189.10505836575874,
+      "mean_fees": 0.5226303501945525
+    },
+    {
+      "n_episodes": 1285,
+      "total_pnl": -639.2300822031876,
+      "mean_pnl": -0.4974553168896402,
+      "std_pnl": 11.471181953766312,
+      "sharpe": -0.04336565481173556,
+      "sharpe_annualised": -8.117605792625135,
+      "max_drawdown": 876.8200644950189,
+      "hit_rate": 0.5657587548638132,
+      "zero_rate": 0.3424124513618677,
+      "mean_trades": 1.3377431906614785,
+      "turnover": 133.77431906614785,
+      "mean_fees": 0.2620466926070039
+    },
+    {
+      "n_episodes": 1285,
+      "total_pnl": -515.6898738957575,
+      "mean_pnl": -0.401315076961679,
+      "std_pnl": 10.25613359356427,
+      "sharpe": -0.039129275501394056,
+      "sharpe_annualised": -7.324599036963761,
+      "max_drawdown": 795.1699231580646,
+      "hit_rate": 0.5159533073929962,
+      "zero_rate": 0.40077821011673154,
+      "mean_trades": 1.1019455252918289,
+      "turnover": 110.19455252918289,
+      "mean_fees": 0.15493385214007785
+    },
+    {
+      "n_episodes": 1285,
+      "total_pnl": -186.78004040533708,
+      "mean_pnl": -0.14535411704695492,
+      "std_pnl": 13.928659047584757,
+      "sharpe": -0.010435614552009547,
+      "sharpe_annualised": -1.9534400092598427,
+      "max_drawdown": 511.6100445796176,
+      "hit_rate": 0.7190661478599222,
+      "zero_rate": 0.18988326848249026,
+      "mean_trades": 1.3330739299610894,
+      "turnover": 133.30739299610894,
+      "mean_fees": 0.4158599221789883
+    },
+    {
+      "n_episodes": 1285,
+      "total_pnl": -230.0800653855505,
+      "mean_pnl": -0.17905063454128445,
+      "std_pnl": 9.486443078963106,
+      "sharpe": -0.018874369777049795,
+      "sharpe_annualised": -3.533088433680596,
+      "max_drawdown": 374.08006911763914,
+      "hit_rate": 0.3673151750972763,
+      "zero_rate": 0.5509727626459144,
+      "mean_trades": 1.2124513618677042,
+      "turnover": 121.24513618677042,
+      "mean_fees": 0.3563268482490272
+    }
+  ],
+  "ppo_across_seeds": {
+    "mean_pnl_mean": -0.4176280425944598,
+    "mean_pnl_std": 0.2599235236049963,
+    "sharpe_mean": -0.032888071894940654,
+    "sharpe_std": 0.015742857376958325
+  },
+  "paired_bootstrap_p_vs_flat": {
+    "buy-and-hold": 0.9611,
+    "random": 0.0,
+    "mean-reversion": 0.0,
+    "logistic-shipped": 0.9611,
+    "logistic-refit": 0.0,
+    "ppo": 0.1286
+  },
+  "zero_cost_ablation": {
+    "ppo": 1.293603115228588,
+    "always-flat": 0.0,
+    "buy-and-hold": 2.23891065336387,
+    "random": 1.3765369346437808,
+    "mean-reversion": -0.10984423070247303,
+    "logistic-shipped": 2.23891065336387,
+    "logistic-refit": -0.9354089461593138
+  },
+  "critic_calibration_error": 0.0812679306118132
+}
