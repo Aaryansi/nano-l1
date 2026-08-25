@@ -63,6 +63,19 @@ N_FEATURES = len(FEATURE_NAMES)
 N_KALSHI = len(KALSHI_FEATURES)
 N_SPOT = len(SPOT_FEATURES)
 
+# index of `spot_ret_since_open` within the full OBSERVATION vector, as opposed
+# to within the spot block. named once here because the two differ by the width
+# of the kalshi block, and silently confusing them would point the synthetic
+# sanity checks at the wrong feature, which would look like a learning failure
+# rather than an indexing bug.
+SIGNAL_OBS_IDX = N_KALSHI + SPOT_FEATURES.index("spot_ret_since_open")
+
+
+def feature_index(name: str) -> int:
+    """observation index of a named feature. raises on a typo rather than
+    silently returning -1, which would read the last feature instead."""
+    return FEATURE_NAMES.index(name)
+
 
 def build_market_features(
     bid: np.ndarray,
