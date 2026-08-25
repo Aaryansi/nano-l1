@@ -88,20 +88,34 @@ straddles a split boundary, which would leak.
 
 ## 4. time discretization
 
-**decision step = 10 seconds, so 90 steps per episode.**
+**primary: decision step = 60 seconds, 14 steps per episode.**
+**secondary: 10 seconds, 89 steps, on a subset.**
 
-justification: the measured density of 327 trades per active 10s bucket means a
-10s bar is well populated, while 68% bucket coverage means roughly a third of
-bars have no trade at all and must be forward-filled. that gap is not hidden, it
-is exposed to the agent as an explicit `staleness` feature (§5).
+this revises an earlier version of this section, which specified 10s steps and
+explicitly rejected 1-minute steps. the revision is on measured ingest cost,
+recorded here rather than quietly amended:
 
-alternatives rejected:
-- **1-minute steps** (15 per episode) align with the candlestick endpoint but
-  give only ~36k decision steps across the corpus and too few decisions per
-  episode for credit assignment to be interesting.
-- **event-based steps** (one step per trade) match the data-generating process
-  but produce variable-length episodes, complicate the discount and the
-  attribution comparison, and are not worth the added machinery at this stage.
+| grid | source | api calls / market | corpus reachable | steps/ep |
+|---|---|---|---|---|
+| 60s | candlesticks | 1 | all 6,434 | 14 |
+| 10s | full trade tape | ~20 (tape paginates at 1000) | ~600 in the same wall-clock | 89 |
+
+a busy 15-minute market carries ~20,000 trades. draining that tape measured at
+**0.20 markets/sec**, against **4.0 markets/sec** for candlesticks. the 60s grid
+therefore buys roughly 10x more episodes and full 68-day coverage for the
+walk-forward split, at the cost of `flow_imbalance` (feature 6, which needs
+taker sides from the tape) and time resolution.
+
+both are built. the 60s corpus is primary; the 10s subset is a robustness check
+that the coarser grid is not hiding structure the finer one would reveal. if the
+two disagree materially, that is a finding and the report says so.
+
+14 steps is still enough for the phase-5b requirement, which needs only that a
+per-decision attribution and a trajectory-aware one can disagree.
+
+**rejected: event-based steps** (one per trade). these match the data-generating
+process but produce variable-length episodes, complicate the discount and the
+attribution comparison, and are not worth the machinery here.
 
 spread is sourced from the 1-minute candlestick containing the step and held
 constant within that minute. this is an approximation and is recorded as such
