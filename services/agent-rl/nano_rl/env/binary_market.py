@@ -311,8 +311,12 @@ class BinaryMarketEnv(gym.Env if gym is not None else object):  # type: ignore[m
         market = self._features[self._ep, t]
         mark = float(0.5 * (self.batch.bid[self._ep, t] + self.batch.ask[self._ep, t]))
         pos = self._pos.features(mark, self.max_position, self.n_steps)
-        obs = np.concatenate([market, pos]).astype(np.float32)
 
+        # the normalizer is fit on the MARKET block only, so it must be applied
+        # to that block only. position features are already on a unit scale by
+        # construction (position/max_position, price in [0,1], pnl/max_position,
+        # steps/n_steps) and would be corrupted by market-fitted statistics.
         if self.normalizer is not None:
-            obs = self.normalizer.transform(obs).astype(np.float32)
-        return obs
+            market = self.normalizer.transform(market)
+
+        return np.concatenate([market, pos]).astype(np.float32)
