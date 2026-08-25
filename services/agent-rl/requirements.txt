@@ -1,0 +1,28 @@
+# pinned for reproducibility. python 3.12.
+#
+# torch is cpu-only on purpose: the networks here are small mlps over an
+# 18-dim state, so a gpu adds setup friction without changing wall-clock much,
+# and a cpu-only pin makes `reproduce.sh` work on any clean checkout.
+
+# data + api
+requests==2.32.3
+numpy==2.1.3
+pandas==2.2.3
+
+# rl
+gymnasium==1.0.0
+torch==2.5.1
+
+# baselines (shared with the existing agent-py logistic-regression model)
+scikit-learn==1.5.2
+
+# plots
+matplotlib==3.9.2
+
+# tests
+pytest==8.3.3
+
+# reference implementation used ONLY to cross-validate our own kernel-shap
+# against a known-good one in tests. the attribution code in nano_rl/explain
+# is written from scratch, not wrapped around this.
+shap==0.46.0
