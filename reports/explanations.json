@@ -1,0 +1,94 @@
+{
+  "ground_truth": {
+    "signal_share": 0.5505522640186421,
+    "verdict": "PASS",
+    "agent_return": 46.041001026153566,
+    "top": [
+      [
+        "spot_ret_since_open",
+        54.861636069154414
+      ],
+      [
+        "time_to_expiry_frac",
+        25.955800500987248
+      ],
+      [
+        "position",
+        5.943410705857934
+      ],
+      [
+        "spot_ret_60s",
+        -2.001514219582615
+      ],
+      [
+        "staleness",
+        -1.8572685992673474
+      ]
+    ]
+  },
+  "naive_vs_trajectory": {
+    "rank_correlation": 0.33952528379772956,
+    "top_k_overlap": 0.42857142857142855,
+    "signal_rank_naive": 2,
+    "signal_rank_trajectory": 1,
+    "action": "LONG"
+  },
+  "real_agent": {
+    "behaviour_top": [
+      [
+        "time_to_expiry_frac",
+        0.26037144684791563
+      ],
+      [
+        "spread",
+        0.055292541265487674
+      ],
+      [
+        "spot_realized_vol",
+        -0.007861440420150757
+      ],
+      [
+        "spot_implied_gap",
+        0.007467529535293579
+      ]
+    ],
+    "value_top": [
+      [
+        "time_to_expiry_frac",
+        -2.606079352378845
+      ],
+      [
+        "spread",
+        -0.4057440528869629
+      ],
+      [
+        "spot_implied_gap",
+        -0.14451378440856932
+      ],
+      [
+        "implied_prob",
+        -0.09127784156799316
+      ]
+    ],
+    "outcomes_top": [
+      [
+        "time_to_expiry_frac",
+        4.204736202649881
+      ],
+      [
+        "unrealized_pnl",
+        1.3949642048536266
+      ],
+      [
+        "spread",
+        1.1891639814542756
+      ],
+      [
+        "volume_rate",
+        1.1498613586435986
+      ]
+    ],
+    "value_of_observation": 5.913949670784921,
+    "behaviour_vs_outcomes_rank_corr": 0.3168214654282766
+  }
+}

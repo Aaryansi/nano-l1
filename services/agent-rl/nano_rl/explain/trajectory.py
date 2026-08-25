@@ -212,10 +212,14 @@ def compare_naive_and_trajectory(
         order = np.argsort(np.argsort(-x))
         return order.astype(float)
 
-    ra, rb = ranks(a), ranks(b)
-    if ra.std() < 1e-12 or rb.std() < 1e-12:
+    # the degeneracy to guard is in the VALUES, not the ranks. ranks of n
+    # distinct positions always have positive variance, so testing them would
+    # report a perfect correlation between two attributions that are both
+    # identically zero, i.e. claim two vacuous explanations agree.
+    if a.max() < 1e-12 or b.max() < 1e-12:
         rho = float("nan")
     else:
+        ra, rb = ranks(a), ranks(b)
         rho = float(np.corrcoef(ra, rb)[0, 1])
 
     top_a = {n for n, _ in naive.top(top_k)}
