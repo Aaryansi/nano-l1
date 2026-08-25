@@ -39,6 +39,7 @@ except ImportError:  # keep the module importable for pure-accounting tests
 from nano_rl.env.costs import CostModel, Quote
 from nano_rl.env.features import (
     N_FEATURES,
+    N_SPOT,
     FeatureNormalizer,
     PositionState,
     build_market_features,
@@ -67,6 +68,11 @@ class EpisodeBatch:
     settlement: np.ndarray
     open_epoch: np.ndarray
 
+    # (n_episodes, n_steps, N_SPOT). None when the corpus was built without
+    # binance coverage, in which case the block is zero-filled at use time so
+    # that observation width stays fixed at N_FEATURES.
+    spot: np.ndarray | None = None
+
     # cached per-episode market features, built lazily on first use
     _market_features: np.ndarray | None = field(default=None, repr=False)
 
@@ -83,7 +89,12 @@ class EpisodeBatch:
             t_sec=d["t_sec"],
             settlement=d["settlement"],
             open_epoch=d["open_epoch"],
+            spot=d["spot"] if "spot" in d.files else None,
         )
+
+    @property
+    def has_spot(self) -> bool:
+        return self.spot is not None
 
     def __len__(self) -> int:
         return len(self.settlement)
@@ -99,9 +110,15 @@ class EpisodeBatch:
         return float(self.t_sec[0, -1] + step)
 
     def market_features(self) -> np.ndarray:
-        """(n_episodes, n_steps, n_market_features), computed once."""
+        """(n_episodes, n_steps, len(MARKET_FEATURES)), computed once.
+
+        concatenates the kalshi block with the spot block. when the corpus has
+        no spot coverage the spot block is zeros, which keeps the observation
+        width fixed and makes the absence visible in attribution (a zero
+        feature gets zero Shapley value) rather than silently changing shape.
+        """
         if self._market_features is None:
-            self._market_features = np.stack(
+            kalshi = np.stack(
                 [
                     build_market_features(
                         bid=self.bid[i],
@@ -116,6 +133,12 @@ class EpisodeBatch:
                     for i in range(len(self))
                 ]
             )
+            spot = (
+                self.spot
+                if self.spot is not None
+                else np.zeros((len(self), self.n_steps, N_SPOT), dtype=kalshi.dtype)
+            )
+            self._market_features = np.concatenate([kalshi, spot], axis=-1)
         return self._market_features
 
     def subset(self, idx: np.ndarray) -> "EpisodeBatch":
@@ -130,6 +153,7 @@ class EpisodeBatch:
             t_sec=self.t_sec[idx],
             settlement=self.settlement[idx],
             open_epoch=self.open_epoch[idx],
+            spot=self.spot[idx] if self.spot is not None else None,
         )
 
 

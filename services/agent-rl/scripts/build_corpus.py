@@ -56,6 +56,12 @@ def main() -> None:
         action="store_true",
         help="retain raw api json (off by default; this is what caused the 44 GB projection)",
     )
+    ap.add_argument(
+        "--with-spot",
+        action="store_true",
+        help="download binance 1s klines and add the 5 spot features",
+    )
+    ap.add_argument("--spot-cache", default="data/binance_klines")
     args = ap.parse_args()
 
     logging.basicConfig(
@@ -78,9 +84,26 @@ def main() -> None:
 
     log.info("building %d episodes, mode=%s, step=%ds", len(markets), args.mode, args.step)
 
+    # spot is fetched once for the whole span, then joined per episode with a
+    # backward as-of lookup. fetching per episode would redownload the same
+    # daily file dozens of times.
+    spot_series = None
+    if args.with_spot:
+        from nano_rl.data.binance import build_spot_features, load_range
+
+        log.info("downloading binance spot for the corpus span (this is ~2.5 MB/day)")
+        spot_series = load_range(
+            "BTCUSDT",
+            markets[0].open_time,
+            markets[-1].close_time,
+            cache_dir=args.spot_cache,
+        )
+
     built: list[dict] = []
     meta: list[tuple[str, float, float]] = []  # ticker, open_epoch, settlement
+    spot_blocks: list[np.ndarray] = []
     skipped = 0
+    n_no_spot = 0
     t0 = time.time()
 
     for i, m in enumerate(markets, 1):
@@ -98,6 +121,17 @@ def main() -> None:
         else:
             built.append(ep.to_arrays())
             meta.append((m.ticker, m.open_time.timestamp(), m.settlement_value))
+
+            if spot_series is not None:
+                block = build_spot_features(
+                    spot=spot_series,
+                    open_epoch=m.open_time.timestamp(),
+                    t_sec=ep.t_sec,
+                    implied_prob=ep.mid,
+                )
+                if not np.any(block):
+                    n_no_spot += 1
+                spot_blocks.append(block.astype(np.float32))
 
         if not args.keep_raw:
             # discard the raw json immediately; it is one to two orders of
@@ -132,7 +166,10 @@ def main() -> None:
     stacked["settlement"] = np.array([s for _, _, s in meta], dtype=np.float32)
     stacked["open_epoch"] = np.array([o for _, o, _ in meta], dtype=np.float64)
 
-    name = f"corpus_{args.mode}_{args.step}s.npz"
+    if spot_blocks:
+        stacked["spot"] = np.stack([b[:n] for b in spot_blocks]).astype(np.float32)
+
+    name = f"corpus_{args.mode}_{args.step}s{'_spot' if spot_blocks else ''}.npz"
     path = out_dir / name
     np.savez_compressed(path, **stacked)
     tickers_path = out_dir / f"tickers_{args.mode}_{args.step}s.txt"
@@ -147,6 +184,8 @@ def main() -> None:
     print(f"  steps each : {n}")
     print(f"  transitions: {len(built) * n:,}")
     print(f"  yes rate   : {yes:.4f}")
+    if spot_blocks:
+        print(f"  spot       : joined, {n_no_spot} episodes without coverage")
     print(f"  written    : {path}  ({size_mb:.1f} MB)")
     print(f"  elapsed    : {(time.time()-t0)/60:.1f} min")
     print("=" * 62)

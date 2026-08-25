@@ -21,8 +21,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# market features, precomputable per episode.
-MARKET_FEATURES: tuple[str, ...] = (
+# kalshi-derived features, precomputable per episode.
+KALSHI_FEATURES: tuple[str, ...] = (
     "implied_prob",
     "spread",
     "p_change_1",
@@ -34,7 +34,23 @@ MARKET_FEATURES: tuple[str, ...] = (
     "time_to_expiry_frac",
 )
 
-# position features, recomputed each step from agent state.
+# binance-spot-derived features. the contract resolves on the sign of the spot
+# move, so these describe the underlying being predicted. see
+# nano_rl/data/binance.py. when spot coverage is missing for an episode these
+# are zero-filled rather than imputed, and the corpus records that fact.
+SPOT_FEATURES: tuple[str, ...] = (
+    "spot_ret_since_open",
+    "spot_ret_30s",
+    "spot_ret_60s",
+    "spot_realized_vol",
+    "spot_implied_gap",
+)
+
+# the full precomputable block, which is what the normalizer is fit on.
+MARKET_FEATURES: tuple[str, ...] = KALSHI_FEATURES + SPOT_FEATURES
+
+# position features, recomputed each step from agent state. these are already
+# on a unit scale by construction and are NOT normalised; see the env's _obs.
 POSITION_FEATURES: tuple[str, ...] = (
     "position",
     "avg_entry_price",
@@ -44,6 +60,8 @@ POSITION_FEATURES: tuple[str, ...] = (
 
 FEATURE_NAMES: tuple[str, ...] = MARKET_FEATURES + POSITION_FEATURES
 N_FEATURES = len(FEATURE_NAMES)
+N_KALSHI = len(KALSHI_FEATURES)
+N_SPOT = len(SPOT_FEATURES)
 
 
 def build_market_features(
