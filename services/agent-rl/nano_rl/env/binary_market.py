@@ -24,6 +24,7 @@ tests/test_env_accounting.py:
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -210,6 +211,24 @@ class BinaryMarketEnv(gym.Env if gym is not None else object):  # type: ignore[m
             self.observation_space = spaces.Box(
                 low=-np.inf, high=np.inf, shape=(N_FEATURES,), dtype=np.float32
             )
+
+        if normalizer is None:
+            # a tanh trunk saturates on large-magnitude inputs, and the
+            # resulting zero gradients look exactly like "the agent did not
+            # learn" rather than like a bug. warn loudly rather than let a
+            # silent 31%-saturated network be mistaken for a negative result.
+            # see scripts/diagnose_ppo.py.
+            peak = float(np.abs(self._features).max())
+            if peak > 5.0:
+                warnings.warn(
+                    f"BinaryMarketEnv built without a normalizer and features "
+                    f"reach magnitude {peak:.1f}. neural agents will train "
+                    f"poorly. fit one with nano_rl.data.splits.walk_forward_split "
+                    f"(real data) or nano_rl.env.features.fit_normalizer "
+                    f"(synthetic).",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
 
         self._rng = np.random.default_rng(0)
         self._order: np.ndarray = np.arange(len(batch))

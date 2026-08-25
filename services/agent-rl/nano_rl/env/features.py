@@ -247,3 +247,19 @@ class FeatureNormalizer:
         self.mean = np.asarray(d["mean"])
         self.std = np.asarray(d["std"])
         return self
+
+
+def fit_normalizer(batch) -> FeatureNormalizer:
+    """fit a normalizer over a batch's market-feature block.
+
+    convenience for synthetic corpora and tests. the real pipeline fits inside
+    nano_rl/data/splits.py instead, on the TRAIN split only, because fitting on
+    a full corpus would leak test-period distribution into training.
+
+    exists because feeding raw observations to a tanh network silently breaks
+    learning: `volume_rate` is log1p(volume) and reaches ~9.2, which saturated
+    31% of first-layer units to zero gradient and pinned ppo at 0.00 return
+    against a 47.25 benchmark. see scripts/diagnose_ppo.py.
+    """
+    feats = batch.market_features()
+    return FeatureNormalizer().fit(feats.reshape(-1, feats.shape[-1]))
