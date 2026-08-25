@@ -322,3 +322,92 @@ def cost_ablation(
     ax.grid(axis="y", visible=False)
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED, loc="lower right")
     _save(fig, path)
+
+
+def attribution_bar(
+    names: list[str],
+    values: np.ndarray,
+    path: Path,
+    title: str,
+    stderr: np.ndarray | None = None,
+    subtitle: str = "",
+    top_k: int = 12,
+) -> None:
+    """shapley attributions, largest absolute contribution first.
+
+    signed, so a diverging encoding is correct here: one hue for positive
+    contributions, one for negative, and the zero line carries meaning.
+    """
+    values = np.asarray(values)
+    order = np.argsort(-np.abs(values))[:top_k][::-1]
+    v = values[order]
+    labels = [names[i] for i in order]
+    err = np.asarray(stderr)[order] if stderr is not None else None
+
+    fig, ax = _new_fig(8.0, 0.42 * len(v) + 1.9)
+    y = np.arange(len(v))
+    ax.barh(y, v, height=0.66, color=[C1 if x >= 0 else C2 for x in v], zorder=3)
+    if err is not None and np.any(err > 0):
+        ax.errorbar(v, y, xerr=err, fmt="none", ecolor=INK_MUTED,
+                    elinewidth=1.1, capsize=2.5, zorder=4)
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=2)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, color=INK, fontsize=9)
+    _style_axes(ax, title, "shapley value", "", pad=26 if subtitle else 10)
+    ax.grid(axis="y", visible=False)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    span = max(np.abs(v).max(), 1e-9)
+    ax.set_xlim(-span * 1.35, span * 1.35)
+    _save(fig, path)
+
+
+def attribution_comparison(
+    names: list[str],
+    naive: np.ndarray,
+    trajectory: np.ndarray,
+    path: Path,
+    title: str = "per-decision attribution versus trajectory-aware attribution",
+    subtitle: str = "",
+    top_k: int = 10,
+) -> None:
+    """paired bars contrasting the two characteristic functions.
+
+    both series are normalised to their own total absolute mass, because they
+    are measured in different units (action probability against dollars of
+    return). the comparison of interest is which features are credited and in
+    what proportion, not the raw magnitudes, and putting two unit systems on
+    one axis without normalising would be the dual-axis mistake in disguise.
+    """
+    naive = np.asarray(naive, dtype=float)
+    trajectory = np.asarray(trajectory, dtype=float)
+
+    def share(x):
+        total = np.abs(x).sum()
+        return x / total if total > 1e-12 else x
+
+    a, b = share(naive), share(trajectory)
+    order = np.argsort(-(np.abs(a) + np.abs(b)))[:top_k][::-1]
+
+    fig, ax = _new_fig(8.6, 0.52 * len(order) + 2.1)
+    y = np.arange(len(order))
+    h = 0.36
+    ax.barh(y - h / 2 - 0.012, a[order], height=h, color=C2,
+            label="per-decision, pi(a|s)", zorder=3)
+    ax.barh(y + h / 2 + 0.012, b[order], height=h, color=C1,
+            label="trajectory-aware, episode return", zorder=3)
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=2)
+    ax.set_yticks(y)
+    ax.set_yticklabels([names[i] for i in order], color=INK, fontsize=9)
+    _style_axes(ax, title, "share of total attribution mass", "",
+                pad=26 if subtitle else 10)
+    ax.grid(axis="y", visible=False)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.10), ncol=2)
+    _save(fig, path)
