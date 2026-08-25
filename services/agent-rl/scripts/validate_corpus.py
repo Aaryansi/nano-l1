@@ -120,6 +120,38 @@ def main() -> None:
         total_n = sum(r[3] for r in rows)
         print(f"  weighted mean |calibration error| = {sum(errs)/total_n:.4f}")
 
+    # ------------------------------------------------------ lead-lag hypothesis
+    if batch.has_spot:
+        print("\nlead-lag: does spot carry information the kalshi price has not "
+              "yet absorbed?")
+        print("  (this is the project's one testable alpha hypothesis)")
+
+        # spot_implied_gap is feature index 9+4 = 13 in MARKET_FEATURES order;
+        # read it from the raw spot block instead to avoid index drift.
+        gap = batch.spot[:, :, 4]  # spot_implied_gap
+        ret = batch.spot[:, :, 0]  # spot_ret_since_open
+        outcome = batch.settlement[:, None]
+
+        for name, sig in (("spot_implied_gap", gap), ("spot_ret_since_open", ret)):
+            # correlation between the signal and the eventual binary outcome,
+            # pooled over all steps
+            flat_sig = sig.reshape(-1)
+            flat_out = np.repeat(outcome, batch.n_steps, axis=1).reshape(-1)
+            if flat_sig.std() < 1e-12:
+                print(f"  {name:<22} degenerate (no variance)")
+                continue
+            corr = float(np.corrcoef(flat_sig, flat_out)[0, 1])
+
+            # and the incremental version: does the signal help ON TOP of price?
+            price = mid.reshape(-1)
+            resid_out = flat_out - price  # what the price already fails to explain
+            corr_resid = float(np.corrcoef(flat_sig, resid_out)[0, 1])
+            print(f"  {name:<22} corr(signal, outcome)={corr:+.4f}   "
+                  f"corr(signal, outcome - price)={corr_resid:+.4f}")
+
+        print("  the second column is the one that matters: correlation with what")
+        print("  the price has ALREADY priced in is not tradeable.")
+
     # ------------------------------------------------------------- rollouts
     print("\npolicy rollouts on TEST split (never used for tuning)")
     env = BinaryMarketEnv(
