@@ -73,13 +73,15 @@ def main() -> None:
     learn_norm = fit_normalizer(learn)
     bench = signal_policy_return(learn, max_position=100.0)
 
+    # entropy is the lever with a mechanism behind it; batch size is a 4x
+    # cost multiplier, so it gets one probe rather than a full crossing.
     ent_coefs = [0.01, 0.05, 0.2]
-    batch_sizes = [64, 256]
+    batch_sizes = [64]
 
-    print("=" * 88)
+    print("=" * 88, flush=True)
     print(f"NULL corpus: can it learn to abstain?  (target: ret 0.00, trades 0.00)")
     print(f"{args.seeds} seeds each, {args.updates} updates")
-    print("=" * 88)
+    print("=" * 88, flush=True)
     print(f"  {'ent':>5} {'eps/batch':>10} | {'return':>16} {'trades':>14} "
           f"{'entropy':>8} {'flat%':>7}")
 
@@ -100,7 +102,7 @@ def main() -> None:
         results[(ent, bs)] = (np.mean(rets), np.mean(trades))
         print(f"  {ent:>5} {bs:>10} | {np.mean(rets):>8.2f} +/- {np.std(rets):<5.2f} "
               f"{np.mean(trades):>7.2f} +/-{np.std(trades):<5.2f} "
-              f"{np.mean(ents):>8.3f} {np.mean(flats):>7.2f}")
+              f"{np.mean(ents):>8.3f} {np.mean(flats):>7.2f}", flush=True)
 
     # the winner must ALSO still solve the learnable corpus, or we have simply
     # traded one failure for another.
@@ -109,7 +111,7 @@ def main() -> None:
 
     print("\n" + "=" * 88)
     print(f"does that setting still solve the LEARNABLE corpus? (benchmark {bench:.2f})")
-    print("=" * 88)
+    print("=" * 88, flush=True)
     for seed in range(args.seeds):
         r = evaluate_config(
             learn,
