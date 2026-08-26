@@ -465,3 +465,58 @@ def deletion_curves(
     n = len(next(iter(curves.values())))
     ax.set_xlim(-0.4, n * 1.28)
     _save(fig, path)
+
+
+def attribution_stability(
+    names: list[str],
+    behaviour: np.ndarray,
+    outcomes: np.ndarray,
+    path: Path,
+    title: str = "do different seeds explain themselves the same way?",
+    subtitle: str = "",
+    top_k: int = 10,
+) -> None:
+    """per-feature spread of attribution across seeds, for two targets.
+
+    each row shows the range across seeds as a bar and the individual seeds as
+    dots. a tight cluster means the explanation is a property of the task; a
+    wide spread means it is a property of the seed.
+
+    both blocks are normalised to their own total mass per seed, since the two
+    targets are measured in different units.
+    """
+    def norm(mat: np.ndarray) -> np.ndarray:
+        totals = np.abs(mat).sum(axis=1, keepdims=True)
+        totals[totals < 1e-12] = 1.0
+        return mat / totals
+
+    b, o = norm(np.asarray(behaviour)), norm(np.asarray(outcomes))
+    order = np.argsort(-(np.abs(b).mean(0) + np.abs(o).mean(0)))[:top_k][::-1]
+
+    fig, axes = plt.subplots(
+        1, 2, figsize=(11.5, 0.42 * len(order) + 2.2),
+        facecolor=SURFACE, sharey=True,
+    )
+
+    for ax, mat, color, label in (
+        (axes[0], b, C2, "behaviour, pi(a|s)"),
+        (axes[1], o, C1, "outcomes, episode return"),
+    ):
+        y = np.arange(len(order))
+        for row, feat in enumerate(order):
+            vals = mat[:, feat]
+            ax.plot([vals.min(), vals.max()], [row, row],
+                    color=color, linewidth=6, alpha=0.30, solid_capstyle="round",
+                    zorder=2)
+            ax.scatter(vals, np.full_like(vals, row), s=26, color=color,
+                       edgecolors=SURFACE, linewidths=1.2, zorder=4)
+        ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=1)
+        ax.set_yticks(y)
+        ax.set_yticklabels([names[i] for i in order], color=INK, fontsize=9)
+        _style_axes(ax, label, "share of attribution mass", "")
+        ax.grid(axis="y", visible=False)
+
+    fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=1.02)
+    if subtitle:
+        fig.text(0.008, 0.985, subtitle, color=INK_MUTED, fontsize=9, ha="left")
+    _save(fig, path)

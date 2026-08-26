@@ -1,0 +1,69 @@
+{
+  "n_seeds": 5,
+  "seed_pnl": [
+    -0.86496506753274,
+    -0.4974553168896402,
+    -0.401315076961679,
+    -0.14535411704695492,
+    -0.17905063454128445
+  ],
+  "performance_pvalues": [
+    0.3266,
+    0.2369,
+    0.0425,
+    0.0895,
+    0.7662,
+    0.2505,
+    0.1758,
+    0.3905,
+    0.4903,
+    0.914
+  ],
+  "n_indistinguishable_pairs": 9,
+  "n_pairs": 10,
+  "stability": [
+    {
+      "target": "behaviour, pi(a|s)",
+      "n_pairs": 10,
+      "rank_corr_mean": 0.8646026831785345,
+      "rank_corr_min": 0.7936016511867906,
+      "rank_corr_std": 0.0409501814239563,
+      "top1_agreement": 1.0,
+      "sign_agreement": 1.0,
+      "per_pair_rho": [
+        0.878,
+        0.915,
+        0.866,
+        0.822,
+        0.858,
+        0.858,
+        0.794,
+        0.942,
+        0.835,
+        0.878
+      ]
+    },
+    {
+      "target": "outcomes, episode return",
+      "n_pairs": 10,
+      "rank_corr_mean": 0.6800825593395252,
+      "rank_corr_min": 0.4984520123839009,
+      "rank_corr_std": 0.1234669333063977,
+      "top1_agreement": 1.0,
+      "sign_agreement": 0.9888888888888889,
+      "per_pair_rho": [
+        0.853,
+        0.884,
+        0.68,
+        0.598,
+        0.792,
+        0.647,
+        0.703,
+        0.616,
+        0.498,
+        0.529
+      ]
+    }
+  ],
+  "verdict": "outcomes LESS stable"
+}
