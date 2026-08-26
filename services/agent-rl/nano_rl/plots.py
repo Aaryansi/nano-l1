@@ -411,3 +411,57 @@ def attribution_comparison(
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
               loc="upper left", bbox_to_anchor=(0.0, -0.10), ncol=2)
     _save(fig, path)
+
+
+def deletion_curves(
+    curves: dict[str, np.ndarray],
+    path: Path,
+    title: str = "faithfulness: return after removing the top-k ranked features",
+    subtitle: str = "",
+    ylabel: str = "mean episode return (dollars)",
+) -> None:
+    """deletion curve, one line per feature ranking.
+
+    features are removed in the order a ranking considers most important. a
+    ranking that identifies genuinely load-bearing features degrades
+    performance FASTER, so the lower curve is the better ranking. a random
+    ranking is included as the control that makes the comparison meaningful.
+    """
+    fig, ax = _new_fig(8.2, 4.8)
+    colors = [C1, C2, C3]
+
+    # curves that converge would overprint their end labels, so stagger any
+    # labels whose endpoints sit within a few percent of the axis range.
+    ends = [ys[-1] for ys in curves.values()]
+    span = (max(ends) - min(ends)) or 1.0
+    offsets = []
+    for i, e in enumerate(ends):
+        clash = sum(1 for j, o in enumerate(ends[:i]) if abs(o - e) < 0.06 * span)
+        offsets.append(11 * clash - (5 if clash else 0))
+
+    for i, (name, ys) in enumerate(curves.items()):
+        x = np.arange(len(ys))
+        ax.plot(x, ys, color=colors[i % 3], linewidth=2.0, marker="o",
+                markersize=4.5, markeredgecolor=SURFACE, markeredgewidth=1.2,
+                label=name, zorder=3)
+        ax.annotate(
+            name,
+            xy=(x[-1], ys[-1]),
+            xytext=(8, offsets[i]),
+            textcoords="offset points",
+            color=INK,
+            fontsize=9,
+            va="center",
+        )
+
+    ax.axhline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=2)
+    _style_axes(ax, title, "features removed (most important first)", ylabel,
+                pad=26 if subtitle else 10)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=3)
+    n = len(next(iter(curves.values())))
+    ax.set_xlim(-0.4, n * 1.28)
+    _save(fig, path)

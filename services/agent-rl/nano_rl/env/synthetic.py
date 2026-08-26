@@ -185,3 +185,83 @@ def flat_policy_return() -> float:
     wrong target there.
     """
     return 0.0
+
+
+# index of the decoy feature within the spot block. `spot_implied_gap` is
+# reused as the carrier so the observation width stays at N_FEATURES.
+DECOY_IDX = 4
+
+
+def make_decoy_corpus(
+    n_episodes: int = 3000,
+    n_steps: int = 14,
+    train_frac: float = 0.6,
+    decoy_strength: float = 2.0,
+    signal_strength: float = 0.0,
+    noise: float = 0.3,
+    price: float = 0.5,
+    spread: float = 0.02,
+    seed: int = 0,
+) -> EpisodeBatch:
+    """a corpus containing a feature that is spuriously predictive in-sample.
+
+    the decoy predicts settlement in the FIRST `train_frac` of episodes and is
+    pure noise in the remainder. an agent trained on the first part learns to
+    condition on it; evaluated on the second part, acting on it earns nothing
+    and costs fees.
+
+    this makes a ground-truth-backed test of the two attribution targets:
+
+        per-decision attribution of pi(a|s) on the held-out episodes SHOULD
+        credit the decoy, because the policy genuinely does key on it. that is
+        a true statement about behaviour and a misleading one about value.
+
+        trajectory-aware attribution of the episode return SHOULD give it
+        approximately zero or negative, because on these episodes the decoy
+        carries no information and trading on it only pays frictions.
+
+    the correct answer on the held-out part is known by construction, which is
+    what makes the disagreement adjudicable rather than merely interesting.
+
+    args:
+        decoy_strength: class separation of the decoy during the in-sample part.
+        signal_strength: separation of the genuine signal. zero by default, so
+            the decoy is the only thing there is to learn.
+    """
+    rng = np.random.default_rng(seed)
+
+    settlement = rng.integers(0, 2, size=n_episodes).astype(np.float32)
+    sign = 2.0 * settlement - 1.0
+
+    n_train = int(n_episodes * train_frac)
+
+    # the genuine signal, usually switched off
+    signal = sign[:, None] * signal_strength + rng.normal(
+        0.0, noise, size=(n_episodes, n_steps)
+    )
+
+    # the decoy: informative in-sample, pure noise out-of-sample
+    decoy = rng.normal(0.0, noise, size=(n_episodes, n_steps))
+    decoy[:n_train] += sign[:n_train, None] * decoy_strength
+
+    spot = np.zeros((n_episodes, n_steps, N_SPOT), dtype=np.float32)
+    spot[:, :, SIGNAL_IDX] = signal.astype(np.float32)
+    spot[:, :, DECOY_IDX] = decoy.astype(np.float32)
+
+    half = spread / 2.0
+    mid = np.full((n_episodes, n_steps), price, dtype=np.float32)
+
+    return EpisodeBatch(
+        bid=(mid - half).astype(np.float32),
+        ask=(mid + half).astype(np.float32),
+        last_price=mid.copy(),
+        volume=np.full((n_episodes, n_steps), 10_000.0, dtype=np.float32),
+        staleness=np.zeros((n_episodes, n_steps), dtype=np.float32),
+        flow_imbalance=np.zeros((n_episodes, n_steps), dtype=np.float32),
+        t_sec=np.tile(
+            np.arange(1, n_steps + 1, dtype=np.float32) * 60.0, (n_episodes, 1)
+        ),
+        settlement=settlement,
+        open_epoch=np.arange(n_episodes, dtype=np.float64) * 900.0,
+        spot=spot,
+    )
