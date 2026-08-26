@@ -4,6 +4,15 @@ a deep-RL agent on Kalshi 15-minute binary contracts, evaluated honestly, with a
 Shapley explainability layer tested on problems where the correct answer is known
 in advance.
 
+**the result.** an agent with no measurable edge, on a provably efficient
+market, produces feature attributions that are stable across seeds (rank
+correlation 0.865, unanimous on the most important feature), structured, and
+semantically plausible. a null-model test built from the Shapley efficiency
+axiom shows those attributions are **indistinguishable from explanations of
+agents with nothing to learn** (z = -0.15, p = 0.92), while correctly flagging a
+planted signal as informative (z = +12.27). consistency across runs is therefore
+not evidence that an explanation means anything. section 3.5.
+
 **what this contributes, and what it does not.** the argument that Shapley
 explanations in RL should be built on outcomes rather than on the policy's output
 is not mine. it is the thesis of SVERL (Beechey, Smith and Şimşek, ICML 2023),
@@ -166,10 +175,74 @@ an artifact of masking.
 
 `time_to_expiry_frac` dominates behaviour, value and outcomes alike, consistent
 with an agent that learned *when not to trade* rather than *what to predict*. the
-whole observation is worth **+5.914 per episode** against being blind.
+whole observation appears to be worth **+7.4 per episode** against being blind.
+
+section 3.5 shows that this number is not distinguishable from noise. an earlier
+draft of this report presented it as a finding. it is retained above, with the
+correction below, because the sequence is the point.
 
 ![behaviour](../reports/attribution_behaviour.png)
 ![outcomes](../reports/attribution_outcomes.png)
+
+### 3.4 the explanations are consistent across seeds
+
+five independently trained agents, **9 of 10 pairs statistically
+indistinguishable in test performance** by paired bootstrap:
+
+| target | rank corr (mean / min) | top-1 agreement | sign agreement |
+|---|---|---|---|
+| behaviour, `pi(a|s)` | +0.865 / +0.794 | 100% | 100% |
+| outcomes, episode return | +0.680 / +0.498 | 100% | 99% |
+
+two hypotheses were tested here and both were rejected. explanations are *not*
+seed-unstable, and outcome-based attribution is *less* stable than
+behaviour-based rather than more. the likely cause of the second is estimator
+variance rather than conceptual instability: attributing behaviour is a
+deterministic forward pass, while attributing outcomes requires estimating
+expected returns from rollouts with a per-episode standard deviation near 50.
+that is an independent motivation for FastSVERL's scalability work rather than a
+new argument for the framing.
+
+![stability](../reports/attribution_stability.png)
+
+### 3.5 consistency is not evidence of validity
+
+the agent explained in 3.3 and 3.4 earns -0.418 per episode and is
+statistically indistinguishable from doing nothing (p = 0.13). its explanations
+are nevertheless stable, structured, and readable. so a natural question: would
+an agent with *nothing whatsoever to learn* produce a visibly different
+explanation?
+
+the Shapley framework supplies its own test statistic. by efficiency,
+`sum_i phi_i = v(N) - v(empty)`, so the **span** is the total value of observing
+the state at all. the null distribution comes from 24 agents trained normally on
+structure-free versions of the same environment. this is the RL analogue of the
+randomization tests of Adebayo et al. (2018), with the difference that the null
+here is one that occurs in deployment rather than an artificial weight or label
+scramble.
+
+| case | span | z | p | verdict |
+|---|---|---|---|---|
+| planted signal | +70.89 | **+12.27** | 0.040 | informative |
+| null corpus | +11.86 | +0.72 | 0.480 | not distinguishable |
+| **real market** | **+7.43** | **-0.15** | 0.920 | **not distinguishable** |
+
+the test has power (it rejects on the planted signal) and specificity (it does
+not reject on the null). the real agent's explanation sits at **z = -0.15**,
+essentially at the centre of the distribution of explanations of nothing. agents
+with nothing to learn produce a span of **+8.19 ± 5.11**; the real agent produces
++7.43.
+
+so the `+5.914` reported in an earlier draft, and the `+7.4` in 3.3, are not
+evidence of anything. the explanation is stable across seeds, unanimous on its
+most important feature, semantically plausible, and empty.
+
+**the methodological point.** consistency across runs is widely used as a proxy
+for trustworthiness. here consistency is high (+0.865) exactly where the span
+test says there is nothing to explain. the two properties are independent, and
+only one of them was checkable before this test.
+
+![null test](../reports/sanity_null_test.png)
 
 ---
 
@@ -198,6 +271,14 @@ fraction 0.62 at 80 updates, 0.03 at 250), and entropy tuning does not fix it.
 explaining a near-inert policy is less informative than explaining a competent
 one.
 
+**the null test has limits of its own.** the statistic is the attribution
+span, so it detects whether an explanation carries information in aggregate. it
+does not validate individual feature attributions: an explanation could clear the
+span test and still misattribute among features. the rank p-value also bottoms
+out at 1/(n+1), which cost this test its power in a first run with 24 too few
+null samples, so both a rank and a normal p-value are reported and agreement is
+required.
+
 **scope.** one instrument, 68 days, single venue. real-agent attributions use one
 seed. spread is held constant within each 1-minute candle. maker fees are
 unmodelled, so the taker assumption is conservative. the 10-second-grid corpus
@@ -225,10 +306,12 @@ dependencies. 214 tests: `cd services/agent-rl && .venv/bin/python -m pytest`.
    with Shapley Values.* ICML 2023. arXiv:2306.05810
 2. Beechey, D., Şimşek, Ö. *Approximating Shapley Explanations in Reinforcement
    Learning.* NeurIPS 2025. arXiv:2511.06094
-3. Lundberg, S., Lee, S.-I. *A Unified Approach to Interpreting Model
+3. Adebayo, J. et al. *Sanity Checks for Saliency Maps.* NeurIPS 2018.
+   arXiv:1810.03292
+4. Lundberg, S., Lee, S.-I. *A Unified Approach to Interpreting Model
    Predictions.* NeurIPS 2017.
-4. Schulman, J. et al. *Proximal Policy Optimization Algorithms.* 2017.
+5. Schulman, J. et al. *Proximal Policy Optimization Algorithms.* 2017.
    arXiv:1707.06347
-5. Schulman, J. et al. *High-Dimensional Continuous Control Using Generalized
+6. Schulman, J. et al. *High-Dimensional Continuous Control Using Generalized
    Advantage Estimation.* ICLR 2016. arXiv:1506.02438
-6. Shapley, L. S. *A Value for n-Person Games.* 1953.
+7. Shapley, L. S. *A Value for n-Person Games.* 1953.

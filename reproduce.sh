@@ -111,6 +111,15 @@ step "shapley explanations, with the ground-truth validation"
     --corpus "$CORPUS" --runs runs/ppo \
     --out "$ROOT/reports" --updates "$EXPLAIN_UPDATES" )
 
+step "attribution stability across seeds"
+( cd "$RL" && "$PY" scripts/stability.py \
+    --corpus "$CORPUS" --runs runs/ppo --out "$ROOT/reports" )
+
+step "null-model test: is the explanation distinguishable from nothing?"
+( cd "$RL" && "$PY" scripts/sanity_check_explanations.py \
+    --corpus "$CORPUS" --runs runs/ppo --out "$ROOT/reports" \
+    --n-null $([ "$QUICK" = 1 ] && echo 8 || echo 24) )
+
 step "faithfulness: the decoy experiment and deletion curves"
 ( cd "$RL" && "$PY" scripts/faithfulness.py \
     --out "$ROOT/reports" --updates "$EXPLAIN_UPDATES" )

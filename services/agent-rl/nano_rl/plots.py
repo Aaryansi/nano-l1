@@ -520,3 +520,57 @@ def attribution_stability(
     if subtitle:
         fig.text(0.008, 0.985, subtitle, color=INK_MUTED, fontsize=9, ha="left")
     _save(fig, path)
+
+
+def null_test(
+    cases: dict[str, tuple[float, float]],
+    null_samples: np.ndarray,
+    path: Path,
+    title: str = "is this explanation distinguishable from an explanation of nothing?",
+    subtitle: str = "",
+) -> None:
+    """observed attribution spans against the null distribution.
+
+    the null band is the reference; a case inside it is an explanation that
+    could have been produced by an agent with nothing to learn.
+    """
+    fig, ax = _new_fig(8.6, 0.62 * len(cases) + 2.6)
+
+    lo, hi = float(np.min(null_samples)), float(np.max(null_samples))
+    mean = float(np.mean(null_samples))
+
+    ax.axvspan(lo, hi, color=REFERENCE, alpha=0.16, zorder=1,
+               label="null range (agents with nothing to learn)")
+    ax.axvline(mean, color=REFERENCE, linewidth=1.4, linestyle="--", zorder=2)
+
+    # the null draws themselves, so the band is not just an assertion
+    ax.scatter(null_samples, np.full_like(null_samples, -0.85), s=26,
+               color=REFERENCE, edgecolors=SURFACE, linewidths=1.0, zorder=3)
+    ax.annotate("null draws", xy=(mean, -0.85), xytext=(0, -16),
+                textcoords="offset points", color=INK_MUTED, fontsize=8.5,
+                ha="center")
+
+    for i, (name, (stat, p)) in enumerate(cases.items()):
+        inside = lo <= stat <= hi
+        color = C2 if inside else C1
+        ax.scatter([stat], [i], s=150, color=color, zorder=5,
+                   edgecolors=SURFACE, linewidths=2.0)
+        ax.annotate(
+            f"p = {p:.3f}   {'not distinguishable' if inside else 'informative'}",
+            xy=(stat, i), xytext=(12, 0), textcoords="offset points",
+            color=INK, fontsize=9, va="center",
+        )
+
+    ax.set_yticks(range(len(cases)))
+    ax.set_yticklabels(list(cases), color=INK, fontsize=9.5)
+    ax.set_ylim(-1.6, len(cases) - 0.4)
+    _style_axes(ax, title, "attribution span  v(all features) - v(none)", "",
+                pad=26 if subtitle else 10)
+    ax.grid(axis="y", visible=False)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    span = max(hi - lo, 1e-6)
+    xs = [s for s, _ in cases.values()] + [lo, hi]
+    ax.set_xlim(min(xs) - span * 0.4, max(xs) + span * 2.4)
+    _save(fig, path)
