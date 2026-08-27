@@ -97,6 +97,49 @@ def attribution_span(att: Attribution) -> float:
     return float(att.full_value - att.base_value)
 
 
+def test_span_against_null(
+    stat: float,
+    null_spans: np.ndarray | list[float],
+    alpha: float = 0.05,
+) -> SanityResult:
+    """the test, taking the statistic and null spans directly.
+
+    exists so a null distribution can be computed once and reused across many
+    observed cases (a power sweep needs one null and dozens of observations).
+    recomputing 24 null agents per sweep point would dominate the cost and
+    would also introduce null-to-null variation that has nothing to do with
+    the quantity being swept.
+    """
+    nulls = np.asarray(null_spans, dtype=float)
+    if len(nulls) < 2:
+        raise ValueError("need at least two null samples to form a distribution")
+
+    mean, std = float(nulls.mean()), float(nulls.std(ddof=1))
+
+    centred = np.abs(nulls - mean)
+    p_rank = float((np.sum(centred >= abs(stat - mean)) + 1) / (len(nulls) + 1))
+
+    z = float((stat - mean) / std) if std > 1e-12 else 0.0
+
+    from math import erfc, sqrt
+
+    p_normal = float(erfc(abs(z) / sqrt(2.0)))
+
+    min_rank = 1.0 / (len(nulls) + 1)
+    passes = (p_rank <= max(alpha, min_rank)) and (p_normal < alpha)
+
+    return SanityResult(
+        statistic=float(stat),
+        null_mean=mean,
+        null_std=std,
+        null_samples=nulls.tolist(),
+        p_rank=p_rank,
+        p_normal=p_normal,
+        z_score=z,
+        passes=passes,
+    )
+
+
 def test_against_null(
     observed: Attribution,
     null_attributions: list[Attribution],
@@ -130,43 +173,46 @@ def test_against_null(
     assumption alone, and it will not miss a ten-sigma effect for want of
     samples.
     """
-    stat = attribution_span(observed)
-    nulls = np.array([attribution_span(a) for a in null_attributions], dtype=float)
-
-    if len(nulls) < 2:
-        raise ValueError("need at least two null samples to form a distribution")
-
-    mean, std = float(nulls.mean()), float(nulls.std(ddof=1))
-
-    # two-sided rank p-value with the +1 correction, so a statistic more
-    # extreme than every null sample reports 1/(n+1) rather than 0.
-    centred = np.abs(nulls - mean)
-    p_rank = float((np.sum(centred >= abs(stat - mean)) + 1) / (len(nulls) + 1))
-
-    z = float((stat - mean) / std) if std > 1e-12 else 0.0
-
-    from math import erfc, sqrt
-
-    p_normal = float(erfc(abs(z) / sqrt(2.0)))
-
-    # both must agree. the rank test alone can be too coarse to reject; the
-    # normal test alone leans on a shape assumption. requiring both keeps the
-    # verdict conservative in the direction that matters, which is not
-    # declaring an empty explanation informative.
-    min_rank = 1.0 / (len(nulls) + 1)
-    rank_ok = p_rank <= max(alpha, min_rank)
-    passes = rank_ok and p_normal < alpha
-
-    return SanityResult(
-        statistic=stat,
-        null_mean=mean,
-        null_std=std,
-        null_samples=nulls.tolist(),
-        p_rank=p_rank,
-        p_normal=p_normal,
-        z_score=z,
-        passes=passes,
+    return test_span_against_null(
+        attribution_span(observed),
+        [attribution_span(a) for a in null_attributions],
+        alpha=alpha,
     )
+
+
+def certified_top_k(
+    att: Attribution, k: int = 5, z_crit: float = 1.96
+) -> dict:
+    """is the top-k ranking separated beyond its own estimation error?
+
+    this is the question RankSHAP and its relatives answer: given monte-carlo
+    noise in the shapley estimates, can the top-k ordering be trusted? here it
+    is checked by whether consecutive attributions are separated by more than
+    the combined standard error of the pair.
+
+    it is included to make a specific point, not as a contribution: this check
+    can PASS on an explanation that the null test rejects. estimation
+    certainty and explanatory validity are different properties, and
+    controlling the first says nothing about the second. an explanation can be
+    a precisely estimated description of nothing.
+    """
+    order = np.argsort(-np.abs(att.values))[:k]
+    vals = np.abs(att.values)[order]
+    errs = att.stderr[order]
+
+    separated = []
+    for i in range(len(order) - 1):
+        gap = vals[i] - vals[i + 1]
+        pooled = float(np.sqrt(errs[i] ** 2 + errs[i + 1] ** 2))
+        separated.append(bool(gap > z_crit * pooled) if pooled > 0 else True)
+
+    return {
+        "features": [att.feature_names[i] for i in order],
+        "values": [float(v) for v in vals],
+        "stderr": [float(e) for e in errs],
+        "adjacent_pairs_separated": separated,
+        "fully_certified": all(separated) if separated else True,
+    }
 
 
 def consistency_across_runs(attributions: list[np.ndarray]) -> float:

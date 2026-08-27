@@ -574,3 +574,52 @@ def null_test(
     xs = [s for s, _ in cases.values()] + [lo, hi]
     ax.set_xlim(min(xs) - span * 0.4, max(xs) + span * 2.4)
     _save(fig, path)
+
+
+def power_curve(
+    edges: list[float],
+    z_scores: list[float],
+    detected: list[bool],
+    path: Path,
+    real_edge: float | None = None,
+    title: str = "how much edge before an explanation is detectably informative?",
+    subtitle: str = "",
+) -> None:
+    """detection z-score against the agent's measured edge.
+
+    the x axis is measured edge rather than latent signal strength, because
+    measured edge is what a practitioner has. points are coloured by whether
+    the null test flagged them, and the detection band is drawn so the
+    threshold can be read off directly.
+    """
+    fig, ax = _new_fig(8.6, 5.0)
+    e = np.asarray(edges, dtype=float)
+    z = np.asarray(z_scores, dtype=float)
+    det = np.asarray(detected, dtype=bool)
+
+    ax.axhspan(-1.96, 1.96, color=REFERENCE, alpha=0.16, zorder=1)
+    ax.annotate("not distinguishable from an explanation of nothing",
+                xy=(e.min(), 0), xytext=(4, 4), textcoords="offset points",
+                color=INK_MUTED, fontsize=8.5, va="bottom")
+
+    ax.plot(e, z, color=C1, linewidth=2.0, zorder=3)
+    ax.scatter(e[~det], z[~det], s=90, color=C2, zorder=4,
+               edgecolors=SURFACE, linewidths=2.0, label="not detected")
+    if det.any():
+        ax.scatter(e[det], z[det], s=90, color=C1, zorder=4,
+                   edgecolors=SURFACE, linewidths=2.0, label="detected")
+
+    if real_edge is not None:
+        ax.axvline(real_edge, color=C2, linewidth=1.6, linestyle=":", zorder=2)
+        ax.annotate(f"the real agent\n({real_edge:+.2f}/ep)",
+                    xy=(real_edge, ax.get_ylim()[1]), xytext=(6, -26),
+                    textcoords="offset points", color=INK, fontsize=8.5)
+
+    _style_axes(ax, title, "agent's measured edge (dollars per episode)",
+                "detection z-score", pad=26 if subtitle else 10)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=2)
+    _save(fig, path)

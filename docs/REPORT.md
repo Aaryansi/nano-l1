@@ -244,6 +244,54 @@ only one of them was checkable before this test.
 
 ![null test](../reports/sanity_null_test.png)
 
+### 3.6 how much edge is needed before an explanation is trustworthy?
+
+the test above is binary. sweeping the strength of a planted signal calibrates
+it. the x axis is the agent's **measured edge**, not the latent signal strength,
+because measured edge is what a practitioner has.
+
+| planted strength | agent edge / ep | span | z | detected |
+|---|---|---|---|---|
+| 0.00 | +2.25 | +16.50 | +1.63 | no |
+| 0.05 | +2.34 | +15.47 | +1.42 | no |
+| **0.10** | **+3.45** | +21.60 | **+2.62** | **yes** |
+| 0.20 | +15.41 | +39.13 | +6.06 | yes |
+| 0.50 | +44.41 | +66.42 | +11.40 | yes |
+| 1.00 | +47.11 | +70.89 | +12.27 | yes |
+
+detection begins around **+3.45 per episode of measured edge**. the real agent
+earns **-0.418**, an order of magnitude below the threshold and on the wrong
+side of zero.
+
+one caveat on the number: the sweep evaluates each agent on the corpus it
+trained on, so the edges are in-sample and therefore optimistic. the threshold
+should be read as a lower bound on what is required, and the monotonic
+relationship rather than the exact value is the transferable part.
+
+![power curve](../reports/power_curve.png)
+
+### 3.7 a precisely estimated description of nothing
+
+the RankSHAP line of work certifies that a top-k Shapley ranking is stable given
+Monte Carlo noise. that is a guarantee about the **estimator**. here is the
+real agent's top-5, with its estimation error:
+
+| rank | feature | value | std error |
+|---|---|---|---|
+| 1 | `time_to_expiry_frac` | 0.2625 | ±0.0009 |
+| 2 | `spread` | 0.0543 | ±0.0010 |
+| 3 | `spot_realized_vol` | 0.0080 | ±0.0002 |
+| 4 | `spot_implied_gap` | 0.0070 | ±0.0003 |
+| 5 | `implied_prob` | 0.0048 | ±0.0003 |
+
+**all four adjacent pairs are separated beyond their combined standard error, so
+the ranking is fully certified.** the same explanation fails the null test at
+z = -0.15, p = 0.92.
+
+so a top-k ranking can be certified stable while the explanation it ranks is
+indistinguishable from an explanation of nothing. the two guarantees are
+orthogonal, and only the first is commonly reported.
+
 ---
 
 ## 4. limitations
@@ -278,6 +326,11 @@ span test and still misattribute among features. the rank p-value also bottoms
 out at 1/(n+1), which cost this test its power in a first run with 24 too few
 null samples, so both a rank and a normal p-value are reported and agreement is
 required.
+
+**the two grids agree on what matters.** the 60s corpus (6,428 episodes, 14
+steps) and the 10s corpus (600 episodes, 89 steps) show the same median spread
+of 0.0100 and outcome rates of 0.4995 and 0.4967. the finer grid adds real flow
+imbalance, which the coarser one cannot carry. it does not change the picture.
 
 **scope.** one instrument, 68 days, single venue. real-agent attributions use one
 seed. spread is held constant within each 1-minute candle. maker fees are
