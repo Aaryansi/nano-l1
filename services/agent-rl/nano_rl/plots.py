@@ -623,3 +623,57 @@ def power_curve(
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
               loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=2)
     _save(fig, path)
+
+
+def steering(
+    results: dict[str, list[dict]],
+    path: Path,
+    target_names: dict[str, str] | None = None,
+    title: str = "can an explanation be changed while performance is held fixed?",
+) -> None:
+    """attribution share and return against penalty strength, per corpus.
+
+    two panels rather than two axes on one plot: attribution share is a
+    fraction and return is in dollars, and putting them on a shared axis would
+    be the dual-axis mistake. the comparison the reader needs is between the
+    two corpora within each panel.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12.0, 4.6), facecolor=SURFACE)
+    colors = [C1, C2]
+
+    for i, (name, rows) in enumerate(results.items()):
+        coefs = [r["coef"] for r in rows]
+        x = np.arange(len(coefs))
+        share = np.array([r["target_share_mean"] for r in rows])
+        share_e = np.array([r["target_share_std"] for r in rows])
+        ret = np.array([r["return_mean"] for r in rows])
+        ret_e = np.array([r["return_std"] for r in rows])
+        label = name
+        if target_names and name in target_names:
+            label = f"{name}\n({target_names[name]})"
+
+        axes[0].plot(x, share, color=colors[i], linewidth=2.0, marker="o",
+                     markersize=5, markeredgecolor=SURFACE, markeredgewidth=1.4,
+                     label=label, zorder=3)
+        axes[0].fill_between(x, share - share_e, share + share_e,
+                             color=colors[i], alpha=0.16, linewidth=0, zorder=2)
+
+        axes[1].plot(x, ret, color=colors[i], linewidth=2.0, marker="o",
+                     markersize=5, markeredgecolor=SURFACE, markeredgewidth=1.4,
+                     label=label, zorder=3)
+        axes[1].fill_between(x, ret - ret_e, ret + ret_e,
+                             color=colors[i], alpha=0.16, linewidth=0, zorder=2)
+
+    for ax, lab, ylab in (
+        (axes[0], "attribution to the target feature", "share of attribution mass"),
+        (axes[1], "task performance", "return per episode (dollars)"),
+    ):
+        ax.set_xticks(np.arange(len(next(iter(results.values())))))
+        ax.set_xticklabels([str(r["coef"]) for r in next(iter(results.values()))])
+        ax.axhline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=1)
+        _style_axes(ax, lab, "steering penalty strength", ylab)
+
+    axes[0].legend(frameon=False, fontsize=8.5, labelcolor=INK_MUTED,
+                   loc="upper right")
+    fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=1.03)
+    _save(fig, path)

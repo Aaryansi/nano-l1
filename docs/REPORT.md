@@ -11,7 +11,10 @@ semantically plausible. a null-model test built from the Shapley efficiency
 axiom shows those attributions are **indistinguishable from explanations of
 agents with nothing to learn** (z = -0.15, p = 0.92), while correctly flagging a
 planted signal as informative (z = +12.27). consistency across runs is therefore
-not evidence that an explanation means anything. section 3.5.
+not evidence that an explanation means anything (section 3.5), the ranking can
+be certified stable under the standard estimation criterion while being
+meaningless (3.7), and the whole explanation can be rewritten at no performance
+cost, which cannot be done where a feature genuinely matters (3.8).
 
 **what this contributes, and what it does not.** the argument that Shapley
 explanations in RL should be built on outcomes rather than on the policy's output
@@ -291,6 +294,46 @@ z = -0.15, p = 0.92.
 so a top-k ranking can be certified stable while the explanation it ranks is
 indistinguishable from an explanation of nothing. the two guarantees are
 orthogonal, and only the first is commonly reported.
+
+### 3.8 the explanation can be rewritten at no cost
+
+if an explanation tracks something real, changing it should cost performance. an
+auxiliary penalty during training, on the divergence between `pi(.|s)` and
+`pi(.|s')` with the target feature resampled from the batch marginal, attacks
+the attribution directly. the same perturbation Shapley measures.
+
+run on two corpora. the control is the point.
+
+| corpus | target feature | attribution | return | p vs baseline |
+|---|---|---|---|---|
+| real market | `time_to_expiry_frac` | 42.1% → **2.0%** | -0.78 → -1.51 | **0.280** |
+| learnable synthetic | `spot_ret_since_open` | 46.5% → **1.5%** | +45.04 → **+8.66** | **<0.001** |
+
+the attribution is equally suppressible in both cases, by 95% and 97%. the
+difference is what it costs. on the synthetic corpus, where the feature *is* the
+planted signal, suppressing it destroys **81% of the return**. on the real
+market it costs nothing measurable.
+
+**explanations are steerable at no performance cost exactly where they are not
+tracking anything real.** that is an independent confirmation of section 3.5: the
+null test says the real agent's explanation is uninformative, and the steering
+experiment shows it can be rewritten for free. two different methods, same
+conclusion.
+
+**why this matters beyond this agent.** if an explanation can be rewritten
+without changing behaviour, then an overseer inspecting attributions is not
+learning about the agent, they are learning about the developer's training
+choices. a developer who wanted their agent to appear not to use a particular
+feature could arrange it, and every conventional check in section 3.7 would still
+pass. that is a concrete false-assurance mechanism for interpretability-based
+oversight, and it is measurable rather than hypothetical.
+
+the control also rules out the deflationary reading. if steering had succeeded on
+*both* corpora, the penalty would merely be defeating the attribution method
+rather than changing what the agent relies on. it does not: where the feature is
+load-bearing, the agent pays.
+
+![steering](../reports/explanation_steering.png)
 
 ---
 

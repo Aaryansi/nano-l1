@@ -62,6 +62,19 @@ class PPOConfig:
     seed: int = 0
     device: str = "cpu"
 
+    # --- explanation steering -------------------------------------------
+    # an auxiliary penalty on the policy's DEPENDENCE on one feature. it
+    # penalises the divergence between pi(.|s) and pi(.|s') where s' has that
+    # feature resampled from the batch's own marginal. that is exactly the
+    # interventional perturbation shapley attribution measures, so driving it
+    # down drives the feature's attribution down by construction.
+    #
+    # this exists to answer a safety-relevant question: can an agent's
+    # explanation be changed while its performance is held fixed? if so, the
+    # explanation reflects a training choice rather than the task.
+    invariance_feature: int | None = None
+    invariance_coef: float = 0.0
+
 
 @dataclass
 class PPOLog:
@@ -212,6 +225,7 @@ class PPOAgent:
         idx = np.arange(n)
 
         pol_losses, val_losses, entropies, kls, clip_fracs = [], [], [], [], []
+        inv_losses: list[float] = []
 
         for _ in range(cfg.update_epochs):
             self._rng.shuffle(idx)
@@ -248,10 +262,35 @@ class PPOAgent:
 
                 entropy_loss = entropy.mean()
 
+                # steering penalty: make the policy invariant to one feature by
+                # resampling that column within the minibatch and penalising the
+                # resulting change in the action distribution.
+                invariance = torch.tensor(0.0, device=self.device)
+                if cfg.invariance_feature is not None and cfg.invariance_coef > 0:
+                    mb_obs = obs[mb_t]
+                    perm = torch.randperm(len(mb_obs), device=self.device)
+                    shuffled = mb_obs.clone()
+                    shuffled[:, cfg.invariance_feature] = mb_obs[
+                        perm, cfg.invariance_feature
+                    ]
+
+                    logits_real, _ = self.net(mb_obs)
+                    logits_pert, _ = self.net(shuffled)
+                    log_p = torch.log_softmax(logits_real, dim=-1)
+                    log_q = torch.log_softmax(logits_pert, dim=-1)
+                    # symmetric kl, so the penalty does not favour collapsing
+                    # either distribution toward the other
+                    p_, q_ = log_p.exp(), log_q.exp()
+                    invariance = (
+                        0.5 * (p_ * (log_p - log_q)).sum(-1)
+                        + 0.5 * (q_ * (log_q - log_p)).sum(-1)
+                    ).mean()
+
                 loss = (
                     policy_loss
                     + cfg.value_coef * value_loss
                     - cfg.entropy_coef * entropy_loss
+                    + cfg.invariance_coef * invariance
                 )
 
                 self.optimizer.zero_grad()
@@ -264,6 +303,7 @@ class PPOAgent:
                     approx_kl = ((ratio - 1) - log_ratio).mean()
                     clip_frac = ((ratio - 1.0).abs() > cfg.clip_coef).float().mean()
 
+                inv_losses.append(float(invariance.item()))
                 pol_losses.append(float(policy_loss.item()))
                 val_losses.append(float(value_loss.item()))
                 entropies.append(float(entropy_loss.item()))
@@ -289,6 +329,7 @@ class PPOAgent:
             "clip_frac": float(np.mean(clip_fracs)),
             "explained_var": explained,
             "action_freq": freq,
+            "invariance": float(np.mean(inv_losses)) if inv_losses else 0.0,
         }
 
     # --------------------------------------------------------------- train

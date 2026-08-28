@@ -1,0 +1,72 @@
+{
+  "real_market": [
+    {
+      "coef": 0.0,
+      "return_mean": -0.7783667571144801,
+      "return_std": 0.7435416793237642,
+      "target_share_mean": 0.42132408775048796,
+      "target_share_std": 0.04356124638529268,
+      "p_vs_baseline": NaN
+    },
+    {
+      "coef": 1.0,
+      "return_mean": -2.047406715121952,
+      "return_std": 1.0398752735782857,
+      "target_share_mean": 0.0706704607031063,
+      "target_share_std": 0.021439543907266018,
+      "p_vs_baseline": 0.3322
+    },
+    {
+      "coef": 5.0,
+      "return_mean": -1.6266867361270634,
+      "return_std": 0.746605516061849,
+      "target_share_mean": 0.02711915375329876,
+      "target_share_std": 0.006333546795940841,
+      "p_vs_baseline": 0.6837
+    },
+    {
+      "coef": 20.0,
+      "return_mean": -1.5084932842789591,
+      "return_std": 1.0696419004516298,
+      "target_share_mean": 0.019873391326268468,
+      "target_share_std": 0.003928896454470314,
+      "p_vs_baseline": 0.2798
+    }
+  ],
+  "learnable_synthetic": [
+    {
+      "coef": 0.0,
+      "return_mean": 45.039334429423015,
+      "return_std": 0.7082994791439295,
+      "target_share_mean": 0.46548486479873286,
+      "target_share_std": 0.145990796223195,
+      "p_vs_baseline": NaN
+    },
+    {
+      "coef": 1.0,
+      "return_mean": 38.547834149042764,
+      "return_std": 9.432453520089402,
+      "target_share_mean": 0.10444071422049801,
+      "target_share_std": 0.0218580237830157,
+      "p_vs_baseline": 0.0817
+    },
+    {
+      "coef": 5.0,
+      "return_mean": 7.924000188191731,
+      "return_std": 11.206228534387703,
+      "target_share_mean": 0.028311623912724276,
+      "target_share_std": 0.011215291971679356,
+      "p_vs_baseline": 0.0
+    },
+    {
+      "coef": 20.0,
+      "return_mean": 8.662500174840291,
+      "return_std": 12.25062523131845,
+      "target_share_mean": 0.015447395931049072,
+      "target_share_std": 0.010002671774499435,
+      "p_vs_baseline": 0.0
+    }
+  ],
+  "steerable_real": true,
+  "steerable_synthetic": false
+}
