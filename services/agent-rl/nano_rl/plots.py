@@ -725,3 +725,48 @@ def competence_curve(
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
               loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=2)
     _save(fig, path)
+
+
+def null_comparison(
+    envs: dict[str, tuple[list[float], list[float]]],
+    path: Path,
+    title: str = "two null constructions, same task",
+    subtitle: str = "",
+) -> None:
+    """spread of each null's attribution spans, one row per environment.
+
+    the point is the WIDTH. a null whose reference distribution is very wide
+    cannot reject anything, so a test built on it has no power regardless of
+    how principled it looks.
+    """
+    n = len(envs)
+    fig, axes = plt.subplots(n, 1, figsize=(9.0, 2.5 * n + 1.2),
+                             facecolor=SURFACE, squeeze=False)
+
+    for ax, (env_id, (weight, env_null)) in zip(axes[:, 0], envs.items()):
+        w = np.asarray(weight, dtype=float)
+        e = np.asarray(env_null, dtype=float)
+
+        for row, (vals, color, label) in enumerate(
+            ((w, C2, "weight randomization"), (e, C1, "environment randomization"))
+        ):
+            lo, hi = vals.min(), vals.max()
+            ax.plot([lo, hi], [row, row], color=color, linewidth=8, alpha=0.28,
+                    solid_capstyle="round", zorder=2)
+            ax.scatter(vals, np.full_like(vals, row), s=30, color=color,
+                       edgecolors=SURFACE, linewidths=1.2, zorder=4)
+            ax.annotate(f"sd {vals.std(ddof=1):.2f}",
+                        xy=(hi, row), xytext=(10, 0), textcoords="offset points",
+                        color=INK, fontsize=9, va="center")
+
+        ax.axvline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=1)
+        ax.set_yticks([0, 1])
+        ax.set_yticklabels(["weight", "environment"], color=INK, fontsize=9)
+        ax.set_ylim(-0.6, 1.6)
+        _style_axes(ax, env_id, "attribution span  v(all) - v(none)", "")
+        ax.grid(axis="y", visible=False)
+
+    fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=1.0)
+    if subtitle:
+        fig.text(0.008, 0.972, subtitle, color=INK_MUTED, fontsize=9, ha="left")
+    _save(fig, path)

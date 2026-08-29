@@ -50,6 +50,18 @@ class SanityResult:
     passes: bool  # True when distinguishable from the null
 
     @property
+    def degenerate_null(self) -> bool:
+        """True when every null sample is identical.
+
+        worth surfacing rather than hiding: a zero-variance null usually means
+        the null agents are degenerate in some way (on Acrobot they fail
+        completely with or without observations), and the reader should know
+        the reference distribution has no spread before reading a p-value off
+        it.
+        """
+        return bool(np.std(self.null_samples) <= 1e-12)
+
+    @property
     def min_achievable_p_rank(self) -> float:
         """the smallest rank p-value this many null samples can produce.
 
@@ -66,6 +78,8 @@ class SanityResult:
         floor = ""
         if self.p_rank <= self.min_achievable_p_rank + 1e-12:
             floor = f" (at the {self.min_achievable_p_rank:.3f} rank floor)"
+        if self.degenerate_null:
+            floor += " [degenerate null: zero variance]"
         return (
             f"span {self.statistic:+.4f} vs null {self.null_mean:+.4f} "
             f"+/- {self.null_std:.4f}  z={self.z_score:+.2f}  "
@@ -119,11 +133,23 @@ def test_span_against_null(
     centred = np.abs(nulls - mean)
     p_rank = float((np.sum(centred >= abs(stat - mean)) + 1) / (len(nulls) + 1))
 
-    z = float((stat - mean) / std) if std > 1e-12 else 0.0
+    # a degenerate null (every sample identical) is not "no information", it is
+    # the opposite: any deviation from it is infinitely surprising. an earlier
+    # version returned z = 0.0 here to avoid dividing by zero, which silently
+    # converted an overwhelming result into a null one. that is the same
+    # failure class as the rank-floor bug, and it was caught on Acrobot, where
+    # blind agents score -500 whether or not they can see, so every null span
+    # is exactly 0.
+    from math import erfc, inf, isinf, sqrt
 
-    from math import erfc, sqrt
+    if std > 1e-12:
+        z = float((stat - mean) / std)
+    elif abs(stat - mean) <= 1e-12:
+        z = 0.0  # observation sits exactly on a degenerate null
+    else:
+        z = float(inf) if stat > mean else float(-inf)
 
-    p_normal = float(erfc(abs(z) / sqrt(2.0)))
+    p_normal = 0.0 if isinf(z) else float(erfc(abs(z) / sqrt(2.0)))
 
     min_rank = 1.0 / (len(nulls) + 1)
     passes = (p_rank <= max(alpha, min_rank)) and (p_normal < alpha)

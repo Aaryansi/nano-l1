@@ -294,6 +294,36 @@ def masked_return(
     return float(np.mean(total))
 
 
+def attribution_span_fast(
+    net: ActorCritic,
+    env_id: str,
+    background: np.ndarray,
+    n_features: int,
+    n_episodes: int = 20,
+    seed: int = 0,
+) -> float:
+    """v(all) - v(none) in TWO rollouts rather than 2^n.
+
+    the efficiency axiom gives sum_i phi_i = v(N) - v(empty), so the span, which
+    is the null test's entire statistic, needs only the two endpoint
+    evaluations. enumerating every coalition to recover it is exact but
+    wasteful: 8x the work on CartPole and 32x on Acrobot for a number already
+    available from the endpoints.
+
+    the per-feature values still require the full enumeration, so
+    exact_shapley_span remains for when those are wanted.
+    """
+    full = masked_return(
+        net, env_id, np.ones(n_features, dtype=bool), background,
+        n_episodes=n_episodes, seed=seed,
+    )
+    empty = masked_return(
+        net, env_id, np.zeros(n_features, dtype=bool), background,
+        n_episodes=n_episodes, seed=seed,
+    )
+    return float(full - empty)
+
+
 def exact_shapley_span(
     net: ActorCritic,
     env_id: str,
