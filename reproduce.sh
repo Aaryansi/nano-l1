@@ -132,6 +132,11 @@ step "can an explanation be steered at fixed performance?"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
     --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" )
 
+step "a second attribution family, and per-feature values across all seeds"
+( cd "$RL" && "$PY" scripts/second_method.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" \
+    --updates "$EXPLAIN_UPDATES" )
+
 step "does it generalise? CartPole and Acrobot"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )

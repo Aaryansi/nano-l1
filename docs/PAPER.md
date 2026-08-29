@@ -317,6 +317,59 @@ the earlier prediction that undertrained agents would always produce empty
 explanations is therefore wrong and is not claimed.
 
 ![null comparison](../reports/null_comparison.png)
+
+### 3.10 is the finding a property of Shapley, or of RL explanation?
+
+integrated gradients shares no machinery with Shapley: it integrates the model's
+gradient along a path from a baseline rather than averaging marginal
+contributions over coalitions. both supply a scalar span for free, Shapley by
+efficiency and IG by completeness, so the null test applies to either unchanged.
+
+**per-feature attributions are not a Shapley artefact.** across all five seeds:
+
+| feature | Shapley share | IG share |
+|---|---|---|
+| `time_to_expiry_frac` | 39.9% ± 3.6% | 33.3% ± 2.4% |
+| `spread` | 18.7% ± 2.2% | 19.9% ± 1.7% |
+| `time_in_position` | 10.5% ± 3.9% | 11.8% ± 5.4% |
+| `implied_prob` | 7.4% ± 2.7% | 7.9% ± 2.7% |
+
+the two families rank features at **+0.907** correlation with each other, and are
+almost equally stable across seeds (**+0.808** Shapley, **+0.805** IG). so the
+per-feature picture is a property of the agent rather than of the estimator.
+
+**the null test, however, disagreed, and the reason is a flaw in this
+experiment rather than a contradiction.**
+
+| family | planted signal | real market |
+|---|---|---|
+| Shapley (§3.5) | z = +12.27 | **z = -0.15** |
+| integrated gradients | z = +9.40 | **z = +3.93** |
+
+both have power. but the comparison **confounds two variables**: the attribution
+family and the attribution target. the Shapley span used throughout is an
+*outcome-level* statistic, the difference in expected episode return between
+observing everything and observing nothing. the IG span is a *behaviour-level*
+statistic, how far the observation moves the policy from its baseline output.
+
+read that way the two are consistent and the reading is informative: **the
+agent's behaviour genuinely responds to its observations, and that
+responsiveness earns nothing.** IG detects the responsiveness (z = +3.93);
+the return-based span correctly reports that none of it reaches the outcome
+(z = -0.15).
+
+that is exactly the behaviour-versus-outcome distinction SVERL draws, arriving
+here from an unplanned direction, and it strengthens rather than weakens the
+case for outcome-based attribution: a behaviour-level statistic would have
+told a practitioner this explanation was informative.
+
+**what this does not establish.** whether the *outcome-level* result is
+Shapley-specific remains open. IG cannot answer it, because episode return is
+not differentiable with respect to the observation through the environment, so
+there is no IG analogue of the return-based span. testing that needs a second
+*perturbation-based* outcome method rather than a gradient one.
+
+![method comparison](../reports/method_comparison.png)
 ![cartpole](../reports/cartpole_competence.png)
 
 ---

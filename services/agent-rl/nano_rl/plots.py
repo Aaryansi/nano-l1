@@ -773,3 +773,50 @@ def null_comparison(
     if subtitle:
         fig.text(0.008, 0.955, subtitle, color=INK_MUTED, fontsize=9, ha="left")
     _save(fig, path)
+
+
+def method_comparison(
+    names: list[str],
+    shapley: np.ndarray,
+    ig: np.ndarray,
+    path: Path,
+    title: str = "two attribution families on the same agents",
+    subtitle: str = "",
+    top_k: int = 10,
+) -> None:
+    """per-feature attribution share under each family, across seeds.
+
+    both are normalised to their own total mass per seed, since the families
+    are measured in different units. what is comparable is which features get
+    credited and in what proportion.
+    """
+    s = np.asarray(shapley)
+    g = np.asarray(ig)
+    order = np.argsort(-(s.mean(0) + g.mean(0)))[:top_k][::-1]
+
+    fig, ax = _new_fig(9.0, 0.52 * len(order) + 2.2)
+    y = np.arange(len(order))
+    h = 0.36
+
+    for offset, mat, color, label in (
+        (-h / 2 - 0.012, s, C1, "shapley"),
+        (+h / 2 + 0.012, g, C2, "integrated gradients"),
+    ):
+        m = mat[:, order].mean(axis=0)
+        e = mat[:, order].std(axis=0)
+        ax.barh(y + offset, m, height=h, color=color, label=label, zorder=3)
+        ax.errorbar(m, y + offset, xerr=e, fmt="none", ecolor=INK_MUTED,
+                    elinewidth=1.1, capsize=2.5, zorder=4)
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, zorder=2)
+    ax.set_yticks(y)
+    ax.set_yticklabels([names[i] for i in order], color=INK, fontsize=9)
+    _style_axes(ax, title, "share of attribution mass", "",
+                pad=26 if subtitle else 10)
+    ax.grid(axis="y", visible=False)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.09), ncol=2)
+    _save(fig, path)
