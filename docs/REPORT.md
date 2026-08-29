@@ -335,6 +335,60 @@ load-bearing, the agent pays.
 
 ![steering](../reports/explanation_steering.png)
 
+### 3.9 does any of this hold outside one market?
+
+everything above is measured on Kalshi binaries, which makes it a case study.
+the same test was run on CartPole-v1: no trading, no transaction costs, a well
+understood optimal policy, and only four observation features, so all
+**2^4 = 16 coalitions are enumerated and the Shapley values are exact**. nothing
+here can be attributed to sampling error.
+
+**the result: the standard randomization null does not transfer to RL.**
+
+two nulls were built for the same task and compared directly:
+
+| null | construction | span |
+|---|---|---|
+| weight randomization | randomly initialised network (Adebayo et al.) | **+55.34 ± 138.92** |
+| environment randomization | trained normally, uninformative observation channel | **-1.35 ± 3.29** |
+
+the weight null's standard deviation is **138.9**, forty times the environment
+null's. a randomly initialised policy on CartPole behaves arbitrarily, and
+masking its inputs changes returns unpredictably, so the reference distribution
+is enormously wide. the consequence is that the test built on it has almost no
+power:
+
+| training | return | span | z (env null) | z (weight null) | detected |
+|---|---|---|---|---|---|
+| 5% | 64.7 | 45.50 | **+14.26** | -0.07 | yes / no |
+| 15% | 29.8 | 11.35 | **+3.87** | -0.32 | yes / no |
+| 35% | 87.6 | 67.70 | **+21.01** | +0.09 | yes / no |
+| 70% | 173.0 | 157.80 | **+48.42** | +0.74 | yes / no |
+| 100% | 140.6 | 124.65 | **+38.34** | +0.50 | yes / no |
+
+**the two nulls disagree on 5 of 5 checkpoints.** the environment null detects
+every one; the weight null detects none. so the choice of null is not a detail,
+it decides the verdict, and the established construction is the one that fails.
+that is a measured answer to the objection in the Atari saliency literature that
+the data randomization test has no obvious RL analogue.
+
+**what did not come out as predicted.** the competence axis was supposed to show
+that explanations of weak agents are indistinguishable from explanations of
+nothing. it does not: every checkpoint is detected, including the weakest at
+return 29.8. the honest reading is that CartPole is a task where observations
+genuinely matter at every skill level, so even a bad agent's explanation is
+informative about it. that is the test behaving correctly rather than failing,
+and it sharpens what the market result means: there, observations do not matter,
+and the test says so. but the "undertrained agents produce empty explanations"
+story is not supported and is not claimed.
+
+**a caveat on this run.** the agent is undertrained, reaching 140.6 of a possible
+500, and its returns are not monotonic in training (173.0 at 70% against 140.6 at
+100%). the null comparison does not depend on the agent being good, but the
+competence axis would be cleaner with a longer budget.
+
+![cartpole](../reports/cartpole_competence.png)
+
 ---
 
 ## 4. limitations
@@ -374,6 +428,12 @@ required.
 steps) and the 10s corpus (600 episodes, 89 steps) show the same median spread
 of 0.0100 and outcome rates of 0.4995 and 0.4967. the finer grid adds real flow
 imbalance, which the coarser one cannot carry. it does not change the picture.
+
+**generalisation is shown for the null comparison, not for the headline.**
+section 3.9 establishes on CartPole that the environment null works where the
+weight null does not. it does not reproduce the market's central finding
+elsewhere, because that finding requires a task with no exploitable structure,
+and CartPole is not one.
 
 **scope.** one instrument, 68 days, single venue. real-agent attributions use one
 seed. spread is held constant within each 1-minute candle. maker fees are

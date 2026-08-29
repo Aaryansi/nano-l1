@@ -677,3 +677,51 @@ def steering(
                    loc="upper right")
     fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=1.03)
     _save(fig, path)
+
+
+def competence_curve(
+    returns: list[float],
+    z_scores: list[float],
+    detected: list[bool],
+    fractions: list[float],
+    path: Path,
+    title: str = "does the test track agent competence?",
+    subtitle: str = "",
+) -> None:
+    """detection z-score against agent return, along a training trajectory.
+
+    each point is a checkpoint of the same agent on the same task, so the only
+    thing varying is how good it is. the shaded band is where an explanation is
+    not distinguishable from an explanation of an agent that learned nothing.
+    """
+    fig, ax = _new_fig(8.6, 5.0)
+    r = np.asarray(returns, dtype=float)
+    z = np.asarray(z_scores, dtype=float)
+    det = np.asarray(detected, dtype=bool)
+
+    ax.axhspan(-1.96, 1.96, color=REFERENCE, alpha=0.16, zorder=1)
+    ax.annotate("not distinguishable from an explanation of nothing",
+                xy=(r.min(), 0), xytext=(4, 4), textcoords="offset points",
+                color=INK_MUTED, fontsize=8.5, va="bottom")
+
+    order = np.argsort(r)
+    ax.plot(r[order], z[order], color=C1, linewidth=2.0, zorder=3)
+    ax.scatter(r[~det], z[~det], s=95, color=C2, zorder=4,
+               edgecolors=SURFACE, linewidths=2.0, label="not detected")
+    if det.any():
+        ax.scatter(r[det], z[det], s=95, color=C1, zorder=4,
+                   edgecolors=SURFACE, linewidths=2.0, label="detected")
+
+    for ri, zi, f in zip(r, z, fractions):
+        ax.annotate(f"{f:.0%}", xy=(ri, zi), xytext=(0, 11),
+                    textcoords="offset points", color=INK_MUTED,
+                    fontsize=8, ha="center")
+
+    _style_axes(ax, title, "agent return (CartPole-v1, max 500)",
+                "detection z-score", pad=26 if subtitle else 10)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=2)
+    _save(fig, path)
