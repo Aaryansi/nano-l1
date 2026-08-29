@@ -162,7 +162,7 @@ interesting explanations require something worth explaining.
 
 fetches the corpus from public endpoints (no API key), trains 5 seeds, evaluates
 on the held-out split, and regenerates every figure. fixed seeds, pinned
-dependencies. 214 tests: `cd services/agent-rl && .venv/bin/python -m pytest`.
+dependencies.  tests: `cd services/agent-rl && .venv/bin/python -m pytest`.
 
 ## references
 

@@ -24,7 +24,7 @@ al. proves 42x wider and has almost no power, never exceeding z = 2.45 on any
 agent including a converged one.
 
 **how to run it.** `./reproduce.sh` regenerates every figure from public data
-with no API keys. 214 tests.
+with no API keys. 226 tests.  tests.
 
 | | |
 |---|---|
