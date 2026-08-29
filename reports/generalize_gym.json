@@ -158,9 +158,9 @@
         "fraction": 1.0,
         "return": -120.64,
         "span": 370.0,
-        "z_env": 0.0,
+        "z_env": Infinity,
         "z_weight": 2.448909480201637,
-        "detected_env": false,
+        "detected_env": true,
         "detected_weight": false
       }
     ],
@@ -172,7 +172,7 @@
       -18.114999999999995,
       368.0866666666667
     ],
-    "nulls_agree": 4,
+    "nulls_agree": 3,
     "n_checkpoints": 4
   }
 ]

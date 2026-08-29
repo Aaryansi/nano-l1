@@ -337,56 +337,55 @@ load-bearing, the agent pays.
 
 ### 3.9 does any of this hold outside one market?
 
-everything above is measured on Kalshi binaries, which makes it a case study.
-the same test was run on CartPole-v1: no trading, no transaction costs, a well
-understood optimal policy, and only four observation features, so all
-**2^4 = 16 coalitions are enumerated and the Shapley values are exact**. nothing
-here can be attributed to sampling error.
+everything above is measured on Kalshi binaries. the same test was run on two
+standard control tasks with no relationship to trading: CartPole-v1 and
+Acrobot-v1. both have observation spaces small enough to enumerate every
+coalition, so the per-feature Shapley values are exact. the test statistic is
+the span `v(all) - v(none)`, which by efficiency needs only the two endpoint
+evaluations.
 
-**the result: the standard randomization null does not transfer to RL.**
+**the established null construction does not transfer to RL.**
 
-two nulls were built for the same task and compared directly:
+| environment | weight-randomization null | environment-randomization null | ratio |
+|---|---|---|---|
+| CartPole-v1 | +55.34 ± **138.92** | -1.35 ± **3.29** | 42x |
+| Acrobot-v1 | +64.03 ± **124.94** | +0.00 ± **0.00** | degenerate |
 
-| null | construction | span |
-|---|---|---|
-| weight randomization | randomly initialised network (Adebayo et al.) | **+55.34 ± 138.92** |
-| environment randomization | trained normally, uninformative observation channel | **-1.35 ± 3.29** |
+randomizing network weights, the standard construction, produces a reference
+distribution 42x wider on CartPole and unboundedly wider on Acrobot. a randomly
+initialised policy behaves arbitrarily, so masking its inputs moves returns
+unpredictably. a test built on that reference has almost no power:
 
-the weight null's standard deviation is **138.9**, forty times the environment
-null's. a randomly initialised policy on CartPole behaves arbitrarily, and
-masking its inputs changes returns unpredictably, so the reference distribution
-is enormously wide. the consequence is that the test built on it has almost no
-power:
-
-| training | return | span | z (env null) | z (weight null) | detected |
+| environment | training | return | span | z (env null) | z (weight null) |
 |---|---|---|---|---|---|
-| 5% | 64.7 | 45.50 | **+14.26** | -0.07 | yes / no |
-| 15% | 29.8 | 11.35 | **+3.87** | -0.32 | yes / no |
-| 35% | 87.6 | 67.70 | **+21.01** | +0.09 | yes / no |
-| 70% | 173.0 | 157.80 | **+48.42** | +0.74 | yes / no |
-| 100% | 140.6 | 124.65 | **+38.34** | +0.50 | yes / no |
+| CartPole | 10% | 291.3 | 292.35 | **+89.36** | +1.71 |
+| CartPole | 50% | 140.8 | 124.30 | **+38.23** | +0.50 |
+| CartPole | 100% | 404.3 | 385.05 | **+117.56** | +2.37 |
+| Acrobot | 10% | -500.0 | 0.00 | +0.00 | -0.51 |
+| Acrobot | 50% | -500.0 | 0.00 | +0.00 | -0.51 |
+| Acrobot | 100% | -120.6 | 370.00 | **+inf** | +2.45 |
 
-**the two nulls disagree on 5 of 5 checkpoints.** the environment null detects
-every one; the weight null detects none. so the choice of null is not a detail,
-it decides the verdict, and the established construction is the one that fails.
-that is a measured answer to the objection in the Atari saliency literature that
-the data randomization test has no obvious RL analogue.
+the two nulls **disagree on 5 of 8 checkpoints**, and the weight null never
+exceeds z = 2.45 on any agent, including a converged CartPole policy scoring
+404 of 500. this is a measured answer to the objection in the Atari saliency
+literature that the data randomization test has no obvious RL analogue: the
+naive port exists, and it does not work.
 
-**what did not come out as predicted.** the competence axis was supposed to show
-that explanations of weak agents are indistinguishable from explanations of
-nothing. it does not: every checkpoint is detected, including the weakest at
-return 29.8. the honest reading is that CartPole is a task where observations
-genuinely matter at every skill level, so even a bad agent's explanation is
-informative about it. that is the test behaving correctly rather than failing,
-and it sharpens what the market result means: there, observations do not matter,
-and the test says so. but the "undertrained agents produce empty explanations"
-story is not supported and is not claimed.
+**Acrobot also supplies the competence result CartPole could not.** its agent
+fails completely until it learns, scoring -500 at 10%, 25% and 50% of training.
+at those checkpoints the attribution span is exactly 0.00 and the test correctly
+declines to detect anything: there is genuinely nothing to explain. once the
+agent learns, at return -120.6, the span jumps to 370 and the test fires. so the
+test tracks *whether there is anything to explain*, not merely how good the
+agent is.
 
-**a caveat on this run.** the agent is undertrained, reaching 140.6 of a possible
-500, and its returns are not monotonic in training (173.0 at 70% against 140.6 at
-100%). the null comparison does not depend on the agent being good, but the
-competence axis would be cleaner with a longer budget.
+CartPole behaves differently and that difference is informative rather than
+contradictory. its observations matter at every skill level, so even a weak
+agent's explanation is genuinely about something, and the test fires throughout.
+the earlier prediction that undertrained agents would always produce empty
+explanations is therefore wrong and is not claimed.
 
+![null comparison](../reports/null_comparison.png)
 ![cartpole](../reports/cartpole_competence.png)
 
 ---

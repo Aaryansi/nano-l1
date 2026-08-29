@@ -766,7 +766,10 @@ def null_comparison(
         _style_axes(ax, env_id, "attribution span  v(all) - v(none)", "")
         ax.grid(axis="y", visible=False)
 
-    fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=1.0)
+    # tight_layout in _save reflows the axes, so the title block is placed
+    # after it rather than before, or the subtitle lands on top of the title.
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    fig.suptitle(title, color=INK, fontsize=11, x=0.008, ha="left", y=0.995)
     if subtitle:
-        fig.text(0.008, 0.972, subtitle, color=INK_MUTED, fontsize=9, ha="left")
+        fig.text(0.008, 0.955, subtitle, color=INK_MUTED, fontsize=9, ha="left")
     _save(fig, path)
