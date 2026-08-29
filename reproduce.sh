@@ -8,6 +8,11 @@
 #   binance    data.binance.vision        static daily files
 #   gymnasium  CartPole-v1, Acrobot-v1    installed with the deps
 #
+# note: kalshi serves a moving window, so a rebuild on a different day returns
+# a slightly different set of markets. verified: overlapping episodes are
+# byte-identical, only membership changes. expect figures close to the
+# published ones rather than identical.
+#
 # runtime is dominated by the kalshi ingest, which is rate limited to about 27
 # minutes on a cold cache. everything is cached, so a second run skips to
 # training. the full pipeline is roughly 2 hours cold, 1 hour warm.

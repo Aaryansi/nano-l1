@@ -399,6 +399,16 @@ its power at n = 8. both a rank and a normal p-value are reported and agreement
 is required. a degenerate null (zero variance) is surfaced explicitly rather
 than silently yielding z = 0.
 
+**a reproducibility caveat about the data.** Kalshi's api serves a moving
+window, so re-running the ingest on a different day returns a different set of
+markets. a cold rebuild five days after the original produced 6,425 episodes
+against 6,428, with 5,960 tickers in common, 468 present only in the original
+and 465 only in the rebuild. **the overlapping episodes are byte-identical on
+every field**, so the ingest is deterministic per market; what changes is
+membership, not content. exact figures here are therefore reproducible in
+method but not to the last decimal, and a re-run should be expected to land
+close rather than identical.
+
 **scope.** one market plus two classic-control tasks. one attribution family
 (Shapley). the market agent's attributions use a single checkpoint for the
 per-feature values, though the span test and stability analysis use all five

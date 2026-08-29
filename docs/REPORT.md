@@ -143,6 +143,16 @@ steps) and the 10s corpus (600 episodes, 89 steps) show the same median spread
 of 0.0100 and outcome rates of 0.4995 and 0.4967. the finer grid adds real flow
 imbalance, which the coarser one cannot carry. it does not change the picture.
 
+**a reproducibility caveat about the data.** Kalshi's api serves a moving
+window, so re-running the ingest on a different day returns a different set of
+markets. a cold rebuild five days after the original produced 6,425 episodes
+against 6,428, with 5,960 tickers in common, 468 present only in the original
+and 465 only in the rebuild. **the overlapping episodes are byte-identical on
+every field**, so the ingest is deterministic per market; what changes is
+membership, not content. exact figures here are therefore reproducible in
+method but not to the last decimal, and a re-run should be expected to land
+close rather than identical.
+
 **scope.** one instrument, 68 days, single venue. real-agent attributions use one
 seed. spread is held constant within each 1-minute candle. maker fees are
 unmodelled, so the taker assumption is conservative. the 10-second-grid corpus
