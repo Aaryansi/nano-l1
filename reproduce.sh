@@ -137,6 +137,13 @@ step "the null-model test again, with every null matched to its own corpus"
 ( cd "$RL" && "$PY" scripts/matched_null_test.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
 
+# the third construction: permute the outcomes and leave everything else, so
+# the null agents stay sighted and the corpus stays fixed. this is the one the
+# paper adopts; the two above are what it rejected on the way.
+step "the outcome-permutation null: sighted agents, fixed corpus"
+( cd "$RL" && "$PY" scripts/permuted_null_test.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
+
 # the matched null's width depends on how converged its blind agents are, so
 # the margin is measured against the budget rather than assumed independent.
 step "is the matched null's width a property of the task or of the budget?"

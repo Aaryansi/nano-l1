@@ -94,8 +94,14 @@ def collect(reports: Path) -> list[tuple[str, float, list[float]]]:
         p = reports / name
         return json.loads(p.read_text()) if p.exists() else None
 
-    # the primary construction: each case against a null built by blinding its
-    # own corpus. listed first because these are the paper's headline verdicts.
+    # the construction the paper adopts: outcomes permuted, agents sighted,
+    # corpus fixed. listed first because these are the headline verdicts.
+    pm = load("permuted_null_test.json")
+    if pm:
+        for c in pm["cases"]:
+            out.append((f"permuted: {c['case']}", c["span"], c["null_spans"]))
+
+    # the corpus-matched construction, reported as rejected
     m = load("matched_null_test.json")
     if m:
         for c in m["cases"]:
