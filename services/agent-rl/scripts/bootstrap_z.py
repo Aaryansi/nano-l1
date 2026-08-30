@@ -124,6 +124,15 @@ def collect(reports: Path) -> list[tuple[str, float, list[float]]]:
         for t in p["tasks"]:
             out.append((f"real {t['task']}", t["span"], t["null_spans"]))
 
+    # the blinded-real null at several training budgets. the width shrinks as
+    # its agents converge, so the margin is reported per budget rather than as
+    # a single number.
+    b = load("null_budget_check.json")
+    if b:
+        for row in b["rows"]:
+            out.append((f"blinded-real, {row['updates']} updates",
+                        b["observed_span"], row["spans"]))
+
     # the same agent against two null constructions. this pair decides a
     # headline, so its interval matters more than any other here.
     c = load("null_corpus_check.json")

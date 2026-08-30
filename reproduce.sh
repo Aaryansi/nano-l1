@@ -137,6 +137,14 @@ step "the null-model test again, with every null matched to its own corpus"
 ( cd "$RL" && "$PY" scripts/matched_null_test.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
 
+# the matched null's width depends on how converged its blind agents are, so
+# the margin is measured against the budget rather than assumed independent.
+step "is the matched null's width a property of the task or of the budget?"
+( cd "$RL" && "$PY" scripts/null_budget_check.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" \
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) \
+    --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "20 40 80 160") )
+
 step "power curve, and estimation certainty vs validity"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" )

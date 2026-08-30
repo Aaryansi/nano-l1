@@ -43,7 +43,12 @@ from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E40
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.prediction import BlindEnv, observation_moments  # noqa: E402
 from nano_rl.env.synthetic import make_null_corpus  # noqa: E402
-from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.explain.rollout import (  # noqa: E402
+    VectorizedRollout,
+    build_background,
+    greedy_policy,
+    masked_span,
+)
 from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
 
 FULL = np.ones(N_FEATURES, dtype=bool)
@@ -52,31 +57,6 @@ EMPTY = np.zeros(N_FEATURES, dtype=bool)
 
 def banner(t):
     print(f"\n{'=' * 80}\n{t}\n{'=' * 80}", flush=True)
-
-
-def greedy(agent):
-    def policy(obs):
-        with torch.no_grad():
-            logits, _ = agent.net(torch.as_tensor(obs, dtype=torch.float32))
-            return logits.argmax(dim=-1).numpy()
-    return policy
-
-
-def span(agent, roll, bg, seed):
-    rng = np.random.default_rng(seed)
-    base = greedy(agent)
-
-    def masked(mask):
-        def policy(obs):
-            syn = obs.copy()
-            if not mask.all():
-                d = bg[rng.integers(0, len(bg), size=len(obs))]
-                syn[:, ~mask] = d[:, ~mask]
-            return base(syn)
-        return policy
-
-    return float(roll.run(masked(FULL))["returns"].mean()
-                 - roll.run(masked(EMPTY))["returns"].mean())
 
 
 def train(env, updates, seed):
@@ -105,8 +85,8 @@ def main():
 
     test_roll = VectorizedRollout(split.test, normalizer=norm, max_position=100.0)
     bg = build_background(test_roll, n_samples=192, seed=args.seed)
-    observed = span(agent, test_roll, bg, args.seed)
-    ret = float(test_roll.run(greedy(agent))["returns"].mean())
+    observed = masked_span(agent, test_roll, bg, args.seed)
+    ret = float(test_roll.run(greedy_policy(agent))["returns"].mean())
 
     banner("THE PAPER'S AGENT, MEASURED ON THE REAL TEST SPLIT")
     print(f"  checkpoint {ckpt.name}   return {ret:+.3f}   span {observed:+.3f}")
@@ -139,7 +119,7 @@ def main():
         blind = BlindEnv(
             BinaryMarketEnv(split.train, normalizer=norm, max_position=100.0),
             mean, sd, seed=3000 + k)
-        b_spans.append(span(train(blind, args.updates, args.seed + k),
+        b_spans.append(masked_span(train(blind, args.updates, args.seed + k),
                             test_roll, bg, args.seed + k))
         print(f"  {k + 1}/{args.n_null}: {b_spans[-1]:>+8.3f}", flush=True)
 

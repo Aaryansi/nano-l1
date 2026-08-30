@@ -46,7 +46,12 @@ from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E40
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.prediction import BlindEnv, observation_moments  # noqa: E402
 from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
-from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.explain.rollout import (  # noqa: E402
+    VectorizedRollout,
+    build_background,
+    greedy_policy,
+    masked_span,
+)
 from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
 
 FULL = np.ones(N_FEATURES, dtype=bool)
@@ -55,33 +60,6 @@ EMPTY = np.zeros(N_FEATURES, dtype=bool)
 
 def banner(t: str) -> None:
     print(f"\n{'=' * 78}\n{t}\n{'=' * 78}", flush=True)
-
-
-def greedy(agent: PPOAgent):
-    def policy(obs: np.ndarray) -> np.ndarray:
-        with torch.no_grad():
-            logits, _ = agent.net(torch.as_tensor(obs, dtype=torch.float32))
-            return logits.argmax(dim=-1).numpy()
-    return policy
-
-
-def span(agent: PPOAgent, roll: VectorizedRollout, bg: np.ndarray,
-         seed: int) -> float:
-    """v(N) - v(empty), the statistic the test uses."""
-    rng = np.random.default_rng(seed)
-    base = greedy(agent)
-
-    def masked(mask: np.ndarray):
-        def policy(obs: np.ndarray) -> np.ndarray:
-            syn = obs.copy()
-            if not mask.all():
-                d = bg[rng.integers(0, len(bg), size=len(obs))]
-                syn[:, ~mask] = d[:, ~mask]
-            return base(syn)
-        return policy
-
-    return float(roll.run(masked(FULL))["returns"].mean()
-                 - roll.run(masked(EMPTY))["returns"].mean())
 
 
 def train_on(env, updates: int, seed: int) -> PPOAgent:
@@ -108,7 +86,7 @@ def matched_null(train_batch, norm, roll, bg, n_null: int, updates: int,
         blind = BlindEnv(
             BinaryMarketEnv(train_batch, normalizer=norm, max_position=100.0),
             mean, sd, seed=5000 + k)
-        spans.append(span(train_on(blind, updates, seed + k), roll, bg, seed + k))
+        spans.append(masked_span(train_on(blind, updates, seed + k), roll, bg, seed + k))
         print(f"    null {k + 1}/{n_null}: {spans[-1]:>+8.3f}", flush=True)
     return spans
 
@@ -118,8 +96,8 @@ def run_case(name: str, train_batch, eval_batch, norm, agent, args) -> dict:
     roll = VectorizedRollout(eval_batch, normalizer=norm, max_position=100.0)
     bg = build_background(roll, n_samples=192, seed=args.seed)
 
-    observed = span(agent, roll, bg, args.seed)
-    ret = float(roll.run(greedy(agent))["returns"].mean())
+    observed = masked_span(agent, roll, bg, args.seed)
+    ret = float(roll.run(greedy_policy(agent))["returns"].mean())
     print(f"  agent return {ret:+.3f}   span {observed:+.3f}")
     print(f"  null: {args.n_null} agents trained on these episodes, blinded")
 

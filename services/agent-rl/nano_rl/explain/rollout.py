@@ -203,3 +203,54 @@ def build_background(
     stacked = np.concatenate(obs_all, axis=0)
     idx = rng.choice(len(stacked), size=min(n_samples, len(stacked)), replace=False)
     return stacked[idx]
+
+
+def greedy_policy(agent) -> Callable[[np.ndarray], np.ndarray]:
+    """batched greedy action selection from a trained agent.
+
+    torch is imported here rather than at module scope so that this module
+    stays importable in the numpy-only paths that use VectorizedRollout without
+    ever touching a network.
+    """
+    import torch
+
+    def policy(obs: np.ndarray) -> np.ndarray:
+        with torch.no_grad():
+            logits, _ = agent.net(torch.as_tensor(obs, dtype=torch.float32))
+            return logits.argmax(dim=-1).numpy()
+
+    return policy
+
+
+def masked_span(agent, rollout: "VectorizedRollout", background: np.ndarray,
+                seed: int) -> float:
+    """v(N) - v(empty) under `rollout`: the statistic the null test uses.
+
+    lives here rather than in each script because four of them need it and an
+    earlier divergence between two copies of a rollout is exactly the bug this
+    project spent an evening finding. one definition, imported everywhere.
+
+    the rng is created once and consumed only by the empty coalition, since the
+    full one masks nothing. that makes the two evaluations deterministic given
+    the seed, and comparable to each other.
+    """
+    rng = np.random.default_rng(seed)
+    base = greedy_policy(agent)
+    n_features = background.shape[1]
+    full = np.ones(n_features, dtype=bool)
+    empty = np.zeros(n_features, dtype=bool)
+
+    def masked(mask: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
+        def policy(obs: np.ndarray) -> np.ndarray:
+            synthetic = obs.copy()
+            if not mask.all():
+                draws = background[rng.integers(0, len(background), size=len(obs))]
+                synthetic[:, ~mask] = draws[:, ~mask]
+            return base(synthetic)
+
+        return policy
+
+    return float(
+        rollout.run(masked(full))["returns"].mean()
+        - rollout.run(masked(empty))["returns"].mean()
+    )

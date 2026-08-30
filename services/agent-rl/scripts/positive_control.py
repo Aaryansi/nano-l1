@@ -47,7 +47,12 @@ from nano_rl.env.prediction import (  # noqa: E402
     PredictionRollout,
     observation_moments,
 )
-from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.explain.rollout import (  # noqa: E402
+    VectorizedRollout,
+    build_background,
+    greedy_policy,
+    masked_span,
+)
 from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
 
 FULL = np.ones(N_FEATURES, dtype=bool)
@@ -56,36 +61,6 @@ EMPTY = np.zeros(N_FEATURES, dtype=bool)
 
 def banner(t: str) -> None:
     print(f"\n{'=' * 80}\n{t}\n{'=' * 80}", flush=True)
-
-
-def greedy(agent: PPOAgent):
-    def policy(obs: np.ndarray) -> np.ndarray:
-        with torch.no_grad():
-            logits, _ = agent.net(torch.as_tensor(obs, dtype=torch.float32))
-            return logits.argmax(dim=-1).numpy()
-
-    return policy
-
-
-def span(agent, roll, background, seed: int) -> float:
-    """v(N) - v(empty) on whichever task `roll` implements."""
-    rng = np.random.default_rng(seed)
-    base_policy = greedy(agent)
-
-    def masked(mask: np.ndarray):
-        def policy(obs: np.ndarray) -> np.ndarray:
-            synthetic = obs.copy()
-            if not mask.all():
-                draws = background[rng.integers(0, len(background), size=len(obs))]
-                synthetic[:, ~mask] = draws[:, ~mask]
-            return base_policy(synthetic)
-
-        return policy
-
-    return float(
-        roll.run(masked(FULL))["returns"].mean()
-        - roll.run(masked(EMPTY))["returns"].mean()
-    )
 
 
 def train(env, updates: int, seed: int) -> PPOAgent:
@@ -114,8 +89,8 @@ def run_task(name: str, make_env, make_roll, split, args, agent=None) -> dict:
                           max_position=100.0),
         n_samples=192, seed=args.seed,
     )
-    observed = span(agent, roll, bg, args.seed)
-    ret = float(roll.run(greedy(agent))["returns"].mean())
+    observed = masked_span(agent, roll, bg, args.seed)
+    ret = float(roll.run(greedy_policy(agent))["returns"].mean())
     print(f"  trained agent: return {ret:+.3f}   span {observed:+.3f}")
 
     # the null: agents trained on these same real episodes with the
@@ -125,7 +100,7 @@ def run_task(name: str, make_env, make_roll, split, args, agent=None) -> dict:
     nulls = []
     for k in range(args.n_null):
         blind = BlindEnv(make_env(split.train), mean, sd, seed=3000 + k)
-        nulls.append(span(train(blind, args.updates, args.seed + k), roll, bg,
+        nulls.append(masked_span(train(blind, args.updates, args.seed + k), roll, bg,
                           args.seed + k))
         print(f"  null {k + 1}/{args.n_null}: span {nulls[-1]:>+8.3f}", flush=True)
 
