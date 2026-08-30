@@ -206,6 +206,67 @@ if mm:
     check("marginal distance, 14 replaced", 0.486, by_kept[4]["marginal"], 0.02)
     check("conditional distance, 14 replaced", 0.186, by_kept[4]["conditional"], 0.02)
 
+# --------------------------------------------------------- positive control
+pc = load("positive_control.json")
+print("\nsection 5.9: positive control on real data")
+if pc:
+    by = {t["task"]: t for t in pc["tasks"]}
+    check("prediction span", 7.467, by["prediction"]["span"], 0.02)
+    check("prediction null mean", -0.470, by["prediction"]["null_mean"], 0.20)
+    check("prediction null sd", 2.341, by["prediction"]["null_std"], 0.05)
+    check("prediction z", 3.39, by["prediction"]["result"]["z_score"], 0.05)
+    check("trading span (paper checkpoint)", 7.405, by["trading"]["span"], 0.02)
+    check("trading null mean", 2.470, by["trading"]["null_mean"], 0.05)
+    check("trading null sd", 2.285, by["trading"]["null_std"], 0.05)
+    check("trading z", 2.16, by["trading"]["result"]["z_score"], 0.05)
+    # the separation is the whole claim, so assert it rather than the numbers
+    # that happen to produce it
+    checks += 1
+    ok = bool(pc["separated"])
+    print(f"  [{'x' if ok else ' '}] {'prediction fires, trading declines':<52} "
+          f"{'yes' if ok else 'NO':>21}")
+    if not ok:
+        failures.append("positive control: the two tasks are not separated")
+
+# ------------------------------------------------------- null construction
+nc = load("null_corpus_check.json")
+print("\nsection 5.10: which null construction")
+if nc:
+    check("observed span", 7.405, nc["observed_span"], 0.02)
+    for key, mean, sd, z in (("null_synthetic", 9.07, 4.91, -0.34),
+                             ("null_blinded_real", 2.26, 2.21, 2.33)):
+        import numpy as np
+        a = np.array(nc[key]["spans"])
+        check(f"{key} mean", mean, float(a.mean()), 0.02)
+        check(f"{key} sd", sd, float(a.std(ddof=1)), 0.02)
+        check(f"{key} z", z, nc[key]["result"]["z_score"], 0.05)
+    # the paper says both constructions decline under the two-part rule
+    for key in ("null_synthetic", "null_blinded_real"):
+        checks += 1
+        passes = nc[key]["result"]["passes"]
+        ok = not passes
+        print(f"  [{'x' if ok else ' '}] {key + ' declines':<52} "
+              f"{'yes' if ok else 'NO, IT FIRES':>21}")
+        if not ok:
+            failures.append(f"{key}: paper says it declines, artifact says it fires")
+
+# ------------------------------------------------------------- z intervals
+zi = load("z_intervals.json")
+print("\nsection 5.11: bootstrap verdict stability")
+if zi:
+    check("blinded-real verdict stability", 0.65,
+          zi["market vs blinded-real null"]["verdict_stability"], 0.08)
+    check("synthetic-corpus verdict stability", 1.0,
+          zi["market vs synthetic-corpus null"]["verdict_stability"], 0.01)
+    check("real prediction verdict stability", 1.00,
+          zi["real prediction"]["verdict_stability"], 0.01)
+    check("real trading verdict stability", 0.64,
+          zi["real trading"]["verdict_stability"], 0.08)
+    check("planted signal interval, low", 10.32, zi["planted signal"]["z_lo"], 0.05)
+    check("planted signal interval, high", 16.87, zi["planted signal"]["z_hi"], 0.05)
+    check("real market interval, low", -0.16, zi["real market"]["z_lo"], 0.30)
+    check("real market interval, high", 0.73, zi["real market"]["z_hi"], 0.15)
+
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
 if failures:

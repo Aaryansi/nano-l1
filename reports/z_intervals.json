@@ -50,23 +50,23 @@
     "n_boot": 4000
   },
   "real prediction": {
-    "z": 2.9178255054956312,
-    "z_lo": 1.9542129794898857,
-    "z_hi": 5.710583685700957,
-    "verdict": "informative",
-    "verdict_stability": 0.97375,
-    "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
-  },
-  "real trading": {
-    "z": 5.014777980768843,
-    "z_lo": 3.5667900814415514,
-    "z_hi": 12.477986637588154,
+    "z": 3.3903211411753396,
+    "z_lo": 2.5182708625731305,
+    "z_hi": 5.289083125084771,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
+    "n_null": 24,
+    "n_boot": 4000
+  },
+  "real trading": {
+    "z": 2.159688491966732,
+    "z_lo": 1.4088125603076214,
+    "z_hi": 4.455495740293395,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.64375,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
     "n_boot": 4000
   },
   "market vs synthetic-corpus null": {

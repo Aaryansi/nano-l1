@@ -53,27 +53,32 @@
   \begin{quote}
   \small
   \textbf{Abstract.}
-Feature attribution is increasingly proposed as a basis for auditing
-reinforcement learning agents. We show that an attribution can be stable across
-training runs, precisely estimated, semantically plausible, and carry no
-information whatsoever. On a prediction market that is empirically efficient, a
-PPO agent whose return is statistically indistinguishable from abstention
-produces attributions with a cross-seed rank correlation of $0.849$, unanimous
-agreement on the most important feature, and a top-5 ranking whose adjacent gaps
-exceed their own standard errors. Every conventional check passes. We introduce a
-null-model test, built on the additivity identity that attribution schemes
-already satisfy, comparing an agent's attribution span against the spans of
-agents trained where the observation channel carries no information. The test
-rejects a planted signal at $z=12.27$ and fails to reject the market agent at
-$z=+0.23$. We further show that the established sanity check for this purpose,
-randomising network parameters, does not transfer to reinforcement learning: on
-CartPole its reference distribution is $42\times$ wider than an
-environment-level null, and across sixteen checkpoints on four control tasks it
-never exceeds $z=2.45$, including on a converged policy. Finally, the market
-agent's attribution can be driven from $39.9\%$ to $3.2\%$ of total mass at no
-measurable cost in return, while the same intervention on a feature that
-genuinely carries signal destroys $81\%$ of return. Attribution is therefore not
-identified by behaviour when the attributed feature does not matter.
+Interpretability is proposed as a basis for oversight: if we can see which
+inputs drive a policy, we can decide whether to trust it. That argument needs
+attributions to carry information about the agent, and we show they need not.
+On a prediction market that is empirically efficient, a PPO agent whose return
+is statistically indistinguishable from abstention produces attributions with a
+cross-seed rank correlation of $0.849$, unanimous agreement on the most
+important feature, and a top-5 ranking whose adjacent gaps exceed their own
+standard errors. Every conventional check passes and the explanation is empty.
+We introduce a null-model test that detects this, built on the additivity
+identity attribution schemes already satisfy: compare an agent's attribution
+span against the spans of agents trained where the observation channel carries
+no information. It rejects a planted signal at $z=12.27$, fails to reject the
+market agent at $z=+0.23$, and fires at $z=+3.39$ on a genuinely learnable task
+built from the same real episodes, so it separates tasks by whether their
+observations carry usable information rather than by whether the corpus is
+synthetic. Two results then concern practice. Explanations are cheap to forge:
+an auxiliary training penalty drives a feature's attribution from $39.9\%$ to
+$3.2\%$ of total mass at no measurable cost in return, with no deception and no
+attack on the explainer, so an oversight regime reading attributions as
+evidence of what a model relies on is reading a quantity the developer can set
+wherever the feature does not matter. And the established sanity check for this
+purpose, randomising network parameters, does not transfer to reinforcement
+learning: across sixteen checkpoints on four control tasks it never exceeds
+$z=2.45$, because its reference distribution equals the spread of
+random-initialisation return to three significant figures and therefore
+measures the variance of initialisation, not the explanation.
   \end{quote}
   \vspace{1.2em}
   \end{@twocolumnfalse}
@@ -744,6 +749,43 @@ Every conclusion is identical on both. Buy-and-hold moved from $+0.068$ to
 $-1.608$, confirming its earlier positive figure reflected that period's $52.3\%$
 outcome rate rather than an edge.
 
+\subsection{A positive control on real data}
+\label{sec:positive}
+
+Every case where the test fires elsewhere in this paper is synthetic, which
+invites the obvious objection: perhaps it detects planted signal rather than
+information, and would decline on any real corpus. The control holds the
+corpus, the 18 features, the normalizer, the walk-forward split and the null
+construction fixed, and varies only the objective.
+
+The market's implied probability is well calibrated, with a weighted mean
+absolute error of $0.0172$. A calibrated price is highly informative
+\emph{about the outcome} while offering nothing to trade against, because the
+fee schedule takes more than the edge. So we score the same agent architecture
+on the same real episodes for \emph{calling} the settlement rather than trading
+it: $+1$ for each step the call agrees with the eventual outcome, $-1$ when it
+disagrees, $0$ for abstaining. Reward may reference the settlement; an
+observation may not, and none does. The environment subclasses the trading one,
+so the observation construction and normalizer handling are literally the same
+code and a difference in results cannot be a difference in the environment.
+
+Against a null of 24 agents trained on these same real episodes with the
+observation channel blinded, the prediction agent's span is $+7.47$ against a
+null of $-0.47 \pm 2.34$, giving $z=+3.39$: informative, and unchanged in every
+one of 4{,}000 resamples. The trading agent on the identical episodes, against
+the identical null construction, gives $+7.41$ against $+2.47 \pm 2.29$ and
+$z=+2.16$, which the two-part rule declines. Note that the two spans are almost
+the same size; what separates them is the null. A blind agent cannot call the
+outcome at all, so the prediction null sits at zero, while a blind agent can
+still avoid trading and so retains most of the trading agent's advantage.
+
+The same feature stream therefore carries usable information for one objective
+and not for the other, and the test says so. This also sharpens what the
+negative result means. It is not that the market data is uninformative; a
+calibrated price is very informative. It is that the information is not
+\emph{monetisable} through a fee schedule that charges $9\%$ round trip, and an
+attribution of the trading agent cannot tell those two situations apart.
+
 \subsection{Our own null construction, checked}
 \label{sec:nullchoice}
 
@@ -814,8 +856,8 @@ draws with replacement and re-apply the full two-part decision rule to each
 replicate, which gives a percentile interval for $z$ and, more usefully, the
 fraction of replicates in which the verdict is unchanged.
 
-Every verdict in the paper is stable in $100\%$ of replicates except two: the
-real prediction task at $97\%$ and the blinded-real market comparison at $65\%$.
+Every verdict in the paper is stable in $100\%$ of replicates except the two
+blinded-real market comparisons, at $64\%$ and $65\%$.
 The planted signal's interval is $[+10.3, +16.9]$ and the market's, under the
 null used in Section~\ref{sec:empty}, is $[-0.16, +0.73]$: nowhere near the
 threshold in either direction. This bootstraps the null only. Uncertainty in the
