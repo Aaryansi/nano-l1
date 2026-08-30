@@ -1,10 +1,16 @@
 % Sanity Checks for Reinforcement Learning Explanations
-% Workshop version, cut to 4 pages from main.tex.
+% Workshop version, cut from main.tex.
+%
+% Four pages of body, with the bibliography running onto a fifth. That is the
+% shape most workshops ask for ("4 pages excluding references"); a venue that
+% counts references needs roughly one more column cut, and the ground-truth
+% subsection is the one to lose.
 %
 % Dropped relative to the full version: the power curve, the certified-ranking
 % result, integrated gradients, credit-assignment robustness, the horizon
-% experiment, and the cold-rebuild reproduction. Those are the extensions; what
-% remains is the argument.
+% experiment, the off-manifold analysis, the null-construction audit, and the
+% cold-rebuild reproduction. Those are the extensions; what remains is the
+% argument.
 %
 % Build:  tectonic workshop.tex
 
@@ -56,23 +62,26 @@
   \begin{quote}
   \small
   \textbf{Abstract.}
-  We show that a feature attribution for a reinforcement learning agent can be
-  stable across training runs, precisely estimated, semantically plausible, and
-  carry no information. On an empirically efficient prediction market, a PPO
-  agent whose return is statistically indistinguishable from abstention produces
-  attributions with cross-seed rank correlation $0.849$ and unanimous agreement
-  on the most important feature. We give a null-model test, built on the
-  additivity identity attribution schemes already satisfy, which compares an
-  agent's attribution span against agents trained where the observation channel
-  carries no information. It rejects a planted signal at $z=12.27$ and fails to
-  reject the market agent at $z=+0.23$. The established sanity check for this
-  purpose, randomising network parameters, does not transfer: its reference
-  distribution is $42\times$ wider on CartPole, and across sixteen checkpoints
-  on four control tasks it never exceeds $z=2.45$, including on a converged
-  policy. Its width is exactly the spread of random-initialisation return.
-  Finally, the market agent's attribution can be driven from $39.9\%$ to $3.2\%$
-  of total mass at no measurable cost in return, while the same intervention on a
-  feature that genuinely carries signal destroys $81\%$ of return.
+  Interpretability is proposed as a basis for oversight: if we can see which
+  inputs drive a policy, we can decide whether to trust it. That argument needs
+  attributions to carry information about the agent, and we show they need not.
+  On an empirically efficient prediction market, a PPO agent whose return is
+  statistically indistinguishable from abstention produces attributions with
+  cross-seed rank correlation $0.849$ and unanimous agreement on the most
+  important feature; every conventional check passes and the explanation is
+  empty. We give a null-model test built on the additivity identity attribution
+  schemes already satisfy, comparing an agent's attribution span against agents
+  trained where the observation channel carries no information. It rejects a
+  planted signal at $z=12.27$, fails to reject the market agent at $z=+0.23$,
+  and fires at $z=+3.39$ on a genuinely learnable task built from the same real
+  episodes. Explanations are also cheap to forge: an auxiliary training penalty
+  drives a feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no
+  measurable cost in return, with no deception and no attack on the explainer.
+  The established sanity check for this purpose, randomising network
+  parameters, does not transfer: across sixteen checkpoints on four control
+  tasks it never exceeds $z=2.45$, because its reference distribution equals the
+  spread of random-initialisation return to three significant figures and so
+  measures the variance of initialisation, not the explanation.
   \end{quote}
   \vspace{1.1em}
   \end{@twocolumnfalse}
@@ -249,15 +258,35 @@ We note one consequence for our own reporting. An earlier draft stated that ``th
 whole observation is worth $+5.914$ per episode against being blind'' and
 presented it as a finding. Blind agents produce $+8.19 \pm 5.11$. It was noise.
 
+\subsection{A positive control on real data}
+
+Every case above where the test fires is synthetic, which invites the objection
+that it detects planted signal rather than information. Holding the corpus,
+features, normalizer, split and null construction fixed and varying only the
+objective answers it. The market's price is calibrated to $0.0172$, so it is
+highly informative \emph{about the outcome} while offering nothing to trade
+against once a $9\%$ round-trip fee is paid. Scoring the same architecture on
+the same real episodes for \emph{calling} the settlement rather than trading it,
+against a null of 24 agents trained on those episodes with observations
+blinded, gives a span of $+7.47$ against $-0.47 \pm 2.34$: $z=+3.39$,
+informative, unchanged in all $4{,}000$ resamples. The trading agent on
+identical episodes and an identical null gives $+7.41$ against $+2.47 \pm 2.29$,
+$z=+2.16$, which the two-part rule declines, though only $64\%$ of resamples
+agree and we report it as borderline. The two spans are nearly the same size;
+what separates them is the null, since a blind agent cannot call the outcome at
+all but can still decline to trade. The market data is not uninformative. The
+information is not monetisable, and an attribution of the trading agent cannot
+tell those two situations apart.
+
 \subsection{Validation against ground truth}
 
 On the planted corpus, outcome attribution ranks the planted feature first with
-$55\%$ of total attribution mass. On the decoy corpus, an agent trained where the
-decoy predicts the outcome (in-sample $+47.24$, held out $-6.83$) is explained on
-episodes where the decoy is provably worthless: per-decision attribution gives it
-$6.5\%$ of mass at rank 3 of 18, outcome-based attribution $1.1\%$ at rank 10.
-Both statements are true; the policy does key on the decoy. Per-decision
-attribution is correct about behaviour and misleading about value.
+$55\%$ of total mass. On the decoy corpus, an agent trained where the decoy
+predicts the outcome (in-sample $+47.24$, held out $-6.83$) is explained on
+episodes where the decoy is provably worthless: per-decision attribution gives
+it $6.5\%$ of mass at rank 3 of 18, outcome-based attribution $1.1\%$ at rank
+10. Both are true; the policy does key on the decoy. Per-decision attribution is
+correct about behaviour and misleading about value.
 
 \subsection{The established null does not transfer}
 

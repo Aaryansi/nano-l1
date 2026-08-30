@@ -38,6 +38,16 @@ cost in return. the same intervention on a feature that genuinely carries signal
 destroys 81% of return. no deception and no attack on the explainer is required;
 it falls out of ordinary training whenever the feature is not load-bearing.
 
+**the test separates tasks, not datasets.** every case where it fires would
+otherwise be synthetic, which invites the objection that it detects planted
+signal rather than information. holding the corpus, features, normalizer, split
+and null construction fixed and varying only the objective: on the same real
+episodes, an agent scored for *calling* the settlement fires at z = +3.39, while
+the trading agent does not. the market data is not uninformative; a calibrated
+price is very informative. the information is not monetizable against a 9%
+round-trip fee, and an attribution of the trading agent cannot tell those two
+situations apart.
+
 **the established sanity check does not transfer to RL.** across sixteen
 checkpoints on four control tasks, weight randomization never exceeds z = 2.45,
 including on a converged agent. its reference distribution is, to three
@@ -51,8 +61,16 @@ masking it correlates at only 0.767 and disagrees on which feature matters most.
 
 ### honesty
 
-[Section 5.9](docs/paper/main.pdf) is a ledger of four predictions this project
-made and then rejected on its own evidence. numbers in the paper are not
+we applied the paper's own thesis to the paper. it argues that the choice of
+null decides the verdict and that nobody checks; so we checked ours, found the
+published null was measuring spans on a different corpus from the observation,
+rebuilt it the way the method section actually defines, and reported that the
+headline survives but only borderline (64% of bootstrap resamples). an earlier
+run at n = 12 had the two constructions on opposite sides of the threshold.
+
+the paper carries a ledger of four predictions this project made and then
+rejected on its own evidence, and separates them from the one claim that is
+structural rather than empirical. numbers in the paper are not
 transcribed by hand: `verify_paper_numbers.py` asserts every one of them against
 the artifact that produced it and fails the build on a mismatch.
 
