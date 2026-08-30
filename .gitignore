@@ -69,3 +69,11 @@ services/agent-rl/checkpoints/
 *.exe
 services/engine-go/engine
 services/feed-sim/replay
+
+# latex build artifacts. main.pdf is tracked; it is the deliverable.
+docs/paper/*.aux
+docs/paper/*.bbl
+docs/paper/*.blg
+docs/paper/*.log
+docs/paper/*.out
+docs/paper/page-*.png

@@ -1,0 +1,632 @@
+% Sanity Checks for Reinforcement Learning Explanations
+%
+% Self-contained two-column format. To target a specific venue, replace the
+% documentclass and geometry block with that venue's style file; the body needs
+% no changes.
+%
+% Build:  tectonic main.tex
+
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[letterpaper,margin=0.75in,columnsep=0.28in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\makeatletter
+\makeatother
+
+\captionsetup{font=small,labelfont=bf,skip=4pt}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\setlength{\parskip}{0pt}
+\setlength{\abovedisplayskip}{5pt}
+\setlength{\belowdisplayskip}{5pt}
+
+\newcommand{\vfn}{v}
+
+\title{\vspace{-1.5em}\bfseries Sanity Checks for Reinforcement Learning Explanations}
+
+% Anonymise before submission.
+\author{}
+\date{}
+
+\begin{document}
+
+% abstract spans the full page width, as in standard ML conference formats
+\twocolumn[
+  \begin{@twocolumnfalse}
+  \maketitle
+  \begin{quote}
+  \small
+  \textbf{Abstract.}
+Feature attribution is increasingly proposed as a basis for auditing
+reinforcement learning agents. We show that an attribution can be stable across
+training runs, precisely estimated, semantically plausible, and carry no
+information whatsoever. On a prediction market that is empirically efficient, a
+PPO agent whose return is statistically indistinguishable from abstention
+produces attributions with a cross-seed rank correlation of $0.849$, unanimous
+agreement on the most important feature, and a top-5 ranking whose adjacent gaps
+exceed their own standard errors. Every conventional check passes. We introduce a
+null-model test, built on the additivity identity that attribution schemes
+already satisfy, comparing an agent's attribution span against the spans of
+agents trained where the observation channel carries no information. The test
+rejects a planted signal at $z=12.27$ and fails to reject the market agent at
+$z=+0.23$. We further show that the established sanity check for this purpose,
+randomising network parameters, does not transfer to reinforcement learning: on
+CartPole its reference distribution is $42\times$ wider than an
+environment-level null, and across eight checkpoints on two control tasks it
+never exceeds $z=2.45$, including on a converged policy. Finally, the market
+agent's attribution can be driven from $39.9\%$ to $3.2\%$ of total mass at no
+measurable cost in return, while the same intervention on a feature that
+genuinely carries signal destroys $81\%$ of return. Attribution is therefore not
+identified by behaviour when the attributed feature does not matter.
+  \end{quote}
+  \vspace{1.2em}
+  \end{@twocolumnfalse}
+]
+
+\section{Introduction}
+
+A common argument for interpretability is oversight: if we can see which inputs
+drive a policy, we can decide whether to trust it. This requires that an
+attribution mean something. It is not obvious that attributions do, and it is
+less obvious how one would tell.
+
+The difficulty is that attribution methods return an answer regardless. Given any
+policy and any state, Shapley values~\citep{shapley1953value,lundberg2017unified},
+integrated gradients~\citep{sundararajan2017axiomatic}, and permutation
+importance all produce a vector of numbers, ranked, signed, and plottable.
+Nothing in the output distinguishes an attribution reflecting structure the agent
+exploits from one reflecting nothing at all.
+
+In supervised learning this is handled by randomisation tests.
+\citet{adebayo2018sanity} compare explanations of a trained model against
+explanations of a model with randomised parameters, and against a model trained
+on permuted labels. If the explanation does not change, it does not depend on
+what the model learned. These tests are standard, and applying them invalidated
+several saliency methods.
+
+Reinforcement learning has adopted only half of this.
+\citet{huber2022benchmarking} apply the parameter-randomisation test to saliency
+maps for Atari agents, and observe that the data-randomisation test has no
+obvious RL analogue: there is no labelled dataset to permute, and it is unclear
+how a sequential decision maker should respond to artificially corrupted
+features.
+
+This paper supplies that analogue, and shows that the half already adopted does
+not work.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item \textbf{An environment-level null for RL.} Rather than corrupting the model
+or the labels, we corrupt the environment's \emph{observation channel}, leaving
+dynamics and reward intact. The agent trains normally, on a real objective, with
+nothing to condition on. This requires no access to task internals
+(Section~\ref{sec:method}).
+
+\item \textbf{The established null fails in RL, measurably.} Parameter
+randomisation yields a reference distribution $42\times$ wider on CartPole and
+degenerate on Acrobot. Across eight checkpoints it never exceeds $z=2.45$,
+including on a converged CartPole policy scoring 404 of 500, while the
+environment null reaches $z=117$. The two disagree on five of eight
+(Section~\ref{sec:nulls}).
+
+\item \textbf{A validation protocol with ground truth.} Explanation evaluation is
+hampered by the absence of ground truth~\citep{cheng2025survey}. We construct
+environments where the correct attribution is known by construction
+(Sections~\ref{sec:synthetic} and~\ref{sec:groundtruth}).
+
+\item \textbf{A worked case} of an uninformative explanation passing every
+conventional check (Section~\ref{sec:empty}).
+
+\item \textbf{Attribution is not identified by behaviour.} An auxiliary training
+penalty drives the market agent's dominant feature from $39.9\%$ to $3.2\%$ of
+attribution mass at no measurable cost in return; the same intervention on a
+load-bearing feature costs $81\%$ of return (Section~\ref{sec:steering}).
+\end{enumerate}
+
+\paragraph{What we do not claim.}
+The argument that RL attribution should target outcomes rather than policy
+outputs is due to \citet{beechey2023sverl}, whose SVERL framework unifies
+behaviour, outcomes and prediction, and whose FastSVERL~\citep{beechey2025fastsverl}
+addresses the scalability, off-policy and temporal problems we only name. Our
+test adapts the data-randomisation test of \citet{adebayo2018sanity}.
+Deletion-based fidelity evaluation is established practice in
+XRL~\citep{cheng2025survey,milani2024xrl}. Our contribution is the RL
+construction, the demonstration that the incumbent alternative fails, and the
+empirical consequences.
+
+\section{Related work}
+
+\paragraph{Shapley values in RL.}
+\citet{beechey2023sverl} give a theoretical account of Shapley-value explanation
+for RL, showing that earlier applications explained the wrong object and
+proposing characteristic functions built on agent performance. Their framework
+identifies three explanatory targets: behaviour, outcomes, and prediction.
+FastSVERL~\citep{beechey2025fastsverl} makes the approach tractable and addresses
+temporal dependence and off-policy data. We adopt the outcomes framing and
+implement it independently; we do not extend the theory.
+
+\paragraph{Sanity checks.}
+\citet{adebayo2018sanity} introduced parameter- and data-randomisation tests;
+\citet{binder2023shortcomings} examine their limitations.
+\citet{huber2022benchmarking} apply the parameter test to perturbation-based
+saliency for Atari agents and note the data test lacks an RL analogue. We propose
+one, and show the parameter test is the weaker of the two in this setting.
+
+\paragraph{Manipulating explanations.}
+\citet{slack2020fooling} construct adversarial classifiers that detect the
+off-manifold points LIME and SHAP query and behave differently on them, yielding
+innocuous explanations for biased models. That is an attack on the explainer's
+sampling. Our steering result differs in kind: we train a normal agent with an
+invariance penalty, the resulting explanation is \emph{correct} about the
+resulting model, and the point is that behaviour does not pin the explanation
+down. It is a non-identifiability result rather than an attack.
+
+\paragraph{Uncertainty in Shapley estimation.}
+\citet{goldwasser2024significance} certify top-$k$ Shapley rankings against Monte
+Carlo error. These guarantees concern the estimator. Section~\ref{sec:certified}
+shows they are orthogonal to whether the explained model learned anything.
+
+\paragraph{Evaluation in XRL.}
+Surveys note that the absence of ground-truth explanations is a central obstacle,
+and that perturbation-based fidelity is the common
+recourse~\citep{cheng2025survey,milani2024xrl}. We use deletion curves in that
+established sense and do not claim them as a contribution.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{The statistic}
+
+Let $\vfn(S)$ be the expected episode return of an agent observing only the
+features in $S \subseteq N$, with features outside $S$ replaced at every timestep
+by draws from a reference distribution. Define the \emph{attribution span}
+\begin{equation}
+\Delta \;=\; \vfn(N) - \vfn(\emptyset).
+\end{equation}
+
+Shapley values~\citep{shapley1953value} and integrated
+gradients~\citep{sundararajan2017axiomatic} satisfy additivity identities
+(efficiency and completeness respectively) under which per-feature attributions
+sum to $\Delta$. The span can therefore be read off either.
+
+It is worth stating precisely what $\Delta$ is. It is \emph{not} a Shapley
+quantity: it is the difference between two masked rollouts, and depends only on
+the masking scheme. Efficiency tells us the Shapley values happen to sum to it.
+This has a practical consequence we exploit: $\Delta$ costs two evaluations
+rather than $2^{|N|}$.
+
+\subsection{The null}
+
+The test compares an observed $\Delta$ against the distribution of $\Delta$ for
+agents that had nothing to learn. We construct these by corrupting the
+observation channel.
+
+\medskip
+\noindent\textbf{Blind-observation null.} \emph{Replace every observation with an
+independent draw from a fixed reference distribution matched to the
+environment's observation moments. Leave dynamics and reward untouched. Train
+normally.}
+\medskip
+
+Such an agent faces the real task and receives real return; it simply cannot
+condition on anything. This is the RL counterpart of training on permuted labels,
+and unlike parameter randomisation it yields a \emph{normally trained} policy:
+the failure mode that occurs in deployment rather than an artificial one.
+
+Matching the reference moments matters. A network fed out-of-range inputs fails
+for reasons of scale rather than information, which would be a different
+experiment.
+
+\subsection{The test}
+
+Given $\Delta_{\mathrm{obs}}$ and null draws $\Delta_1,\dots,\Delta_n$ with mean
+$\bar\Delta$ and standard deviation $s$, we report
+\begin{equation}
+p_{\mathrm{rank}} = \frac{\#\{i : |\Delta_i - \bar\Delta| \ge |\Delta_{\mathrm{obs}} - \bar\Delta|\} + 1}{n+1},
+\quad
+z = \frac{\Delta_{\mathrm{obs}} - \bar\Delta}{s},
+\end{equation}
+and require both to reject.
+
+Two statistics are reported because neither suffices. The rank statistic assumes
+no distributional shape but bottoms out at $1/(n+1)$: with $n=8$ it cannot reject
+at $\alpha=0.05$ however extreme the observation, and in an early run it reported
+$p=0.111$ for a signal lying $10.5$ standard deviations outside the null. The
+normal statistic has resolution but assumes a shape the null need not have.
+Requiring both keeps the test conservative in the direction that matters.
+
+\paragraph{Degenerate nulls.} If every null draw is identical, $s=0$ and $z$ is
+undefined. This is not an absence of information but its opposite: any deviation
+is maximally surprising. We return $z=\pm\infty$ and surface the degeneracy
+explicitly. It occurs in practice (Sections~\ref{sec:nulls}
+and~\ref{sec:robust}) whenever a task lets a blind agent converge on a single
+behaviour.
+
+\section{Experimental setup}
+
+\subsection{Environments with known answers}
+\label{sec:synthetic}
+
+Explanation evaluation lacks ground truth~\citep{cheng2025survey}. We construct
+three synthetic corpora in which the correct answer is fixed by construction.
+Episodes are fixed-length with no early termination, so the horizon is controlled
+exactly.
+
+\begin{itemize}[leftmargin=1.1em,itemsep=1pt,topsep=2pt]
+\item \textbf{Planted signal.} One of 18 features is informative about the binary
+outcome; the rest are noise or constants.
+\item \textbf{Null.} Identical shapes and frictions, no informative feature. The
+optimal policy is to abstain.
+\item \textbf{Decoy.} One feature correlates $0.989$ with the outcome in the first
+$60\%$ of episodes and $0.006$ in the remainder.
+\end{itemize}
+
+The claim about the planted corpus needs care. The planted feature is the only
+one informative about the \emph{outcome}. Others can still affect the
+\emph{return} without predicting anything, because return depends on behaviour:
+an agent that cannot tell where it is in an episode acts incoherently and pays
+transaction costs. The test is that the planted feature ranks first with the
+majority of attribution mass, not that everything else is zero.
+
+\subsection{A market with terminal ground truth}
+
+Our main empirical setting is a binary contract settling to \$1.00 if BTC is
+higher after 15 minutes and \$0.00 otherwise, on a regulated prediction market.
+We use 6{,}425 settled contracts over 68 days (89{,}950 transitions, outcome rate
+$0.4999$), with a walk-forward split by time and purge gaps; the test split is
+evaluated once.
+
+This instrument was chosen for one property: every episode resolves to a known
+value, so a critic's $V(s)$ can be checked against realised settlement frequency.
+Agents are trained with PPO~\citep{schulman2017ppo}. State is 18 causal
+features. Actions are target inventory in
+$\{-1,0,+1\}\times q_{\max}$. Reward is the change in mark-to-market equity net
+of costs, which telescopes exactly to net episode P\&L.
+
+Transaction costs use the exchange's published taker schedule,
+$\lceil 0.07\,C\,P(1-P)\rceil$, maximised at $P=0.5$ where this contract trades by
+construction. With the measured one-cent modal spread this is a $9\%$ round-trip
+hurdle on a 50-cent notional, and it determines most of what follows.
+
+\subsection{Control tasks}
+
+CartPole-v1 (4 features) and Acrobot-v1 (6 features) provide settings with no
+relationship to trading and well-understood optimal policies. Both have
+observation spaces small enough to enumerate all $2^{|N|}$ coalitions, so
+per-feature Shapley values there are exact.
+
+\subsection{Reproducibility}
+
+All results derive from public endpoints with no API keys. Hyperparameters were
+fixed a priori from synthetic sweeps where the correct answer is known
+analytically, not tuned on validation performance. The full pipeline is one
+command; 226 tests cover the environment, the attribution implementations, and
+six no-lookahead properties verified by mutation testing. Every numerical claim
+in this paper is asserted against its source artifact by a script that runs as
+the pipeline's final stage.
+
+The exchange serves a moving window, so re-running the ingest returns a different
+set of contracts. A cold rebuild five days after the original produced 6{,}425
+episodes against 6{,}428, sharing 5{,}960 tickers; \emph{overlapping episodes are
+byte-identical on every field}. Ingest is deterministic per contract and what
+changes is membership. All conclusions reproduced (Section~\ref{sec:repro}).
+
+\section{Results}
+
+\subsection{An explanation that passes every check and says nothing}
+\label{sec:empty}
+
+The market is empirically efficient: its implied probability has a weighted mean
+absolute calibration error of $0.0172$ across ten bins, and spot return
+correlates $0.476$ with the outcome but only $0.016$ with the residual after the
+price is accounted for. No policy beats abstention (Table~\ref{tab:baselines});
+losses track turnover.
+
+\begin{table}[t]
+\centering\small
+\caption{Test split, 1{,}284 held-out episodes. $p$-values are paired bootstrap
+against always-flat on the same episodes, necessary because per-episode P\&L has
+a standard deviation near 50 against differences near 1.}
+\label{tab:baselines}
+\begin{tabular}{lrrr}
+\toprule
+Policy & Mean P\&L & Trades/ep & $p$ vs flat \\
+\midrule
+always-flat        & $+0.000$  & 0.00 & --- \\
+buy-and-hold       & $-1.608$  & 1.00 & 0.23 \\
+\textbf{PPO} (5 seeds) & $\mathbf{-0.595 \pm 0.176}$ & 1.37 & \textbf{0.10} \\
+logistic (refit)   & $-5.729$  & 2.52 & $<$0.0001 \\
+mean-reversion     & $-11.615$ & 4.94 & $<$0.0001 \\
+random             & $-18.532$ & 9.33 & $<$0.0001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+PPO's shortfall is its own. On synthetic data containing no signal by
+construction the same agent scores $-0.47 \pm 0.47$; here it scores
+$-0.595 \pm 0.176$. Nothing is left to attribute to the market.
+
+Yet its explanations look entirely reasonable. Across five seeds whose pairwise
+performance differences are statistically indistinguishable in all ten pairs:
+behaviour attributions have cross-seed rank correlation $0.849$ (min $0.761$)
+with $100\%$ agreement on the top feature and $100\%$ sign agreement; the top-5
+ranking is fully certified, all four adjacent gaps exceeding their combined
+standard errors; and the ranking is semantically legible, time-to-expiry
+dominating, which reads as an agent that learned when not to trade.
+
+The null test disagrees (Table~\ref{tab:null}, Figure~\ref{fig:null}).
+
+\begin{table}[t]
+\centering\small
+\caption{Null-model test on the market. Null from 24 blind-trained agents,
+span $+8.19 \pm 5.11$.}
+\label{tab:null}
+\begin{tabular}{lrrl}
+\toprule
+Case & Span & $z$ & Verdict \\
+\midrule
+planted signal & $+70.89$ & $\mathbf{+12.27}$ & informative \\
+null corpus    & $+11.86$ & $+0.72$ & not distinguishable \\
+\textbf{real market} & $\mathbf{+9.37}$ & $\mathbf{+0.23}$ & \textbf{not distinguishable} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_null_test.png}
+\caption{Attribution spans against the null distribution. The shaded band is the
+range over 24 agents trained where the observation channel carries no
+information. The market agent sits at its centre.}
+\label{fig:null}
+\end{figure}
+
+The test has power and specificity. The market agent's explanation sits at the
+centre of the distribution of explanations of nothing.
+
+We note one consequence for our own reporting. An earlier draft stated that ``the
+whole observation is worth $+5.914$ per episode against being blind'' and
+presented it as a finding. Blind agents produce $+8.19 \pm 5.11$. It was noise.
+
+\subsection{Validation against ground truth}
+\label{sec:groundtruth}
+
+On the planted corpus, outcome attribution ranks the planted feature first with
+$55\%$ of total attribution mass. This check is unavailable on real data and is
+what licenses the rest.
+
+On the decoy corpus, an agent trained where the decoy predicts the outcome
+(in-sample $+47.24$, held out $-6.83$) is explained on held-out episodes where
+the decoy is provably worthless (Figure~\ref{fig:decoy}). Per-decision
+attribution of $\pi(a\mid s)$ gives it $6.5\%$ of mass, rank 3 of 18;
+outcome-based attribution gives it $1.1\%$, rank 10.
+
+Both statements are true. The policy does key on the decoy, so per-decision
+attribution is correct about behaviour and misleading about value. An auditor
+asking what an agent relies on that does not work gets the wrong answer from it.
+
+Deletion curves agree: removing features in the order each ranking considers
+important, the outcome ranking degrades return faster (AUC $-187.8$ against
+$-165.3$; a random ranking gives $+366.6$).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_decoy.png}
+\caption{A feature that drives the policy but earns nothing, on held-out episodes
+where it is provably uninformative.}
+\label{fig:decoy}
+\end{figure}
+
+\subsection{How much edge is required}
+
+Sweeping planted-signal strength calibrates the test (Figure~\ref{fig:power}).
+Detection begins near $+3.45$ per episode of \emph{measured} edge. The market
+agent earns $-0.595$: an order of magnitude below threshold and of the wrong
+sign. These edges are in-sample and therefore optimistic; the threshold is a
+lower bound.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_power.png}
+\caption{Detection $z$ against the agent's measured edge. The shaded band is
+where an explanation is not distinguishable from an explanation of nothing.}
+\label{fig:power}
+\end{figure}
+
+\subsection{Estimation guarantees do not substitute}
+\label{sec:certified}
+
+\citet{goldwasser2024significance} certify that a top-$k$ ranking is stable under
+Monte Carlo noise: a guarantee about the estimator. The market agent's top-5,
+with standard errors near $0.001$ on a leading value of $0.26$, has all four
+adjacent pairs separated beyond their combined error and is fully certified by
+that criterion. The same explanation fails the null test at $z=+0.23$.
+
+A ranking can be certified stable while the explanation it ranks is
+indistinguishable from an explanation of nothing. Only one of these two
+properties is commonly reported.
+
+\subsection{The established null does not transfer to RL}
+\label{sec:nulls}
+
+We construct both nulls for the same task (Table~\ref{tab:nulls},
+Figure~\ref{fig:nullcmp}). Shapley values here are exact.
+
+\begin{table}[t]
+\centering\small
+\caption{Null construction on two control tasks.}
+\label{tab:nulls}
+\begin{tabular}{lrrr}
+\toprule
+Environment & Parameter rand. & Environment rand. & Ratio \\
+\midrule
+CartPole-v1 & $+55.34 \pm \mathbf{138.92}$ & $-1.35 \pm \mathbf{3.29}$ & $42\times$ \\
+Acrobot-v1  & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_null_comparison.png}
+\caption{Spread of each null construction, on both control tasks. Width
+determines power: a very wide reference distribution cannot reject anything.}
+\label{fig:nullcmp}
+\end{figure*}
+
+A randomly initialised policy behaves arbitrarily, so masking its inputs moves
+return unpredictably and the reference distribution is very wide. The resulting
+test has almost no power. Across eight checkpoints the parameter null never
+exceeds $z=2.45$, including on a converged CartPole policy scoring 404 of 500,
+while the environment null reaches $z=+117.6$. The two disagree on five of eight.
+The choice of null is not a detail; it decides the verdict, and the incumbent
+construction is the one that fails.
+
+Acrobot additionally shows the test tracking \emph{whether there is anything to
+explain} rather than agent quality. Its agent fails completely until it learns
+($-500$ at $10\%$, $25\%$, $50\%$ of training), the span is exactly $0.00$ there,
+and the test correctly declines. CartPole behaves differently because its
+observations matter at every skill level. We do not claim undertrained agents
+generally produce empty explanations; they do not.
+
+\subsection{Attribution is not identified by behaviour}
+\label{sec:steering}
+
+We add an auxiliary penalty during training on the divergence between
+$\pi(\cdot\mid s)$ and $\pi(\cdot\mid s')$, where $s'$ has one feature resampled
+from the batch marginal: the same interventional perturbation the attribution
+measures (Table~\ref{tab:steer}, Figure~\ref{fig:steer}).
+
+\begin{table}[t]
+\centering\small
+\caption{Steering one feature's attribution.}
+\label{tab:steer}
+\begin{tabular}{lrrr}
+\toprule
+Corpus & Attribution & Return & $p$ \\
+\midrule
+market          & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.66}$ \\
+planted signal  & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+7.92}$ & $<$0.001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_steering.png}
+\caption{Attribution is equally suppressible on both corpora (left). Only where
+the feature is load-bearing does suppressing it cost return (right).}
+\label{fig:steer}
+\end{figure*}
+
+The attribution is equally suppressible in both cases ($92\%$ and $97\%$). What
+differs is the price: where the feature is the planted signal, suppressing it
+destroys $81\%$ of return; on the market it costs nothing measurable.
+Explanations are steerable at no cost exactly where they are not tracking
+anything, corroborating Section~\ref{sec:empty} by a route sharing no machinery
+with the null test. The control matters: had steering succeeded on both corpora,
+the penalty would merely be defeating the attribution method.
+
+\subsection{What the verdict does and does not depend on}
+\label{sec:robust}
+
+\paragraph{Attribution family.} Integrated gradients~\citep{sundararajan2017axiomatic},
+sharing no machinery with Shapley, ranks features at $0.981$ correlation with Shapley across five seeds and
+is comparably seed-stable ($0.750$ against $0.800$). Per-feature attributions are
+not a Shapley artefact. IG cannot test the outcome-level claim: episode return is
+not differentiable through the environment, so IG has no outcome analogue. Its
+behaviour-level span reports the market agent as informative ($z=+4.58$), which
+is consistent rather than contradictory and is precisely the
+behaviour-versus-outcome distinction of \citet{beechey2023sverl}. The agent's
+behaviour does respond to its observations; that responsiveness earns nothing.
+
+\paragraph{Credit assignment.} Leave-one-out ($\vfn(N)-\vfn(N\setminus i)$) and
+only-one-in ($\vfn(\{i\})-\vfn(\emptyset)$) are the extremes of the average
+Shapley takes, and neither satisfies efficiency, so each carries its own total.
+On the planted signal all three fire ($z = +10.66$, $+10.96$, $+2.29$); on the
+market none does ($z = -0.42$, $-1.57$, $-0.72$). The verdict is
+scheme-independent. \emph{The per-feature ranking is not}: leave-one-out and
+only-one-in rank features at only $0.309$ correlation with each other on the same
+agent. Whether there is anything to explain is robust; which features matter is
+not, and a ranking from a single scheme should not be reported as the answer.
+
+\paragraph{Horizon.} We hypothesised that the parameter null's excess variance
+arises because randomising weights perturbs the measurement's \emph{domain},
+return being a functional of the policy-induced state distribution, and that this
+compounds along the trajectory. The prediction is that its variance grows with
+horizon faster than the environment null's. It does not: over horizons 4 to 28
+both grow near-linearly at indistinguishable rates ($\alpha=0.94$, $r^2=0.995$
+against $\alpha=0.83$, $r^2=0.998$), the ratio flat at $1.7$--$1.8\times$. The
+hypothesis is rejected and the $42\times$ gap remains unexplained.
+
+The experiment did establish something else. At horizon 56 the environment null
+collapses to a standard deviation of $0.04$ with two distinct values across
+sixteen agents: every blind agent converged on the same abstaining policy. This
+is the Acrobot degeneracy again, and it now has a mechanism: the environment null
+degenerates when the task affords enough time to learn that inaction is optimal.
+
+\subsection{Reproduction from scratch}
+\label{sec:repro}
+
+All figures above come from a corpus rebuilt after deleting every cached file. An
+earlier corpus, collected five days before and sharing $93\%$ of its contracts,
+gave PPO $-0.418 \pm 0.260$ ($p=0.129$) against $-0.595 \pm 0.176$ ($p=0.100$),
+and null-test $z$ of $+12.27 / +0.72 / -0.15$ against $+12.27 / +0.72 / +0.23$.
+Every conclusion is identical on both. Buy-and-hold moved from $+0.068$ to
+$-1.608$, confirming its earlier positive figure reflected that period's $52.3\%$
+outcome rate rather than an edge.
+
+\section{Limitations}
+
+\textbf{The construction is adapted.} The test is the data-randomisation test
+of \citet{adebayo2018sanity} with an RL-appropriate null; the outcomes framing is
+\citet{beechey2023sverl}'s; deletion-based fidelity is standard.
+
+\textbf{The span measures information in aggregate.} An explanation could clear
+the test and still misattribute among features; Section~\ref{sec:robust} shows the
+ranking is scheme-dependent even when the verdict is not.
+
+\textbf{Temporal credit assignment is named, not solved.} Masking a feature for a
+whole episode measures whether it mattered, not when. This is
+FastSVERL's~\citep{beechey2025fastsverl} territory.
+
+\textbf{Off-policy attribution is not handled.} Masked coalitions induce a
+different policy and therefore a different state distribution; estimates are
+on-policy for the masked policy, not counterfactuals about the unmasked one.
+
+\textbf{The $42\times$ gap is unexplained.} Our proposed mechanism was tested and
+rejected. A remaining conjecture, consistent with all three environments but
+untested, is that the parameter null's width depends on how often a randomly
+initialised network is an accidentally competent policy: sometimes on CartPole
+and Acrobot, never on a market with no exploitable signal.
+
+\textbf{Scope.} One real domain and two classic-control tasks; one attribution
+family for the outcome-level tests. Corpus membership is not reproducible across
+time, though content is.
+
+\section{Conclusion}
+
+An attribution can be stable, precisely estimated, plausible, and empty. The
+checks practitioners apply --- consistency across runs, separation beyond
+estimation error, semantic legibility --- do not detect this, because none of
+them ask whether the explained agent learned anything. A null-model test does,
+using a statistic the attribution framework already provides. The established
+test for this purpose does not survive the move to reinforcement learning, and we
+recommend against its use there without the measurement in
+Section~\ref{sec:nulls}.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
