@@ -68,7 +68,7 @@ rejects a planted signal at $z=12.27$ and fails to reject the market agent at
 $z=+0.23$. We further show that the established sanity check for this purpose,
 randomising network parameters, does not transfer to reinforcement learning: on
 CartPole its reference distribution is $42\times$ wider than an
-environment-level null, and across eight checkpoints on two control tasks it
+environment-level null, and across sixteen checkpoints on four control tasks it
 never exceeds $z=2.45$, including on a converged policy. Finally, the market
 agent's attribution can be driven from $39.9\%$ to $3.2\%$ of total mass at no
 measurable cost in return, while the same intervention on a feature that
@@ -120,9 +120,9 @@ nothing to condition on. This requires no access to task internals
 
 \item \textbf{The established null fails in RL, measurably.} Parameter
 randomisation yields a reference distribution $42\times$ wider on CartPole and
-degenerate on Acrobot. Across eight checkpoints it never exceeds $z=2.45$,
+degenerate on Acrobot. Across sixteen checkpoints it never exceeds $z=2.45$,
 including on a converged CartPole policy scoring 404 of 500, while the
-environment null reaches $z=117$. The two disagree on five of eight
+environment null reaches $z=117$. The two disagree on five of sixteen
 (Section~\ref{sec:nulls}).
 
 \item \textbf{A validation protocol with ground truth.} Explanation evaluation is
@@ -320,17 +320,20 @@ hurdle on a 50-cent notional, and it determines most of what follows.
 
 \subsection{Control tasks}
 
-CartPole-v1 (4 features) and Acrobot-v1 (6 features) provide settings with no
-relationship to trading and well-understood optimal policies. Both have
-observation spaces small enough to enumerate all $2^{|N|}$ coalitions, so
-per-feature Shapley values there are exact.
+CartPole-v1 (4 features), Acrobot-v1 (6), MountainCar-v0 (2) and Pendulum-v1
+(3) provide settings with no relationship to trading and well-understood optimal
+policies. All four have observation spaces small enough to enumerate every one
+of the $2^{|N|}$ coalitions, so per-feature Shapley values there are exact.
+Pendulum's action space is continuous; we discretise it into nine evenly spaced
+values so the same categorical PPO trains on every task, at the cost of fine
+control near the optimum.
 
 \subsection{Reproducibility}
 
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 226 tests cover the environment, the attribution implementations, and
+command; 235 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -506,15 +509,18 @@ Figure~\ref{fig:nullcmp}). Shapley values here are exact.
 
 \begin{table}[t]
 \centering\footnotesize
-\caption{Null construction on two control tasks. Entries are mean $\pm$ sd of
+\caption{Null construction on four control tasks (CartPole-v1, Acrobot-v1,
+MountainCar-v0, Pendulum-v1). Entries are mean $\pm$ sd of
 the span across draws; the sd is what sets the test's power.}
 \label{tab:nulls}
 \begin{tabular}{lrrr}
 \toprule
 Environment & Parameter & Environment & Ratio \\
 \midrule
-CartPole-v1 & $+55.34 \pm \mathbf{138.92}$ & $-1.35 \pm \mathbf{3.29}$ & $42\times$ \\
-Acrobot-v1  & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
+CartPole    & $+55.34 \pm \mathbf{138.92}$ & $-1.35 \pm \mathbf{3.29}$ & $42\times$ \\
+Acrobot     & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
+MountainCar & $+0.00 \pm \mathbf{0.00}$ & $+0.00 \pm \mathbf{0.00}$ & $0\times$ \\
+Pendulum    & $-152.16 \pm \mathbf{131.42}$ & $+11.12 \pm \mathbf{37.79}$ & $3\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -522,18 +528,29 @@ Acrobot-v1  & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degener
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_null_comparison.png}
-\caption{Spread of each null construction, on both control tasks. Width
-determines power: a very wide reference distribution cannot reject anything.}
+\caption{Spread of each null construction on four control tasks. Width
+determines power: a very wide reference distribution cannot reject anything.
+MountainCar is degenerate under both constructions, because no policy in the
+budget ever reaches the goal.}
 \label{fig:nullcmp}
 \end{figure*}
 
 A randomly initialised policy behaves arbitrarily, so masking its inputs moves
 return unpredictably and the reference distribution is very wide. The resulting
-test has almost no power. Across eight checkpoints the parameter null never
+test has almost no power. Across sixteen checkpoints the parameter null never
 exceeds $z=2.45$, including on a converged CartPole policy scoring 404 of 500,
-while the environment null reaches $z=+117.6$. The two disagree on five of eight.
-The choice of null is not a detail; it decides the verdict, and the incumbent
-construction is the one that fails.
+while the environment null reaches $z=+117.6$. The two disagree on five of the
+sixteen. The choice of null is not a detail; it decides the verdict, and the
+incumbent construction is the one that fails.
+
+Two environments qualify the claim rather than extend it. MountainCar is
+degenerate under \emph{both} constructions, at $0.00 \pm 0.00$: within our step
+budget no policy ever reaches the goal, every episode returns $-200$, and there
+is genuinely nothing to explain. The test declines, correctly, and contributes
+no evidence either way. Pendulum narrows the gap to $3\times$ because its
+environment null is itself wide ($37.79$): a blind agent on a dense-reward
+continuous task still varies in return. The $42\times$ figure is the extreme
+case, not the typical one.
 
 Acrobot additionally shows the test tracking \emph{whether there is anything to
 explain} rather than agent quality. Its agent fails completely until it learns
@@ -541,6 +558,43 @@ explain} rather than agent quality. Its agent fails completely until it learns
 and the test correctly declines. CartPole behaves differently because its
 observations matter at every skill level. We do not claim undertrained agents
 generally produce empty explanations; they do not.
+
+\paragraph{Why the parameter null is wide.}
+\label{par:why}
+The gap has a mechanism, and it is not about explanations at all. Recording each
+random network's \emph{unmasked} return alongside its span
+(Figure~\ref{fig:conjecture}) shows the parameter null's width is, to three
+significant figures, the spread of random-initialisation return: $138.38$ against
+$138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot, $135.49$ against
+$131.42$ on Pendulum, and $0.00$ against $0.00$ on MountainCar.
+
+The reason is visible in the decomposition $\Delta = \vfn(N) - \vfn(\emptyset)$.
+For a randomly initialised network the masked term is nearly constant across
+draws --- its standard deviation is $1.8\%$ of the unmasked term's on CartPole,
+$5.4\%$ on Acrobot --- because a policy that was not using its observations
+loses almost nothing when they are removed. The span therefore inherits the
+variance of the unmasked term entire. \emph{Parameter randomisation measures the
+variance of initialisation, not anything about the explanation being tested},
+which is why its reference distribution is wide wherever random networks vary
+and why a test built on it has no power. An environment null does not have this
+problem because its agents are trained to convergence and land near a common
+blind-optimal return.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_conjecture.png}
+\caption{The parameter null's width against the spread of random-initialisation
+return, one point per environment. The points lie on $y=x$: the established
+null's reference distribution is the variance of initialisation.}
+\label{fig:conjecture}
+\end{figure}
+
+This supersedes the conjecture we offered in an earlier draft, that the width
+depended on how often a random network is accidentally competent. That is
+roughly right but imprecise: what matters is not competence but \emph{variance}
+in competence, and the relationship is an identity rather than a tendency. Four
+environments is too few to fit anything, and we report the correspondence rather
+than a correlation coefficient for that reason.
 
 \subsection{Attribution is not identified by behaviour}
 \label{sec:steering}
@@ -610,7 +664,10 @@ compounds along the trajectory. The prediction is that its variance grows with
 horizon faster than the environment null's. It does not: over horizons 4 to 28
 both grow near-linearly at indistinguishable rates ($\alpha=0.94$, $r^2=0.995$
 against $\alpha=0.83$, $r^2=0.998$), the ratio flat at $1.7$--$1.8\times$. The
-hypothesis is rejected and the $42\times$ gap remains unexplained.
+hypothesis is rejected. The gap is instead accounted for by the
+initialisation-variance identity of Section~\ref{sec:nulls}, which involves no
+compounding along the trajectory and is consistent with the flat ratio found
+here.
 
 The experiment did establish something else. At horizon 56 the environment null
 collapses to a standard deviation of $0.04$ with two distinct values across
@@ -715,15 +772,19 @@ FastSVERL's~\citep{beechey2025fastsverl} territory.
 different policy and therefore a different state distribution; estimates are
 on-policy for the masked policy, not counterfactuals about the unmasked one.
 
-\textbf{The $42\times$ gap is unexplained.} Our proposed mechanism was tested and
-rejected. A remaining conjecture, consistent with all three environments but
-untested, is that the parameter null's width depends on how often a randomly
-initialised network is an accidentally competent policy: sometimes on CartPole
-and Acrobot, never on a market with no exploitable signal.
+\textbf{The width identity is measured on four environments.} The correspondence
+between the parameter null's width and initialisation-return variance is close
+to exact on each task we ran, and it has a mechanism, but four points cannot
+establish a law. We report the correspondence, not a fitted relationship.
 
-\textbf{Scope.} One real domain and two classic-control tasks; one attribution
-family for the outcome-level tests. Corpus membership is not reproducible across
-time, though content is.
+\textbf{Scope.} One real domain and four classic-control tasks; one attribution
+family for the outcome-level tests. All four control tasks have small
+observation spaces, so nothing here speaks to pixel-based or high-dimensional
+agents, where the reference distribution is itself the hard problem. Box2D
+environments were deliberately excluded: they require a system-level build
+dependency, which would trade the one-command reproduction for one more
+observation dimension. Corpus membership is not reproducible across time, though
+content is.
 
 \section{Conclusion}
 

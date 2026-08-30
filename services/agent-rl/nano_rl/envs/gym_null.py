@@ -36,6 +36,41 @@ import torch
 from nano_rl.agents.networks import ActorCritic
 
 
+class DiscretizedAction(gym.ActionWrapper):
+    """expose a 1-D Box action space as Discrete(n) on an even grid.
+
+    the PPO implementation here is categorical, so continuous-control tasks
+    would otherwise be out of reach. discretising the single action dimension
+    is the standard way to put them on the same footing; it costs fine control
+    near the optimum and nothing that matters for a null test, which asks only
+    whether observations carry information.
+    """
+
+    def __init__(self, env: gym.Env, n_bins: int = 9):
+        super().__init__(env)
+        low = float(env.action_space.low[0])
+        high = float(env.action_space.high[0])
+        self._grid = np.linspace(low, high, n_bins, dtype=np.float32)
+        self.action_space = gym.spaces.Discrete(n_bins)
+
+    def action(self, a):
+        return np.array([self._grid[int(a)]], dtype=np.float32)
+
+
+def make_env(env_id: str, **kwargs) -> gym.Env:
+    """gym.make, with a continuous action space discretised.
+
+    every call site goes through this rather than gym.make directly, so a
+    continuous env is wrapped identically whether it is being trained, blinded,
+    evaluated or masked. wrapping in some paths and not others would silently
+    compare different environments.
+    """
+    env = gym.make(env_id, **kwargs)
+    if isinstance(env.action_space, gym.spaces.Box):
+        env = DiscretizedAction(env)
+    return env
+
+
 class BlindObservation(gym.ObservationWrapper):
     """replace every observation with a draw from a fixed reference distribution.
 
@@ -63,7 +98,7 @@ class BlindObservation(gym.ObservationWrapper):
 
 def observation_moments(env_id: str, n_steps: int = 4000, seed: int = 0):
     """mean and std of the observation under a random policy."""
-    env = gym.make(env_id)
+    env = make_env(env_id)
     rng = np.random.default_rng(seed)
     obs, _ = env.reset(seed=seed)
     rows = []
@@ -233,7 +268,7 @@ def train_gym_ppo(
 
 def evaluate_gym(net: ActorCritic, env_id: str, n_episodes: int = 30, seed: int = 0) -> float:
     """mean undiscounted return under the greedy policy."""
-    env = gym.make(env_id)
+    env = make_env(env_id)
     total = []
     for i in range(n_episodes):
         obs, _ = env.reset(seed=seed + i)
@@ -267,7 +302,7 @@ def masked_return(
     resampled each step rather than fixed per episode, so that consistency of
     the fake values cannot itself carry information.
     """
-    env = gym.make(env_id)
+    env = make_env(env_id)
     rng = np.random.default_rng(seed)
     total = []
 

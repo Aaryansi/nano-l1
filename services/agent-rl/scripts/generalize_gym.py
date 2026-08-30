@@ -40,6 +40,7 @@ from nano_rl.envs.gym_null import (  # noqa: E402
     attribution_span_fast,
     evaluate_gym,
     exact_shapley_span,
+    make_env,
     observation_moments,
     train_gym_ppo,
 )
@@ -51,7 +52,7 @@ def banner(t: str) -> None:
 
 
 def make_background(env_id: str, n: int = 512, seed: int = 0) -> np.ndarray:
-    env = gym.make(env_id)
+    env = make_env(env_id)
     rng = np.random.default_rng(seed)
     obs, _ = env.reset(seed=seed)
     rows = []
@@ -65,7 +66,7 @@ def make_background(env_id: str, n: int = 512, seed: int = 0) -> np.ndarray:
 
 
 def run_env(env_id: str, args) -> dict:
-    probe = gym.make(env_id)
+    probe = make_env(env_id)
     n_feat = int(probe.observation_space.shape[0])
     n_act = int(probe.action_space.n)
     probe.close()
@@ -76,7 +77,14 @@ def run_env(env_id: str, args) -> dict:
     bg = make_background(env_id, seed=args.seed)
 
     # ---- null 1: randomised weights (the established construction)
-    weight_spans = []
+    #
+    # each net's unmasked return is recorded alongside its span, to test the
+    # conjecture left open by the horizon experiment: that the weight null is
+    # wide because a randomly initialised network is sometimes an accidentally
+    # competent policy. both quantities are in return units, so they can be
+    # compared directly rather than through a normalisation that would have to
+    # be argued for.
+    weight_spans, weight_returns = [], []
     for k in range(args.n_null):
         torch.manual_seed(10_000 + k)
         net = ActorCritic(n_feat, n_act, 64)
@@ -86,13 +94,18 @@ def run_env(env_id: str, args) -> dict:
                 n_episodes=args.attr_episodes, seed=args.seed + k,
             )
         )
+        weight_returns.append(
+            evaluate_gym(net, env_id, n_episodes=args.attr_episodes,
+                         seed=args.seed + k)
+        )
     weight_spans = np.array(weight_spans)
+    weight_returns = np.array(weight_returns)
 
     # ---- null 2: uninformative observation channel (this work)
     mean, std = observation_moments(env_id, seed=args.seed)
     env_spans = []
     for k in range(args.n_null):
-        blind = BlindObservation(gym.make(env_id), mean, std, seed=2000 + k)
+        blind = BlindObservation(make_env(env_id), mean, std, seed=2000 + k)
         net, _ = train_gym_ppo(
             blind, GymPPOConfig(seed=2000 + k), total_steps=args.null_steps
         )
@@ -105,6 +118,8 @@ def run_env(env_id: str, args) -> dict:
         )
     env_spans = np.array(env_spans)
 
+    print(f"  random-init return: {weight_returns.mean():>+9.3f} "
+          f"+/- {weight_returns.std(ddof=1):>8.3f}")
     print(f"  weight null      : {weight_spans.mean():>+9.3f} "
           f"+/- {weight_spans.std(ddof=1):>8.3f}")
     print(f"  environment null : {env_spans.mean():>+9.3f} "
@@ -114,7 +129,7 @@ def run_env(env_id: str, args) -> dict:
 
     # ---- the trained agent, checkpointed
     fractions = (0.1, 0.25, 0.5, 1.0)
-    env = gym.make(env_id)
+    env = make_env(env_id)
     final, checkpoints = train_gym_ppo(
         env, GymPPOConfig(seed=args.seed), total_steps=args.steps,
         checkpoint_fractions=fractions,
@@ -157,6 +172,9 @@ def run_env(env_id: str, args) -> dict:
         "weight_null": {"mean": float(weight_spans.mean()),
                         "std": float(weight_spans.std(ddof=1)),
                         "spans": weight_spans.tolist()},
+        "random_init_return": {"mean": float(weight_returns.mean()),
+                               "std": float(weight_returns.std(ddof=1)),
+                               "returns": weight_returns.tolist()},
         "env_null": {"mean": float(env_spans.mean()),
                      "std": float(env_spans.std(ddof=1)),
                      "spans": env_spans.tolist()},
@@ -203,6 +221,38 @@ def main() -> None:
     if total_agree == 0:
         print("  they never agree, so the choice of null decides every verdict")
 
+    # ---- the conjecture the horizon experiment left open
+    banner("IS THE WEIGHT NULL WIDE BECAUSE RANDOM NETS ARE SOMETIMES COMPETENT?")
+    print("  conjectured mechanism: a randomly initialised net is occasionally")
+    print("  an accidentally decent policy, so masking its inputs costs a lot")
+    print("  on those draws and nothing on the rest. if so, the spread of")
+    print("  random-init RETURNS should track the spread of their spans.")
+    print()
+    print(f"  {'environment':<18}{'random return sd':>18}{'weight null sd':>17}"
+          f"{'ratio':>9}")
+    rr, ws = [], []
+    for r in results:
+        a = r["random_init_return"]["std"]
+        b = r["weight_null"]["std"]
+        rr.append(a)
+        ws.append(b)
+        print(f"  {r['env_id']:<18}{a:>18.2f}{b:>17.2f}{b / max(a, 1e-9):>9.2f}")
+
+    conj: dict = {"n_environments": len(results)}
+    if len(results) >= 3:
+        c = float(np.corrcoef(rr, ws)[0, 1])
+        conj["return_sd_vs_null_sd_corr"] = c
+        print(f"\n  correlation across {len(results)} environments: {c:+.3f}")
+        # with a handful of environments this is suggestive at best, and the
+        # paper must not report it as though it were an estimate.
+        print("  n is small; this is consistent-with, not evidence-for.")
+        conj["supported"] = bool(c > 0.8)
+    else:
+        print("\n  too few environments to correlate anything")
+    conj["random_return_sd"] = list(map(float, rr))
+    conj["weight_null_sd"] = list(map(float, ws))
+    conj["env_ids"] = [r["env_id"] for r in results]
+
     plots.null_comparison(
         {r["env_id"]: (r["weight_null"]["spans"], r["env_null"]["spans"])
          for r in results},
@@ -212,7 +262,12 @@ def main() -> None:
     )
 
     (out / "generalize_gym.json").write_text(json.dumps(results, indent=2))
+    # kept in its own file: generalize_gym.json is a bare list consumed
+    # positionally elsewhere, and wrapping it to add a key would break readers
+    # for no gain.
+    (out / "null_width_conjecture.json").write_text(json.dumps(conj, indent=2))
     print(f"\nwrote {out}/generalize_gym.json")
+    print(f"wrote {out}/null_width_conjecture.json")
 
 
 if __name__ == "__main__":

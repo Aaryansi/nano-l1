@@ -1,0 +1,23 @@
+{
+  "n_environments": 4,
+  "return_sd_vs_null_sd_corr": 0.9992628291920251,
+  "supported": true,
+  "random_return_sd": [
+    138.37727599343629,
+    123.03757763936852,
+    0.0,
+    135.4894982113035
+  ],
+  "weight_null_sd": [
+    138.9182626337582,
+    124.94166722248161,
+    0.0,
+    131.4185808765863
+  ],
+  "env_ids": [
+    "CartPole-v1",
+    "Acrobot-v1",
+    "MountainCar-v0",
+    "Pendulum-v1"
+  ]
+}

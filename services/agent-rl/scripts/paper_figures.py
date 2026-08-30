@@ -199,11 +199,21 @@ def fig_power(d, out: Path):
 
 
 def fig_null_comparison(d, out: Path):
-    """full width: the two null constructions, one row per environment."""
-    fig, axes = plt.subplots(1, len(d), figsize=(FULL, 1.9), facecolor="white")
-    axes = np.atleast_1d(axes)
+    """full width: the two null constructions, one panel per environment.
 
-    for i, (ax, row) in enumerate(zip(axes, d)):
+    laid out on a grid rather than a single row. four panels across seven
+    inches leaves each one 1.75in wide, which is narrower than its own x-axis
+    label.
+    """
+    ncols = 2 if len(d) > 2 else len(d)
+    nrows = int(np.ceil(len(d) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(FULL, 1.9 * nrows),
+                             facecolor="white", squeeze=False)
+    flat = axes.ravel()
+    for spare in flat[len(d):]:
+        spare.axis("off")
+
+    for i, (ax, row) in enumerate(zip(flat, d)):
         w = np.array(row["weight_null"]["spans"])
         v = np.array(row["env_null"]["spans"])
         for y, vals, color, lab in ((1, w, C2, "parameter"), (0, v, C1, "environment")):
@@ -219,15 +229,16 @@ def fig_null_comparison(d, out: Path):
         # only the leftmost panel is labelled. repeating identical row labels on
         # every panel puts them in the gap between subplots, where they collide
         # with the sd annotation the panel to their left writes past its axes.
-        ax.set_yticklabels(["environment", "parameter"] if i == 0 else ["", ""],
-                           color=INK, fontsize=7)
+        ax.set_yticklabels(
+            ["environment", "parameter"] if i % ncols == 0 else ["", ""],
+            color=INK, fontsize=7)
         ax.set_ylim(-0.6, 1.6)
         style(ax, xlabel=r"span  $v(N)-v(\emptyset)$", title=row["env_id"])
         ax.grid(axis="y", visible=False)
         # leave room on the right for the widest sd annotation
         lo, hi = ax.get_xlim()
         ax.set_xlim(lo, hi + 0.22 * (hi - lo))
-    fig.subplots_adjust(wspace=0.12)
+    fig.subplots_adjust(wspace=0.12, hspace=0.85)
     save(fig, out / "fig_null_comparison.png")
 
 
@@ -261,6 +272,46 @@ def fig_steering(d, out: Path):
     axes[0].legend(frameon=False, fontsize=6.5, labelcolor=MUTED, loc="upper right",
                    handletextpad=0.4, borderpad=0.2)
     save(fig, out / "fig_steering.png")
+
+
+def fig_conjecture(d, out: Path):
+    """single column: the parameter null's width against random-init return sd.
+
+    the points sit on the identity line, which is the explanation: the
+    parameter null does not measure anything about explanations, it measures
+    the spread of random initialisation.
+    """
+    x = np.array(d["random_return_sd"])
+    y = np.array(d["weight_null_sd"])
+    names = [n.split("-")[0] for n in d["env_ids"]]
+
+    fig, ax = plt.subplots(figsize=(COL, 2.2), facecolor="white")
+    hi = max(x.max(), y.max()) * 1.18
+    ax.plot([0, hi], [0, hi], color=REF, lw=0.9, ls="--", zorder=1)
+    # label the line in the empty middle stretch: at the top right it lands on
+    # the cluster the figure is about
+    ax.text(hi * 0.52, hi * 0.46, "$y=x$", fontsize=6.5, color=MUTED,
+            ha="left", va="top")
+    ax.scatter(x, y, s=42, color=C1, zorder=4, edgecolors="white",
+               linewidths=1.1)
+    # three of the four environments land within ~15 units of each other, so
+    # labels placed at a uniform offset overprint each other and the markers.
+    # they are staggered around the cluster and tied back with leader lines.
+    offsets = {0: (-2, -30), 1: (-24, 30), 2: (-34, -12), 3: (34, 15)}
+    order = np.argsort(-x)
+    for rank, i in enumerate(order):
+        ax.annotate(
+            names[i], xy=(x[i], y[i]), xytext=offsets[rank],
+            textcoords="offset points", fontsize=6.6, color=INK,
+            ha="center", va="center",
+            arrowprops=dict(arrowstyle="-", color=REF, lw=0.6,
+                            shrinkA=1, shrinkB=4))
+
+    ax.set_xlim(-hi * 0.06, hi)
+    ax.set_ylim(-hi * 0.06, hi)
+    style(ax, xlabel="sd of random-init return",
+          ylabel="sd of parameter null")
+    save(fig, out / "fig_conjecture.png")
 
 
 def fig_manifold(d, out: Path):
@@ -334,6 +385,7 @@ def main() -> None:
     fig_power(L("power_curve.json"), out)
     fig_null_comparison(L("generalize_gym.json"), out)
     fig_steering(L("steering.json"), out)
+    fig_conjecture(L("null_width_conjecture.json"), out)
     fig_manifold(L("manifold_masking.json"), out)
     fig_decoy(L("faithfulness.json"), out)
     print("done")

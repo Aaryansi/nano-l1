@@ -67,8 +67,9 @@
   carries no information. It rejects a planted signal at $z=12.27$ and fails to
   reject the market agent at $z=+0.23$. The established sanity check for this
   purpose, randomising network parameters, does not transfer: its reference
-  distribution is $42\times$ wider on CartPole, and across eight checkpoints on
-  two control tasks it never exceeds $z=2.45$, including on a converged policy.
+  distribution is $42\times$ wider on CartPole, and across sixteen checkpoints
+  on four control tasks it never exceeds $z=2.45$, including on a converged
+  policy. Its width is exactly the spread of random-initialisation return.
   Finally, the market agent's attribution can be driven from $39.9\%$ to $3.2\%$
   of total mass at no measurable cost in return, while the same intervention on a
   feature that genuinely carries signal destroys $81\%$ of return.
@@ -263,23 +264,35 @@ attribution is correct about behaviour and misleading about value.
 We build both nulls for the same task (Table~\ref{tab:nulls},
 Figure~\ref{fig:nullcmp}). A randomly initialised policy behaves arbitrarily, so
 masking its inputs moves return unpredictably and the reference distribution is
-very wide. Across eight checkpoints the parameter null never exceeds $z=2.45$,
+very wide. Across sixteen checkpoints the parameter null never exceeds $z=2.45$,
 including on a converged CartPole policy scoring 404 of 500, while the
-environment null reaches $z=+117.6$. The two disagree on five of eight.
+environment null reaches $z=+117.6$. The two disagree on five of the sixteen.
 
 \begin{table}[t]
 \centering\small
-\caption{Null construction on two control tasks.}
+\caption{Null construction on four control tasks. MountainCar is degenerate under both: no policy in the budget reaches the goal.}
 \label{tab:nulls}
 \begin{tabular}{lrrr}
 \toprule
 Environment & Parameter & Environment & Ratio \\
 \midrule
-CartPole-v1 & $\pm \mathbf{138.92}$ & $\pm \mathbf{3.29}$ & $42\times$ \\
-Acrobot-v1 & $\pm \mathbf{124.94}$ & $\pm \mathbf{0.00}$ & degenerate \\
+CartPole & $\pm \mathbf{138.92}$ & $\pm \mathbf{3.29}$ & $42\times$ \\
+Acrobot & $\pm \mathbf{124.94}$ & $\pm \mathbf{0.00}$ & degenerate \\
+MountainCar & $\pm \mathbf{0.00}$ & $\pm \mathbf{0.00}$ & $0\times$ \\
+Pendulum & $\pm \mathbf{131.42}$ & $\pm \mathbf{37.79}$ & $3\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Why it is wide.} The gap has a mechanism, and it is not about
+explanations. On every task the parameter null's width equals the spread of
+random-initialisation return to three significant figures: $138.38$ against
+$138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot. In
+$\Delta = \vfn(N) - \vfn(\emptyset)$ the masked term is near-constant for a
+random network (sd $1.8\%$ of the unmasked term's on CartPole), because a policy
+not using its observations loses little when they go. The span inherits the
+unmasked variance entire: \emph{parameter randomisation measures the variance of
+initialisation}, which is why a test built on it has no power.
 
 \begin{figure*}[t]
 \centering
@@ -300,7 +313,7 @@ undertrained agents generally produce empty explanations.
 We add a training penalty on the divergence between $\pi(\cdot\mid s)$ and
 $\pi(\cdot\mid s')$, where $s'$ has one feature resampled from the batch
 marginal: the same perturbation the attribution measures
-(Table~\ref{tab:steer}, Figure~\ref{fig:steer}).
+(Table~\ref{tab:steer}).
 
 \begin{table}[t]
 \centering\small
@@ -316,13 +329,6 @@ planted signal & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+7.92}$ & $<$
 \end{tabular}
 \end{table}
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{figures/fig_steering.png}
-\caption{Attribution is equally suppressible on both corpora (left). Only where
-the feature is load-bearing does suppressing it cost return (right).}
-\label{fig:steer}
-\end{figure*}
 
 The attribution is equally suppressible in both cases. What differs is the price:
 suppressing the planted signal destroys $81\%$ of return; on the market it costs
@@ -342,12 +348,15 @@ The test adapts \citet{adebayo2018sanity}; the outcomes framing is
 \citet{beechey2023sverl}'s. The span measures information in aggregate, not
 whether the decomposition among features is right. Temporal credit assignment and
 off-policy attribution are named, not solved; these are
-FastSVERL's~\citep{beechey2025fastsverl} territory. We proposed a mechanism for
-the $42\times$ gap (randomising weights perturbs the measurement's domain and
-compounds along the trajectory) and tested it: over horizons 4 to 28 both
-nulls grow at indistinguishable rates ($\alpha=0.94$ against $0.83$). The
-hypothesis is rejected and the gap remains unexplained. Scope is one real domain
-and two control tasks.
+FastSVERL's~\citep{beechey2025fastsverl} territory. An earlier mechanism we
+proposed for the $42\times$ gap (that randomising weights perturbs the
+measurement's domain and compounds along the trajectory) was tested and
+rejected: over horizons 4 to 28 both nulls grow at indistinguishable rates
+($\alpha=0.94$ against $0.83$). The initialisation-variance identity accounts
+for it instead, and involves no compounding. Four environments is too few to fit
+a law, so we report that correspondence rather than a coefficient. Scope is one
+real domain and four classic-control tasks, all with small observation spaces,
+so nothing here speaks to pixel-based agents.
 
 \section{Conclusion}
 

@@ -157,8 +157,12 @@ step "is the span an artefact of off-manifold masking?"
     --runs runs/ppo --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) )
 
-step "does it generalise? CartPole and Acrobot"
+# four classic-control tasks, not two. box2d environments are deliberately not
+# used: they need a system swig binary to build, which would trade the
+# one-command property for one more feature dimension.
+step "does it generalise? four control tasks"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
 
 # -------------------------------------------------------------------- done

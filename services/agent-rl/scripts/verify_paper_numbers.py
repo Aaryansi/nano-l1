@@ -88,16 +88,49 @@ if st:
 g = load("generalize_gym.json")
 print("\ntable 3: null construction across environments")
 if g:
+    # paper table 3, one row per environment
+    WEIGHT_SD = {"cartpole": 138.92, "acrobot": 124.94,
+                 "mountaincar": 0.0, "pendulum": 131.42}
+    ENV_SD = {"cartpole": 3.29, "acrobot": 0.0,
+              "mountaincar": 0.0, "pendulum": 37.79}
     for row in g:
         e = row["env_id"].split("-")[0].lower()
-        check(f"{e} weight null sd", 138.92 if e == "cartpole" else 124.94,
-              row["weight_null"]["std"], 0.02)
-        check(f"{e} env null sd", 3.29 if e == "cartpole" else 0.0,
-              row["env_null"]["std"], 0.02 if e == "cartpole" else 1.0)
+        # a degenerate null is exactly zero, so a relative tolerance cannot
+        # express "close"; compare those absolutely instead.
+        check(f"{e} weight null sd", WEIGHT_SD[e], row["weight_null"]["std"],
+              0.02 if WEIGHT_SD[e] else 1.0)
+        check(f"{e} env null sd", ENV_SD[e], row["env_null"]["std"],
+              0.02 if ENV_SD[e] else 1.0)
     agree = sum(r["nulls_agree"] for r in g)
     total = sum(r["n_checkpoints"] for r in g)
-    check("checkpoints where nulls agree", 3, agree, 0.001)
-    check("total checkpoints", 8, total, 0.001)
+    check("checkpoints where nulls agree", 11, agree, 0.001)
+    check("total checkpoints", 16, total, 0.001)
+
+    import numpy as np
+    zw = [c["z_weight"] for r in g for c in r["checkpoints"]]
+    check("max |z| under the weight null", 2.45, max(map(abs, zw)), 0.02)
+
+# ------------------------------------------------- initialisation variance
+nw = load("null_width_conjecture.json")
+print("\nsection 5.5: why the parameter null is wide")
+if nw and g:
+    byenv = dict(zip([e.split("-")[0].lower() for e in nw["env_ids"]],
+                     nw["random_return_sd"]))
+    for e, v in (("cartpole", 138.38), ("acrobot", 123.04),
+                 ("pendulum", 135.49), ("mountaincar", 0.0)):
+        check(f"{e} random-init return sd", v, byenv[e], 0.02 if v else 1.0)
+    # the mechanism: the masked term is near-constant, so the span inherits
+    # the unmasked term's variance
+    import numpy as np
+    for row in g:
+        e = row["env_id"].split("-")[0].lower()
+        if e not in ("cartpole", "acrobot"):
+            continue
+        un = np.array(row["random_init_return"]["returns"])
+        ma = un - np.array(row["weight_null"]["spans"])
+        frac = float(ma.std(ddof=1) / un.std(ddof=1))
+        check(f"{e} masked/unmasked sd ratio",
+              0.018 if e == "cartpole" else 0.054, frac, 0.10)
 
 # ---------------------------------------------------------------- schemes
 sc = load("scheme_robustness.json")
