@@ -1,0 +1,83 @@
+{
+  "planted signal": {
+    "z": 12.272937264340852,
+    "z_lo": 10.291642093995055,
+    "z_hi": 17.033257387994738,
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000
+  },
+  "null corpus": {
+    "z": 0.7176806672462446,
+    "z_lo": 0.3129918136583071,
+    "z_hi": 1.3806818458605117,
+    "verdict_stability": 0.9987,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000
+  },
+  "real market": {
+    "z": 0.22947572263316204,
+    "z_lo": -0.15732746623714525,
+    "z_hi": 0.7469820963385536,
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000
+  },
+  "planted, conditional masking": {
+    "z": 9.60550237282806,
+    "z_lo": 6.642401609079613,
+    "z_hi": 21.606041733896937,
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  },
+  "real market, conditional masking": {
+    "z": -0.5509333385232573,
+    "z_lo": -1.0990588087075117,
+    "z_hi": -0.09663942086645368,
+    "verdict_stability": 0.9999,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  },
+  "real prediction": {
+    "z": 2.9178255054956312,
+    "z_lo": 1.9601508413360011,
+    "z_hi": 5.7434874806125364,
+    "verdict_stability": 0.9751,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  },
+  "real trading": {
+    "z": 5.014777980768843,
+    "z_lo": 3.579009454429794,
+    "z_hi": 12.568239621244611,
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  },
+  "market vs synthetic-corpus null": {
+    "z": -0.5602479122176731,
+    "z_lo": -1.2937071669483142,
+    "z_hi": -0.23053122598910558,
+    "verdict_stability": 0.9983,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  },
+  "market vs blinded-real null": {
+    "z": 2.2049731649553297,
+    "z_lo": 1.360206563654471,
+    "z_hi": 6.062224085691823,
+    "verdict_stability": 0.7058,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 10000
+  }
+}

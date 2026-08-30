@@ -744,6 +744,60 @@ Every conclusion is identical on both. Buy-and-hold moved from $+0.068$ to
 $-1.608$, confirming its earlier positive figure reflected that period's $52.3\%$
 outcome rate rather than an edge.
 
+\subsection{Hypotheses we rejected}
+\label{sec:rejected}
+
+Four predictions in this project turned out to be wrong. They are collected here
+rather than left implicit in the sections that tested them, because a reader
+assessing whether the surviving claims were stress-tested should be able to see
+what did not survive.
+
+\begin{table*}[t]
+\centering\small
+\caption{Predictions this project made and then rejected on its own evidence.
+None of the surviving results depends on any of them.}
+\label{tab:rejected}
+\begin{tabular}{p{0.29\textwidth}p{0.29\textwidth}p{0.34\textwidth}}
+\toprule
+Hypothesis & Prediction & Outcome \\
+\midrule
+An agent with no edge produces unstable explanations, and instability is the
+tell. &
+Low cross-seed rank correlation. &
+\textbf{Rejected.} $0.850$ mean rank correlation, unanimous on the top feature.
+Emptiness and instability are unrelated, which is what makes the empty case hard
+to catch. \\
+\addlinespace
+Outcome-level attribution, being tied to return, is more stable than
+behaviour-level attribution. &
+Higher cross-seed rank correlation for outcomes. &
+\textbf{Rejected, and reversed.} Outcomes reach $0.347$ against behaviour's
+$0.850$. Attributing to return is noisier, not steadier. \\
+\addlinespace
+The parameter null is wide because randomising weights perturbs the
+measurement's domain and the error compounds along the trajectory. &
+Its variance grows with horizon faster than the environment null's. &
+\textbf{Rejected.} Over horizons 4 to 28 both grow at indistinguishable rates
+($\alpha = 0.94$ against $0.83$), ratio flat at $1.7$--$1.8\times$. \\
+\addlinespace
+The parameter null is wide because a randomly initialised network is sometimes
+an accidentally competent policy. &
+Width tracks how often random policies do well. &
+\textbf{Superseded.} Roughly right but imprecise: the width is not related to
+competence but \emph{equal} to the standard deviation of
+initialisation return (Section~\ref{sec:nulls}). A tendency was replaced by an
+identity. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+One further claim is stated in the paper as structural rather than empirical.
+The span's invariance to the masking mode (Section~\ref{sec:manifold}) follows
+from the construction, since $p(x \mid \emptyset) = p(x)$; the measured equality
+confirms the implementation respects that argument and is not independent
+evidence for it. We separate the two because a numerical agreement that must
+hold is easily mistaken for one that might not have.
+
 \section{Limitations}
 
 \textbf{The construction is adapted.} The test is the data-randomisation test
