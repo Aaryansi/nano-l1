@@ -130,6 +130,13 @@ step "null-model test: is the explanation distinguishable from nothing?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
 
+# the same test with every null matched to its own corpus, which is what
+# section 3 actually defines. the step above is kept because the paper reports
+# what was tried before as well as what it settled on.
+step "the null-model test again, with every null matched to its own corpus"
+( cd "$RL" && "$PY" scripts/matched_null_test.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
+
 step "power curve, and estimation certainty vs validity"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" )

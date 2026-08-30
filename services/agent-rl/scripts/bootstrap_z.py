@@ -94,12 +94,22 @@ def collect(reports: Path) -> list[tuple[str, float, list[float]]]:
         p = reports / name
         return json.loads(p.read_text()) if p.exists() else None
 
+    # the primary construction: each case against a null built by blinding its
+    # own corpus. listed first because these are the paper's headline verdicts.
+    m = load("matched_null_test.json")
+    if m:
+        for c in m["cases"]:
+            out.append((f"matched: {c['case']}", c["span"], c["null_spans"]))
+
+    # the earlier construction, kept because the paper reports it as what was
+    # tried before rather than dropping it silently
     s = load("sanity_test.json")
     if s:
         for key, label in (("planted_signal", "planted signal"),
                            ("held_out_null", "null corpus"),
                            ("real_market", "real market")):
-            out.append((label, s["results"][key]["statistic"], s["null_spans"]))
+            out.append((f"shared-null: {label}",
+                        s["results"][key]["statistic"], s["null_spans"]))
 
     m = load("manifold_masking.json")
     if m:

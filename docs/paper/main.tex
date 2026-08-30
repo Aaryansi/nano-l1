@@ -837,7 +837,9 @@ trained on the \emph{real} training episodes with observations replaced by
 moment-matched noise, and attributed on the same real test episodes as the
 observation. Holding the agent fixed at the checkpoint the paper explains and
 the measurement corpus fixed at the real test split, the null construction is
-then the only thing that varies (Figure~\ref{fig:nullchoice}, $n=32$ each):
+then the only thing that varies (Figure~\ref{fig:nullchoice}, $n=32$ each).
+Section~\ref{sec:matched} applies the same correction to every case rather
+than to this one alone, and reports what it costs:
 
 \begin{center}\footnotesize
 \begin{tabular}{lrrl}
