@@ -62,26 +62,46 @@ def train_on(env, updates: int, seed: int) -> PPOAgent:
     return agent
 
 
-def run_case(name: str, train_batch, eval_batch, norm, agent, args) -> dict:
+def verdict_of(r) -> str:
+    """a two-sided rejection below the null is not evidence of information.
+
+    test_span_against_null is two-sided, so it rejects when the observed span is
+    unusually SMALL as well as unusually large. only the upper tail means the
+    observations carried something. an earlier version of this script printed
+    "informative" for a span 2.8 sd BELOW its null, which is close to the
+    opposite of what that means.
+    """
+    if not r.passes:
+        return "not distinguishable"
+    return "informative" if r.z_score > 0 else "below null"
+
+
+def run_case(name: str, eval_batch, norm, agent, make_null_world, args) -> dict:
     banner(name.upper())
     roll = VectorizedRollout(eval_batch, normalizer=norm, max_position=100.0)
+
+    # the background depends only on observations, and permutation leaves every
+    # observation bit identical, so one background is correct for every world
+    # here and rebuilding it per draw would produce the same array.
     bg = build_background(roll, n_samples=192, seed=args.seed)
 
     observed = masked_span(agent, roll, bg, args.seed)
     ret = float(roll.run(greedy_policy(agent))["returns"].mean())
     print(f"  agent return {ret:+.3f}   span {observed:+.3f}")
-    print(f"  outcome rate {outcome_rate(train_batch):.4f}, preserved by "
-          f"permutation")
 
     spans, rets = [], []
     for k in range(args.n_null):
-        # a fresh permutation per null agent, so the reference reflects
-        # variation in the relabelling as well as in training
-        pb = permute_outcomes(train_batch, seed=7000 + k)
-        env = BinaryMarketEnv(pb, normalizer=norm, max_position=100.0)
-        a = train_on(env, args.updates, args.seed + k)
-        spans.append(masked_span(a, roll, bg, args.seed + k))
-        rets.append(float(roll.run(greedy_policy(a))["returns"].mean()))
+        # a permutation test recomputes the WHOLE statistic under the null, so
+        # the null agent is trained and measured inside its own permuted world.
+        # training there and measuring on the real corpus leaves it out of
+        # distribution at measurement time and inflates its span.
+        ntrain, neval = make_null_world(k)
+        a = train_on(BinaryMarketEnv(ntrain, normalizer=norm,
+                                     max_position=100.0), args.updates,
+                     args.seed + k)
+        nroll = VectorizedRollout(neval, normalizer=norm, max_position=100.0)
+        spans.append(masked_span(a, nroll, bg, args.seed + k))
+        rets.append(float(nroll.run(greedy_policy(a))["returns"].mean()))
         print(f"    null {k + 1}/{args.n_null}: span {spans[-1]:>+8.3f}",
               flush=True)
 
@@ -89,7 +109,7 @@ def run_case(name: str, train_batch, eval_batch, norm, agent, args) -> dict:
     r = test_span_against_null(observed, spans)
     print(f"\n  null {arr.mean():+.3f} +/- {arr.std(ddof=1):.3f}   "
           f"observed {observed:+.3f}   z {r.z_score:+.2f}   "
-          f"{'INFORMATIVE' if r.passes else 'not distinguishable'}")
+          f"{verdict_of(r).upper()}")
     print(f"  null agents' mean return {np.mean(rets):+.3f} "
           f"(a collapsed null would sit at 0.000 with sd 0.000)")
 
@@ -97,7 +117,8 @@ def run_case(name: str, train_batch, eval_batch, norm, agent, args) -> dict:
             "null_spans": list(map(float, spans)),
             "null_mean": float(arr.mean()), "null_std": float(arr.std(ddof=1)),
             "null_return_mean": float(np.mean(rets)),
-            "result": r.as_dict(), "fires": bool(r.passes)}
+            "result": r.as_dict(), "verdict": verdict_of(r),
+            "fires": bool(r.passes and r.z_score > 0)}
 
 
 def main() -> None:
@@ -122,13 +143,17 @@ def main() -> None:
     ln = fit_normalizer(lb)
     la = train_on(BinaryMarketEnv(lb, normalizer=ln, max_position=100.0),
                   args.updates, args.seed)
-    cases.append(run_case("planted signal", lb, lb, ln, la, args))
+    cases.append(run_case(
+        "planted signal", lb, ln, la,
+        lambda k, b=lb: (permute_outcomes(b, 7000 + k),) * 2, args))
 
     hb = make_null_corpus(n_episodes=args.episodes, seed=9999)
     hn = fit_normalizer(hb)
     ha = train_on(BinaryMarketEnv(hb, normalizer=hn, max_position=100.0),
                   args.updates, args.seed + 77)
-    cases.append(run_case("null corpus", hb, hb, hn, ha, args))
+    cases.append(run_case(
+        "null corpus", hb, hn, ha,
+        lambda k, b=hb: (permute_outcomes(b, 7000 + k),) * 2, args))
 
     batch = EpisodeBatch.load(args.corpus)
     split = walk_forward_split(batch)
@@ -136,8 +161,13 @@ def main() -> None:
     if not ckpts:
         raise SystemExit(f"no checkpoints in {args.runs}; train first")
     ra = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(ckpts[0]))
-    cases.append(run_case("real market", split.train, split.test,
-                          split.normalizer, ra, args))
+    # train and test are relabelled independently: under the null the outcomes
+    # are exchangeable within each split, and permuting the concatenation would
+    # move outcomes across the walk-forward boundary for no benefit.
+    cases.append(run_case(
+        "real market", split.test, split.normalizer, ra,
+        lambda k, sp=split: (permute_outcomes(sp.train, 7000 + k),
+                             permute_outcomes(sp.test, 8000 + k)), args))
 
     banner("VERDICT")
     print(f"  {'case':<18}{'span':>10}{'null mean':>12}{'null sd':>10}"
@@ -145,7 +175,7 @@ def main() -> None:
     for c in cases:
         print(f"  {c['case']:<18}{c['span']:>+10.2f}{c['null_mean']:>+12.2f}"
               f"{c['null_std']:>10.2f}{c['result']['z_score']:>+9.2f}"
-              f"{('informative' if c['fires'] else 'not distinguishable'):>22}")
+              f"{c['verdict']:>22}")
 
     by = {c["case"]: c for c in cases}
     power = by["planted signal"]["fires"]
@@ -159,7 +189,7 @@ def main() -> None:
         print("\n  this construction keeps both properties the blinded form")
         print("  lost, on the same three cases. it holds the corpus fixed and")
         print(f"  the real-market verdict under it is: "
-              f"{'informative' if by['real market']['fires'] else 'not distinguishable'}")
+              f"{by['real market']['verdict']}")
     else:
         print("\n  this construction fails too, and the paper reports three")
         print("  failures rather than a fix.")
