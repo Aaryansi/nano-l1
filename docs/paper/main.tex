@@ -910,10 +910,55 @@ null.}
 \label{fig:constructions}
 \end{figure*}
 
+\paragraph{The obvious repair, and why it is vacuous here.}
+The permutation fails because it destroys calibration. The obvious fix is to
+stratify: shuffle outcomes only among contracts the market priced alike, so each
+price bucket keeps its own base rate and the arbitrage never appears. This is
+sound, and it asks a sharper question than the plain permutation, namely whether
+the agent knows anything \emph{the price does not}. It also costs nothing to
+test, since measuring how much a relabelling removes and how much it distorts
+requires no training at all.
+
+\begin{center}\footnotesize
+\begin{tabular}{rrrrr}
+\toprule
+Buckets & Labels moved & Label corr. & Calib. err. & Fade edge \\
+\midrule
+1 (plain) & $0.506$ & $-0.012$ & $0.466$ & $+0.496$ \\
+2 & $0.063$ & $0.873$ & $0.051$ & $+0.025$ \\
+8 & $0.061$ & $0.879$ & $0.007$ & $+0.014$ \\
+32 & $0.052$ & $0.896$ & $0.007$ & $-0.002$ \\
+256 & $0.049$ & $0.901$ & $0.007$ & $-0.002$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Stratifying does exactly what it was meant to: from eight buckets on, the
+calibration error returns to the real corpus's $0.007$ and the fade edge to
+zero. The arbitrage is gone. But the relabelling now moves only $5$--$6\%$ of
+outcomes, and the permuted labels stay correlated at $0.88$--$0.90$ with the
+true ones, at \emph{every} resolution including the coarsest. A world that is
+ninety percent the real world is not a null.
+
+The reason is a property of the domain rather than of the construction. The
+terminal price correlates $0.950$ with the outcome; $88.7\%$ of episodes end
+within $0.1$ of a bound, and there the price is right $99.4\%$ of the time. So
+``information beyond the price'' lives in a small minority of episodes, and a
+relabelling that removes only that cannot differ much from the real data no
+matter how the buckets are drawn. The construction removes the right thing.
+There is almost none of it here to remove.
+
+We report this as a fourth failure with a fourth mechanism, and note that unlike
+the other three it is contingent: in a domain where observations carry
+substantial information beyond the single best predictor, stratified permutation
+may well work. We have no evidence either way, and say so rather than
+generalising from one market.
+
 \paragraph{The pattern.}
-Three constructions, three failures, and the same shape each time. Removing the
-information also perturbs something else, and the perturbation decides the
-verdict:
+Four constructions and four failures. The first three share a shape: removing
+the information also perturbs something else, and the perturbation decides the
+verdict. The fourth is the boundary of that shape, a construction that perturbs
+nothing and therefore removes nothing:
 
 \begin{center}\footnotesize
 \begin{tabular}{p{0.24\columnwidth}p{0.30\columnwidth}p{0.34\columnwidth}}
@@ -927,15 +972,19 @@ fires on anything, budget-dependent \\
 \addlinespace
 outcome permutation & the price's calibration & creates an arbitrage; the null
 learns more than the agent \\
+\addlinespace
+stratified permutation & nothing, and that is the problem & preserves the world
+so faithfully that it removes almost no information \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-We report this as the finding rather than presenting a fourth construction we
-have not tested. A null for reinforcement learning has to remove the
-information while leaving the observation stream, the agent's responsiveness,
-and the task's difficulty intact, and none of the three natural ways of doing
-that manages all four. \citet{huber2022benchmarking} observed that the
+A null for reinforcement learning has to remove the information while leaving
+the observation stream, the agent's responsiveness, and the task's difficulty
+intact. The first three constructions each sacrifice exactly one of those. The
+fourth sacrifices none and removes nothing, which suggests the requirements are
+closer to being in tension than to being jointly satisfiable, at least where one
+observation nearly determines the outcome. \citet{huber2022benchmarking} observed that the
 data-randomisation test has no obvious RL analogue. We set out to supply one and
 instead have an account of why it is hard.
 
@@ -945,10 +994,8 @@ mildest of the three: it widens the reference and so errs toward declining,
 which is the conservative direction for every claim we make with it. That is a
 reason to trust our negative results more than our positive ones, and we would
 not have been able to say which way the bias ran without building the other two.
-One construction we have not tried is a \emph{stratified} permutation, shuffling
-outcomes only within price buckets, which would preserve calibration and remove
-only the information beyond the price. It asks a narrower question, whether the
-agent knows anything the market does not, and that may be the better question.
+The stratified permutation we suggested as the obvious repair is tested above
+and is vacuous in this market, though for a reason that may not hold elsewhere.
 
 \section{What survives the choice of null}
 

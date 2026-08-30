@@ -140,6 +140,13 @@ step "the null-model test again, with every null matched to its own corpus"
 # the third construction: permute the outcomes and leave everything else, so
 # the null agents stay sighted and the corpus stays fixed. this is the one the
 # paper adopts; the two above are what it rejected on the way.
+# the stratified variant, and whether any bucket width makes it usable. costs
+# seconds because it trains nothing: if no window exists there is nothing to
+# run a null test on.
+step "is there a stratified permutation that works?"
+( cd "$RL" && "$PY" scripts/stratified_sweep.py --corpus "$CORPUS" \
+    --out "$REPORTS" )
+
 step "what the outcome permutation actually removes"
 ( cd "$RL" && "$PY" scripts/permutation_calibration.py --corpus "$CORPUS" \
     --out "$REPORTS" )

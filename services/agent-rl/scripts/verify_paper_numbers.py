@@ -356,6 +356,33 @@ if pc:
     check("fade edge, real (extremes)", -0.0015, pc["fade_edge"]["real"]["extremes"], 0.60)
     check("fade edge, permuted (extremes)", 0.4864, pc["fade_edge"]["permuted"]["extremes"], 0.05)
 
+# ------------------------------------------------ the stratified permutation
+ss = load("stratified_sweep.json")
+print("\nsection 5.14: the stratified permutation")
+if ss:
+    rows = {r["n_buckets"]: r for r in ss["rows"]}
+    for n, moved, corr in ((1, 0.506, -0.012), (2, 0.063, 0.873),
+                           (8, 0.061, 0.879), (32, 0.052, 0.896),
+                           (256, 0.049, 0.901)):
+        check(f"{n} buckets, labels moved", moved, rows[n]["changed"], 0.05)
+        check(f"{n} buckets, label corr", corr, rows[n]["label_corr"],
+              0.05 if abs(corr) > 0.1 else 1.0)
+    check("calibration recovered at 8 buckets", 0.0071,
+          rows[8]["calibration_error"], 0.05)
+    check("price-outcome correlation", 0.950,
+          ss["real"]["price_outcome_r"], 0.02)
+    check("fraction of episodes resolved by price", 0.887,
+          ss["real"]["fraction_resolved"], 0.02)
+    check("price is right when resolved", 0.994,
+          ss["real"]["price_agrees_when_resolved"], 0.02)
+    # the finding: no bucket width is usable
+    checks += 1
+    none_usable = not ss["usable_exists"]
+    print(f"  [{'x' if none_usable else ' '}] {'no bucket width is usable':<52} "
+          f"{'yes' if none_usable else 'NO':>21}")
+    if not none_usable:
+        failures.append("stratified sweep: paper says no window exists")
+
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
 if failures:

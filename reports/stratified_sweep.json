@@ -1,0 +1,90 @@
+{
+  "real": {
+    "calibration_error": 0.007135400809801939,
+    "fade_edge": -0.001502770705427239,
+    "price_outcome_r": 0.9502916895092999,
+    "fraction_resolved": 0.8871302542812662,
+    "price_agrees_when_resolved": 0.9938578531734426
+  },
+  "rows": [
+    {
+      "changed": 0.5059678256357032,
+      "label_corr": -0.011942464177454917,
+      "calibration_error": 0.4659813495256687,
+      "fade_edge": 0.49571863906351105,
+      "n_buckets": 1,
+      "usable": false
+    },
+    {
+      "changed": 0.0633108458744162,
+      "label_corr": 0.8733774557644625,
+      "calibration_error": 0.05089937404767607,
+      "fade_edge": 0.024528232511887765,
+      "n_buckets": 2,
+      "usable": false
+    },
+    {
+      "changed": 0.06071613907628438,
+      "label_corr": 0.8785669042987058,
+      "calibration_error": 0.0398648768824346,
+      "fade_edge": 0.021603400689717542,
+      "n_buckets": 4,
+      "usable": false
+    },
+    {
+      "changed": 0.06071613907628438,
+      "label_corr": 0.8785669042987057,
+      "calibration_error": 0.007092432727670909,
+      "fade_edge": 0.013998837952074955,
+      "n_buckets": 8,
+      "usable": false
+    },
+    {
+      "changed": 0.054488842760768035,
+      "label_corr": 0.8910215807808896,
+      "calibration_error": 0.007092432727670909,
+      "fade_edge": 0.0002521283878748961,
+      "n_buckets": 16,
+      "usable": false
+    },
+    {
+      "changed": 0.05189413596263622,
+      "label_corr": 0.8962110293151334,
+      "calibration_error": 0.007092432727670909,
+      "fade_edge": -0.0017952538876442616,
+      "n_buckets": 32,
+      "usable": false
+    },
+    {
+      "changed": 0.045147898287493514,
+      "label_corr": 0.909703595504166,
+      "calibration_error": 0.007092432727670909,
+      "fade_edge": -0.001502770705427239,
+      "n_buckets": 64,
+      "usable": false
+    },
+    {
+      "changed": 0.048261546445251685,
+      "label_corr": 0.9034762572630736,
+      "calibration_error": 0.007092432727670909,
+      "fade_edge": -0.0017952538876442616,
+      "n_buckets": 128,
+      "usable": false
+    },
+    {
+      "changed": 0.04929942916450441,
+      "label_corr": 0.9014004778493765,
+      "calibration_error": 0.007135400809801939,
+      "fade_edge": -0.001502770705427239,
+      "n_buckets": 256,
+      "usable": false
+    }
+  ],
+  "thresholds": {
+    "max_cal_error": 0.05,
+    "max_fade_edge": 0.05,
+    "min_changed": 0.1
+  },
+  "usable_exists": false,
+  "best": null
+}

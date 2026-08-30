@@ -97,3 +97,78 @@ class TestItDestroysThePlantedSignal:
         after = best_abs_corr(p.settlement)
         assert before > 0.15, "planted corpus should carry a usable signal"
         assert after < before / 2.0
+
+
+class TestStratifiedPermutation:
+    """the variant that preserves calibration by only shuffling like with like."""
+
+    def test_observations_still_untouched(self, corpus):
+        from nano_rl.env.permuted import permute_outcomes_stratified
+        p = permute_outcomes_stratified(corpus, n_buckets=4, seed=1)
+        np.testing.assert_array_equal(
+            corpus.market_features(), p.market_features()
+        )
+
+    def test_still_a_permutation(self, corpus):
+        from nano_rl.env.permuted import permute_outcomes_stratified
+        p = permute_outcomes_stratified(corpus, n_buckets=4, seed=1)
+        np.testing.assert_array_equal(
+            np.sort(corpus.settlement), np.sort(p.settlement)
+        )
+
+    def test_labels_stay_inside_their_bucket(self, corpus):
+        """the whole point: a contract only swaps with similarly priced ones.
+
+        checked by bucket-mean rather than by tracking indices, because
+        preserving each bucket's base rate is the property that preserves
+        calibration, and it is the property that matters.
+        """
+        from nano_rl.env.permuted import permute_outcomes_stratified
+        n = 4
+        p = permute_outcomes_stratified(corpus, n_buckets=n, seed=2)
+        last = 0.5 * (np.asarray(corpus.bid)[:, -1] + np.asarray(corpus.ask)[:, -1])
+        edges = np.quantile(last, np.linspace(0.0, 1.0, n + 1))
+        bucket = np.digitize(last, np.unique(edges)[1:-1], right=False)
+        for b in np.unique(bucket):
+            m = bucket == b
+            assert np.asarray(corpus.settlement, float)[m].mean() == pytest.approx(
+                np.asarray(p.settlement, float)[m].mean()
+            )
+
+    def test_it_removes_less_than_the_plain_permutation(self):
+        """the finding, as a test: stratifying costs you removal.
+
+        needs a corpus whose terminal price actually predicts the outcome. the
+        module fixture's price is constant at the last step, so every episode
+        lands in one bucket and stratifying is a no-op; that is a property of
+        the fixture, not of the construction, and asserting on it would pin the
+        wrong thing.
+
+        averaged over seeds because a single permutation can go either way by
+        chance.
+        """
+        from dataclasses import replace
+
+        from nano_rl.env.permuted import (
+            permute_outcomes,
+            permute_outcomes_stratified,
+        )
+
+        base = make_learnable_corpus(n_episodes=400, n_steps=8, seed=0)
+        y = np.asarray(base.settlement, dtype=float)
+        rng = np.random.default_rng(0)
+        # a terminal quote that mostly agrees with the outcome, which is what
+        # gives stratification something to stratify on
+        price = np.where(y > 0.5, 0.95, 0.05) + rng.normal(0, 0.02, size=len(y))
+        bid, ask = np.asarray(base.bid).copy(), np.asarray(base.ask).copy()
+        bid[:, -1], ask[:, -1] = price - 0.01, price + 0.01
+        corpus = replace(base, bid=bid, ask=ask, _market_features=None)
+
+        plain, strat = [], []
+        for seed in range(20):
+            plain.append((y != np.asarray(
+                permute_outcomes(corpus, seed).settlement, float)).mean())
+            strat.append((y != np.asarray(
+                permute_outcomes_stratified(corpus, 8, seed).settlement,
+                float)).mean())
+        assert np.mean(strat) < np.mean(plain)
