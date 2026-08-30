@@ -95,11 +95,19 @@ def train(env, updates: int, seed: int) -> PPOAgent:
     return agent
 
 
-def run_task(name: str, make_env, make_roll, split, args) -> dict:
-    """train, measure the span, build a matched blind null, and test."""
+def run_task(name: str, make_env, make_roll, split, args, agent=None) -> dict:
+    """train (or reuse) an agent, measure the span, build a matched blind null.
+
+    the trading arm passes the paper's own checkpoint rather than training a
+    fresh one. a freshly trained agent at this budget is a DIFFERENT agent from
+    the one the rest of the paper explains, and it uses its observations more,
+    so training one here would have the control and the paper disagreeing about
+    the same row for a reason that has nothing to do with the objective.
+    """
     banner(f"{name.upper()}: same episodes, same features")
 
-    agent = train(make_env(split.train), args.updates, args.seed)
+    if agent is None:
+        agent = train(make_env(split.train), args.updates, args.seed)
     roll = make_roll(split.test)
     bg = build_background(
         VectorizedRollout(split.test, normalizer=split.normalizer,
@@ -138,6 +146,7 @@ def run_task(name: str, make_env, make_roll, split, args) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True)
+    ap.add_argument("--runs", default="runs/ppo")
     ap.add_argument("--out", default="reports")
     ap.add_argument("--n-null", type=int, default=12)
     ap.add_argument("--updates", type=int, default=40)
@@ -156,6 +165,12 @@ def main() -> None:
     print("  the objective is the only thing that varies.")
     print(f"  train {len(split.train)} episodes, test {len(split.test)}")
 
+    ckpts = sorted(Path(args.runs).glob("seed*.pt"))
+    if not ckpts:
+        raise SystemExit(f"no checkpoints in {args.runs}; train first")
+    paper_agent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(ckpts[0]))
+    print(f"  trading arm reuses {ckpts[0].name}, the checkpoint the paper explains")
+
     results = [
         run_task(
             "prediction",
@@ -167,7 +182,7 @@ def main() -> None:
             "trading",
             lambda b: BinaryMarketEnv(b, normalizer=norm, max_position=100.0),
             lambda b: VectorizedRollout(b, normalizer=norm, max_position=100.0),
-            split, args,
+            split, args, agent=paper_agent,
         ),
     ]
 

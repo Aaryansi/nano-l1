@@ -34,12 +34,19 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# the two-sided normal threshold the paper's verdicts use
-Z_CRIT = 1.96
+from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
 
 
 def bootstrap(observed: float, nulls: list[float], n_boot: int, seed: int) -> dict:
-    """percentile interval for z, and how often the verdict survives."""
+    """percentile interval for z, and how often the VERDICT survives.
+
+    stability is measured under the paper's actual decision rule, which
+    requires the rank and normal criteria to reject together, by calling the
+    same function the results use. an earlier version of this script tested
+    |z| > 1.96 alone and reported one headline as unstable that the real
+    two-part rule never called significant in the first place. a robustness
+    check that does not replicate the decision it is checking measures nothing.
+    """
     a = np.asarray(nulls, dtype=float)
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, len(a), size=(n_boot, len(a)))
@@ -55,19 +62,23 @@ def bootstrap(observed: float, nulls: list[float], n_boot: int, seed: int) -> di
     z = np.full(n_boot, np.nan)
     z[ok] = (observed - mean[ok]) / sd[ok]
 
-    point_sd = a.std(ddof=1)
-    point = (observed - a.mean()) / point_sd if point_sd > 1e-12 else float("nan")
+    point = test_span_against_null(observed, a)
     finite = z[np.isfinite(z)]
 
     if finite.size == 0:
-        return {"z": point, "degenerate_fraction": 1.0, "n_boot": n_boot}
+        return {"z": point.z_score, "degenerate_fraction": 1.0, "n_boot": n_boot}
 
-    fires = bool(abs(point) > Z_CRIT)
-    agree = float(np.mean((np.abs(finite) > Z_CRIT) == fires))
+    passes = np.fromiter(
+        (test_span_against_null(observed, draws[i]).passes
+         for i in np.flatnonzero(ok)),
+        dtype=bool, count=int(ok.sum()),
+    )
+    agree = float(np.mean(passes == bool(point.passes)))
     return {
-        "z": float(point),
+        "z": float(point.z_score),
         "z_lo": float(np.percentile(finite, 2.5)),
         "z_hi": float(np.percentile(finite, 97.5)),
+        "verdict": "informative" if point.passes else "not distinguishable",
         "verdict_stability": agree,
         "degenerate_fraction": float(1.0 - ok.mean()),
         "n_null": int(a.size),
@@ -130,7 +141,8 @@ def main() -> None:
     print("=" * 84)
     print("bootstrap confidence intervals on the reported z-scores")
     print("=" * 84)
-    print(f"  {args.n_boot} resamples of the null draws, percentile interval\n")
+    print(f"  {args.n_boot} resamples of the null draws, percentile interval.")
+    print("  stability is measured under the paper's own two-part rule.\n")
     print(f"  {'test':<34}{'n':>4}{'z':>9}{'95% interval':>20}{'verdict held':>14}")
 
     results = {}

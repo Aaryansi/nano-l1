@@ -1,83 +1,92 @@
 {
   "planted signal": {
     "z": 12.272937264340852,
-    "z_lo": 10.291642093995055,
-    "z_hi": 17.033257387994738,
+    "z_lo": 10.324026439768486,
+    "z_hi": 16.871459329876092,
+    "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 10000
+    "n_boot": 4000
   },
   "null corpus": {
     "z": 0.7176806672462446,
-    "z_lo": 0.3129918136583071,
-    "z_hi": 1.3806818458605117,
-    "verdict_stability": 0.9987,
+    "z_lo": 0.31592962247638856,
+    "z_hi": 1.3691593299631308,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.9995,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 10000
+    "n_boot": 4000
   },
   "real market": {
     "z": 0.22947572263316204,
-    "z_lo": -0.15732746623714525,
-    "z_hi": 0.7469820963385536,
+    "z_lo": -0.1582696674909033,
+    "z_hi": 0.7323051220387672,
+    "verdict": "not distinguishable",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 10000
+    "n_boot": 4000
   },
   "planted, conditional masking": {
     "z": 9.60550237282806,
-    "z_lo": 6.642401609079613,
-    "z_hi": 21.606041733896937,
+    "z_lo": 6.646149393604351,
+    "z_hi": 21.760363474689782,
+    "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 12,
-    "n_boot": 10000
+    "n_boot": 4000
   },
   "real market, conditional masking": {
     "z": -0.5509333385232573,
-    "z_lo": -1.0990588087075117,
-    "z_hi": -0.09663942086645368,
-    "verdict_stability": 0.9999,
-    "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 10000
-  },
-  "real prediction": {
-    "z": 2.9178255054956312,
-    "z_lo": 1.9601508413360011,
-    "z_hi": 5.7434874806125364,
-    "verdict_stability": 0.9751,
-    "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 10000
-  },
-  "real trading": {
-    "z": 5.014777980768843,
-    "z_lo": 3.579009454429794,
-    "z_hi": 12.568239621244611,
+    "z_lo": -1.125670123601578,
+    "z_hi": -0.08920822252294162,
+    "verdict": "not distinguishable",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 12,
-    "n_boot": 10000
+    "n_boot": 4000
+  },
+  "real prediction": {
+    "z": 2.9178255054956312,
+    "z_lo": 1.9542129794898857,
+    "z_hi": 5.710583685700957,
+    "verdict": "informative",
+    "verdict_stability": 0.97375,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 4000
+  },
+  "real trading": {
+    "z": 5.014777980768843,
+    "z_lo": 3.5667900814415514,
+    "z_hi": 12.477986637588154,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 4000
   },
   "market vs synthetic-corpus null": {
-    "z": -0.5602479122176731,
-    "z_lo": -1.2937071669483142,
-    "z_hi": -0.23053122598910558,
-    "verdict_stability": 0.9983,
+    "z": -0.33819373303385325,
+    "z_lo": -0.6782677855763909,
+    "z_hi": -0.02912386169845938,
+    "verdict": "not distinguishable",
+    "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 10000
+    "n_null": 32,
+    "n_boot": 4000
   },
   "market vs blinded-real null": {
-    "z": 2.2049731649553297,
-    "z_lo": 1.360206563654471,
-    "z_hi": 6.062224085691823,
-    "verdict_stability": 0.7058,
+    "z": 2.327845067372307,
+    "z_lo": 1.6131724067830806,
+    "z_hi": 3.9923088184277304,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.64675,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 10000
+    "n_null": 32,
+    "n_boot": 4000
   }
 }

@@ -744,6 +744,84 @@ Every conclusion is identical on both. Buy-and-hold moved from $+0.068$ to
 $-1.608$, confirming its earlier positive figure reflected that period's $52.3\%$
 outcome rate rather than an edge.
 
+\subsection{Our own null construction, checked}
+\label{sec:nullchoice}
+
+Section~\ref{sec:nulls} argues that the choice of null decides the verdict and
+that practitioners do not check it. That argument applies to this paper, so we
+checked.
+
+Section~\ref{sec:method} defines the null as corrupting the observation channel
+while leaving dynamics and reward intact. The null used for the market result
+does something slightly different: its agents are trained \emph{and} attributed
+on synthetic signal-free corpora, so the corpus changes as well as the
+information, and their spans are measured on synthetic episodes while the
+observed span is measured on real ones. The two quantities being compared are
+not measured on the same thing.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_nullchoice.png}
+\caption{One agent, one observed span, two null constructions. The vertical
+line does not move; only the reference distribution does. The synthetic-corpus
+null is nearly twice as wide, because it absorbs corpus-to-corpus variation the
+observation does not have.}
+\label{fig:nullchoice}
+\end{figure}
+
+We therefore rebuilt the null the way the method section defines it: agents
+trained on the \emph{real} training episodes with observations replaced by
+moment-matched noise, and attributed on the same real test episodes as the
+observation. Holding the agent fixed at the checkpoint the paper explains and
+the measurement corpus fixed at the real test split, the null construction is
+then the only thing that varies (Figure~\ref{fig:nullchoice}, $n=32$ each):
+
+\begin{center}\footnotesize
+\begin{tabular}{lrrl}
+\toprule
+Null & Mean $\pm$ sd & $z$ & Verdict \\
+\midrule
+synthetic corpora & $+9.07 \pm 4.91$ & $-0.34$ & not distinguishable \\
+blinded real & $+2.26 \pm 2.21$ & $+2.33$ & not distinguishable \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The verdict survives, but not comfortably, and the reason it survives is worth
+stating. Under the blinded-real null the normal statistic \emph{does} reject at
+$z=+2.33$; the rank statistic does not, and Section~\ref{sec:method} requires
+both. The two-part rule is doing real work here rather than being a formality.
+
+Resampling each null (Section~\ref{sec:intervals}) shows how much weight the two
+comparisons carry. The synthetic-corpus verdict is unchanged in $100\%$ of
+replicates; the blinded-real verdict in $65\%$. We report the market result as
+undecided under the stricter construction rather than as confirmed, and we
+recommend the blinded-real form for future use: it holds the corpus fixed, which
+is what isolates information as the variable.
+
+An earlier run of this comparison at $n=12$ put the two constructions on
+opposite sides of the threshold. That disagreement was a small-sample artefact
+and disappeared at $n=32$. We mention it because it is the failure mode this
+paper is about, encountered in our own results, and because $n=12$ null agents
+is a common budget.
+
+\subsection{Confidence intervals on the verdicts}
+\label{sec:intervals}
+
+Every $z$ in this paper divides by a standard deviation estimated from 12 to 32
+null agents. Reporting it to two decimals hides that. We resample the null
+draws with replacement and re-apply the full two-part decision rule to each
+replicate, which gives a percentile interval for $z$ and, more usefully, the
+fraction of replicates in which the verdict is unchanged.
+
+Every verdict in the paper is stable in $100\%$ of replicates except two: the
+real prediction task at $97\%$ and the blinded-real market comparison at $65\%$.
+The planted signal's interval is $[+10.3, +16.9]$ and the market's, under the
+null used in Section~\ref{sec:empty}, is $[-0.16, +0.73]$: nowhere near the
+threshold in either direction. This bootstraps the null only. Uncertainty in the
+observed statistic, a mean over held-out episodes, is not included, so these
+intervals are optimistic in a way we would rather state than hide.
+
 \subsection{Implications for oversight}
 \label{sec:oversight}
 

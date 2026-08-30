@@ -274,6 +274,48 @@ def fig_steering(d, out: Path):
     save(fig, out / "fig_steering.png")
 
 
+def fig_nullchoice(d, out: Path):
+    """single column: one observed span against two null constructions.
+
+    the whole point is that the vertical line does not move. everything that
+    changes between the two rows is the reference distribution, and the verdict
+    changes with it.
+    """
+    obs = d["observed_span"]
+    rows = (
+        ("synthetic\ncorpora", d["null_synthetic"], C2),
+        ("blinded real\nepisodes", d["null_blinded_real"], C1),
+    )
+
+    fig, ax = plt.subplots(figsize=(COL, 1.95), facecolor="white")
+    ax.axvline(obs, color=INK, lw=1.2, zorder=5)
+    ax.annotate(f"observed  {obs:+.2f}", xy=(obs, 1.62), xytext=(4, 0),
+                textcoords="offset points", fontsize=6.6, color=INK, va="top")
+
+    for y, (label, block_, color) in enumerate(rows):
+        v = np.array(block_["spans"])
+        ax.plot([v.min(), v.max()], [y, y], color=color, lw=6, alpha=0.28,
+                solid_capstyle="round", zorder=2)
+        ax.scatter(v, np.full_like(v, y), s=9, color=color, zorder=4,
+                   edgecolors="white", linewidths=0.4)
+        z = block_["result"]["z_score"]
+        verdict = "informative" if block_["result"]["passes"] else "not distinguishable"
+        # anchored to the axes edge, not to the data, so the two rows'
+        # annotations line up instead of tracking their own maxima
+        ax.annotate(f"$z={z:+.2f}$   {verdict}", xy=(1.0, y),
+                    xycoords=("axes fraction", "data"),
+                    xytext=(-2, -11), textcoords="offset points",
+                    fontsize=6.4, color=MUTED, ha="right", va="top")
+
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels([r[0] for r in rows], color=INK, fontsize=7,
+                       linespacing=1.15)
+    ax.set_ylim(-0.75, 1.75)
+    style(ax, xlabel=r"span  $v(N)-v(\emptyset)$")
+    ax.grid(axis="y", visible=False)
+    save(fig, out / "fig_nullchoice.png")
+
+
 def fig_conjecture(d, out: Path):
     """single column: the parameter null's width against random-init return sd.
 
@@ -386,6 +428,7 @@ def main() -> None:
     fig_null_comparison(L("generalize_gym.json"), out)
     fig_steering(L("steering.json"), out)
     fig_conjecture(L("null_width_conjecture.json"), out)
+    fig_nullchoice(L("null_corpus_check.json"), out)
     fig_manifold(L("manifold_masking.json"), out)
     fig_decoy(L("faithfulness.json"), out)
     print("done")
