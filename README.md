@@ -1,9 +1,11 @@
 # nano-l1
 
-**sanity checks for reinforcement learning explanations.** a deep-RL agent on
-Kalshi 15-minute binary contracts, and a null-model test for whether its
-explanation carries any information at all. built alongside an existing Go
-matching engine, which is left intact.
+**no free null.** deciding whether an explanation of an RL agent means anything
+requires a reference distribution: what it would have looked like had the agent
+learned nothing. reinforcement learning has no agreed way to build one. this
+builds four, on a deep-RL agent trading Kalshi 15-minute binary contracts, and
+each one fails in its own way. built alongside an existing Go matching engine,
+which is left intact.
 
 [**the paper**](docs/paper/main.pdf) &middot;
 [4-page version](docs/paper/workshop.pdf) &middot;
@@ -47,6 +49,14 @@ the trading agent does not. the market data is not uninformative; a calibrated
 price is very informative. the information is not monetizable against a 9%
 round-trip fee, and an attribution of the trading agent cannot tell those two
 situations apart.
+
+**every null construction perturbs something besides the information.** the
+signal-free corpus varies the corpus. blinding the observation channel removes
+the agent's capacity to respond, collapsing the reference to a point mass and
+firing on a corpus built to contain no signal. permuting the outcomes leaves the
+price forecasting a label it no longer matches and hands the null agents a $49
+per episode arbitrage, so the agent under test lands fifteen standard deviations
+*below* its own null. which perturbation you accept decides the verdict.
 
 **the established sanity check does not transfer to RL.** across sixteen
 checkpoints on four control tasks, weight randomization never exceeds z = 2.45,
