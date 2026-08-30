@@ -1021,10 +1021,12 @@ would most want a guarantee.
 
 \paragraph{The verdict depends on a choice nobody reports.}
 Section~\ref{sec:nulls} shows the established sanity check has almost no power
-in RL, and Section~\ref{sec:nullchoice} shows that our own headline verdict
-moves when the null construction is corrected. A reported attribution is not
-interpretable without the reference distribution it was measured against, and
-that reference is currently neither standardised nor, in most papers, stated.
+in RL. Section~\ref{sec:nullchoice} shows our own headline is sensitive to the
+construction, and Section~\ref{sec:matched} shows that the alternative which
+looks more principled is broken, in a way visible only by running it rather than
+by reasoning about it. A reported attribution is not interpretable without the
+reference distribution it was measured against, and that reference is currently
+neither standardised nor, in most papers, stated.
 
 \paragraph{What we would ask for.}
 Report the null construction alongside any attribution offered as evidence.
@@ -1129,6 +1131,14 @@ on-policy for the masked policy, not counterfactuals about the unmasked one.
 between the parameter null's width and initialisation-return variance is close
 to exact on each task we ran, and it has a mechanism, but four points cannot
 establish a law. We report the correspondence, not a fitted relationship.
+
+\textbf{The null construction is chosen, not derived.} We keep the
+signal-free-corpus null because the corpus-matched alternative fails
+(Section~\ref{sec:matched}), not because we can show it is optimal. Its known
+fault is that it varies the corpus as well as the information, which widens the
+reference and biases toward declining. A construction that holds the corpus
+fixed \emph{and} keeps the null agents sighted would dominate both, and we do
+not have one.
 
 \textbf{Scope.} One real domain and four classic-control tasks; one attribution
 family for the outcome-level tests. All four control tasks have small
