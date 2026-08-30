@@ -215,7 +215,21 @@ rather than $2^{|N|}$.
 
 The test compares an observed $\Delta$ against the distribution of $\Delta$ for
 agents that had nothing to learn. We construct these by corrupting the
-observation channel.
+observation channel (Figure~\ref{fig:method}).
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_method.png}
+\caption{Two ways to build a reference distribution of explanations for an agent
+that learned nothing. The established check (a) randomises the policy's
+parameters, leaving a network that was never trained. Ours (b) leaves the policy
+and its training untouched and corrupts the environment's observation channel,
+so the agent optimises a real reward with nothing to condition on. Only (b)
+yields a normally trained policy, which is the failure mode that occurs in
+deployment; Section~\ref{sec:nulls} shows the difference is worth $42\times$ in
+the width of the resulting reference distribution.}
+\label{fig:method}
+\end{figure*}
 
 \medskip
 \noindent\textbf{Blind-observation null.} \emph{Replace every observation with an
@@ -320,6 +334,28 @@ command; 226 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
+
+\paragraph{Code and compute.} Code, data-ingest scripts and the exact commands
+that produce every figure and table are at
+\url{https://github.com/Aaryansi/nano-l1}. All experiments run on CPU: an
+8-core Apple M1 with 8\,GB of memory, no GPU at any stage. The complete pipeline
+takes roughly two hours from a cold cache, of which about 27 minutes is
+rate-limited market ingest, and roughly one hour warm. Policies are two-layer
+MLPs of 64 hidden units; the 18-feature market agent has 5{,}636 parameters. The
+headline experiments are therefore reproducible on a laptop, which is a
+deliberate property of the setting rather than an accident: the claims concern
+whether an explanation carries information, and that question does not require
+scale to pose.
+
+\paragraph{Hyperparameters.} PPO with clipped surrogate, GAE, and
+$\gamma=1.0$; $\gamma$ is unity because episodes are finite-horizon and reward
+telescopes exactly to terminal P\&L, so discounting would bias the objective
+away from the quantity of interest. Market agents train for 100 updates over 5
+seeds; explanation-time agents for 60 updates; null draws use $n=24$ for the
+main test and 12--16 for the environment and robustness experiments. Full
+values, including network widths, learning rate, clip range and entropy
+coefficient, are in the configuration files in the repository rather than
+restated here.
 
 The exchange serves a moving window, so re-running the ingest returns a different
 set of contracts. A cold rebuild five days after the original produced 6{,}425

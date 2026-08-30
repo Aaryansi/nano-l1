@@ -28,6 +28,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -62,6 +63,78 @@ def save(fig, path: Path):
     fig.savefig(path, dpi=400, facecolor="white", bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
     print(f"  wrote {path.name}")
+
+
+def _box(ax, x, y, w, h, label, *, edge=INK, face="white", lw=0.9, fs=7.5, tc=INK):
+    ax.add_patch(FancyBboxPatch(
+        (x, y), w, h, boxstyle="round,pad=0.008,rounding_size=0.025",
+        facecolor=face, edgecolor=edge, linewidth=lw, zorder=3))
+    ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
+            fontsize=fs, color=tc, zorder=4)
+
+
+def _arrow(ax, p0, p1, *, color=INK, lw=0.9, ls="-", rad=0.0):
+    ax.add_patch(FancyArrowPatch(
+        p0, p1, arrowstyle="-|>", mutation_scale=7, color=color, linewidth=lw,
+        linestyle=ls, connectionstyle=f"arc3,rad={rad}", zorder=2,
+        shrinkA=0, shrinkB=0))
+
+
+def fig_method(out: Path):
+    """full width: the two nulls as interventions on the agent-environment loop.
+
+    the distinction this paper turns on is *where* the corruption is applied,
+    and that is a fact about a diagram, not about a number. carrying it in prose
+    alone makes a one-glance idea take a paragraph to reconstruct.
+
+    the only figure here not driven by reports/ json: it is a schematic, so it
+    asserts nothing that could go stale.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(FULL, 1.85), facecolor="white")
+
+    panels = (
+        ("(a) parameter randomisation", True,
+         "weights resampled, so the policy never learned anything.\n"
+         "masking its inputs moves return arbitrarily."),
+        ("(b) observation corruption (ours)", False,
+         "the policy is trained normally on a real reward.\n"
+         "the only thing withheld is information."),
+    )
+
+    for ax, (title, hot, note) in zip(axes, panels):
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+        ax.set_title(title, color=INK, fontsize=8, loc="left", pad=3)
+
+        # the corrupted component is the policy in (a), the channel in (b)
+        _box(ax, 0.04, 0.52, 0.30, 0.26, "environment")
+        _box(ax, 0.62, 0.52, 0.34, 0.26, r"policy $\pi_\theta$",
+             edge=C2 if hot else INK, lw=1.7 if hot else 0.9,
+             face="#fdeee7" if hot else "white")
+
+        # observation channel, left to right
+        _arrow(ax, (0.34, 0.65), (0.62, 0.65),
+               color=INK if hot else C1, lw=0.9 if hot else 1.6,
+               ls="-" if hot else (0, (2.2, 1.5)))
+        ax.text(0.48, 0.83, "observation" if hot else "observation\n(resampled)",
+                ha="center", va="center", fontsize=7,
+                color=INK if hot else C1, linespacing=1.25)
+
+        # action closes the loop and is untouched by either intervention. drawn
+        # as an explicit rectangular path: an arc3 of this span bows up through
+        # the boxes rather than around them.
+        ax.plot([0.79, 0.79], [0.52, 0.28], color=MUTED, lw=0.9, zorder=2)
+        ax.plot([0.79, 0.19], [0.28, 0.28], color=MUTED, lw=0.9, zorder=2)
+        _arrow(ax, (0.19, 0.28), (0.19, 0.52), color=MUTED)
+        ax.text(0.49, 0.20, "action", ha="center", va="top", fontsize=7,
+                color=MUTED)
+
+        ax.text(0.0, 0.06, note, ha="left", va="top", fontsize=6.8,
+                color=MUTED, linespacing=1.45, transform=ax.transAxes)
+
+    fig.subplots_adjust(wspace=0.10)
+    save(fig, out / "fig_method.png")
 
 
 def fig_null_test(d, out: Path):
@@ -220,6 +293,7 @@ def main() -> None:
     L = lambda n: json.loads((R / n).read_text())  # noqa: E731
 
     print("regenerating paper figures at publication size")
+    fig_method(out)
     fig_null_test(L("sanity_test.json"), out)
     fig_power(L("power_curve.json"), out)
     fig_null_comparison(L("generalize_gym.json"), out)

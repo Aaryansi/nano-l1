@@ -27,6 +27,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
+PIPELINE_START=$(date +%s)
 RL="$ROOT/services/agent-rl"
 PY="$RL/.venv/bin/python"
 REPORTS="$ROOT/reports"
@@ -156,10 +157,28 @@ step "does it generalise? CartPole and Acrobot"
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
 
 # -------------------------------------------------------------------- done
+step "redrawing the paper's figures at publication size"
+( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
+    --out "$ROOT/docs/paper/figures" )
+
 step "verifying every number in docs/paper/main.md against the artifacts"
 ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py )
 
-step "done"
+# the paper states a wall-clock figure. record the real one rather than leaving
+# it to memory of an earlier run.
+PIPELINE_SECONDS=$(( $(date +%s) - PIPELINE_START ))
+cat > "$REPORTS/pipeline_timing.json" <<JSON
+{
+  "seconds": $PIPELINE_SECONDS,
+  "minutes": $(( PIPELINE_SECONDS / 60 )),
+  "quick": $QUICK,
+  "explain_only": $EXPLAIN_ONLY,
+  "cpu": "$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo unknown)",
+  "cores": $(sysctl -n hw.ncpu 2>/dev/null || echo 0)
+}
+JSON
+
+step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"
 echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
 echo

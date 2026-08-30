@@ -129,10 +129,23 @@ is worth stating that $\Delta$ is \emph{not} a Shapley quantity: it is the
 difference between two masked rollouts and depends only on the masking. This has
 a practical consequence: it costs two evaluations rather than $2^{|N|}$.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_method.png}
+\caption{Two ways to build a reference distribution of explanations for an agent
+that learned nothing. The established check (a) randomises the policy's
+parameters, leaving a network that was never trained. Ours (b) corrupts the
+environment's observation channel instead, so the agent optimises a real reward
+with nothing to condition on. Only (b) yields a normally trained policy, which
+is the failure mode that occurs in deployment.}
+\label{fig:method}
+\end{figure*}
+
 \medskip
 \noindent\textbf{Blind-observation null.} \emph{Replace every observation with an
 independent draw from a fixed distribution matched to the environment's
-observation moments. Leave dynamics and reward untouched. Train normally.}
+observation moments. Leave dynamics and reward untouched. Train normally}
+(Figure~\ref{fig:method}).
 \medskip
 
 Such an agent faces the real task and receives real return but cannot condition
