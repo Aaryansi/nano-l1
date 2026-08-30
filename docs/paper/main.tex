@@ -30,6 +30,9 @@
 \setlength{\parskip}{0pt}
 \setlength{\abovedisplayskip}{5pt}
 \setlength{\belowdisplayskip}{5pt}
+% the results tables are 4 numeric columns in a 3.35in column. at the 6pt
+% default several of them overrun the text block.
+\setlength{\tabcolsep}{3.5pt}
 
 \newcommand{\vfn}{v}
 
@@ -232,11 +235,11 @@ experiment.
 
 Given $\Delta_{\mathrm{obs}}$ and null draws $\Delta_1,\dots,\Delta_n$ with mean
 $\bar\Delta$ and standard deviation $s$, we report
-\begin{equation}
-p_{\mathrm{rank}} = \frac{\#\{i : |\Delta_i - \bar\Delta| \ge |\Delta_{\mathrm{obs}} - \bar\Delta|\} + 1}{n+1},
-\quad
-z = \frac{\Delta_{\mathrm{obs}} - \bar\Delta}{s},
-\end{equation}
+% set on two lines: side by side these overrun the column by 18pt.
+\begin{align}
+p_{\mathrm{rank}} &= \frac{\#\{i : |\Delta_i - \bar\Delta| \ge |\Delta_{\mathrm{obs}} - \bar\Delta|\} + 1}{n+1}, \\[2pt]
+z &= \frac{\Delta_{\mathrm{obs}} - \bar\Delta}{s},
+\end{align}
 and require both to reject.
 
 Two statistics are reported because neither suffices. The rank statistic assumes
@@ -343,7 +346,7 @@ a standard deviation near 50 against differences near 1.}
 \toprule
 Policy & Mean P\&L & Trades/ep & $p$ vs flat \\
 \midrule
-always-flat        & $+0.000$  & 0.00 & --- \\
+always-flat        & $+0.000$  & 0.00 & n/a \\
 buy-and-hold       & $-1.608$  & 1.00 & 0.23 \\
 \textbf{PPO} (5 seeds) & $\mathbf{-0.595 \pm 0.176}$ & 1.37 & \textbf{0.10} \\
 logistic (refit)   & $-5.729$  & 2.52 & $<$0.0001 \\
@@ -464,12 +467,13 @@ We construct both nulls for the same task (Table~\ref{tab:nulls},
 Figure~\ref{fig:nullcmp}). Shapley values here are exact.
 
 \begin{table}[t]
-\centering\small
-\caption{Null construction on two control tasks.}
+\centering\footnotesize
+\caption{Null construction on two control tasks. Entries are mean $\pm$ sd of
+the span across draws; the sd is what sets the test's power.}
 \label{tab:nulls}
 \begin{tabular}{lrrr}
 \toprule
-Environment & Parameter rand. & Environment rand. & Ratio \\
+Environment & Parameter & Environment & Ratio \\
 \midrule
 CartPole-v1 & $+55.34 \pm \mathbf{138.92}$ & $-1.35 \pm \mathbf{3.29}$ & $42\times$ \\
 Acrobot-v1  & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
@@ -618,8 +622,8 @@ time, though content is.
 \section{Conclusion}
 
 An attribution can be stable, precisely estimated, plausible, and empty. The
-checks practitioners apply --- consistency across runs, separation beyond
-estimation error, semantic legibility --- do not detect this, because none of
+checks practitioners apply (consistency across runs, separation beyond
+estimation error, semantic legibility) do not detect this, because none of
 them ask whether the explained agent learned anything. A null-model test does,
 using a statistic the attribution framework already provides. The established
 test for this purpose does not survive the move to reinforcement learning, and we

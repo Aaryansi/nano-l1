@@ -76,4 +76,4 @@ docs/paper/*.bbl
 docs/paper/*.blg
 docs/paper/*.log
 docs/paper/*.out
-docs/paper/page-*.png
+docs/paper/*page-*.png

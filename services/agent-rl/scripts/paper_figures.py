@@ -130,7 +130,7 @@ def fig_null_comparison(d, out: Path):
     fig, axes = plt.subplots(1, len(d), figsize=(FULL, 1.9), facecolor="white")
     axes = np.atleast_1d(axes)
 
-    for ax, row in zip(axes, d):
+    for i, (ax, row) in enumerate(zip(axes, d)):
         w = np.array(row["weight_null"]["spans"])
         v = np.array(row["env_null"]["spans"])
         for y, vals, color, lab in ((1, w, C2, "parameter"), (0, v, C1, "environment")):
@@ -143,10 +143,18 @@ def fig_null_comparison(d, out: Path):
                         color=INK, fontsize=6.5, va="center")
         ax.axvline(0, color=REF, lw=0.9, ls="--", zorder=1)
         ax.set_yticks([0, 1])
-        ax.set_yticklabels(["environment", "parameter"], color=INK, fontsize=7)
+        # only the leftmost panel is labelled. repeating identical row labels on
+        # every panel puts them in the gap between subplots, where they collide
+        # with the sd annotation the panel to their left writes past its axes.
+        ax.set_yticklabels(["environment", "parameter"] if i == 0 else ["", ""],
+                           color=INK, fontsize=7)
         ax.set_ylim(-0.6, 1.6)
         style(ax, xlabel=r"span  $v(N)-v(\emptyset)$", title=row["env_id"])
         ax.grid(axis="y", visible=False)
+        # leave room on the right for the widest sd annotation
+        lo, hi = ax.get_xlim()
+        ax.set_xlim(lo, hi + 0.22 * (hi - lo))
+    fig.subplots_adjust(wspace=0.12)
     save(fig, out / "fig_null_comparison.png")
 
 
