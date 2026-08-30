@@ -267,6 +267,48 @@ if zi:
     check("real market interval, low", -0.16, zi["real market"]["z_lo"], 0.30)
     check("real market interval, high", 0.73, zi["real market"]["z_hi"], 0.15)
 
+# ------------------------------------------------- the matched construction
+mn = load("matched_null_test.json")
+print("\nsection 5.13: correcting the null everywhere")
+if mn:
+    by = {c["case"]: c for c in mn["cases"]}
+    check("matched planted span", 74.69, by["planted signal"]["span"], 0.02)
+    check("matched null-corpus span", 13.90, by["null corpus"]["span"], 0.02)
+    check("matched real-market span", 7.40, by["real market"]["span"], 0.02)
+    check("matched real-market null mean", 2.97, by["real market"]["null_mean"], 0.05)
+    check("matched real-market null sd", 2.29, by["real market"]["null_std"], 0.05)
+    for case in ("planted signal", "null corpus"):
+        checks += 1
+        # both are degenerate point-mass nulls; that is the finding
+        degenerate = by[case]["null_std"] < 1e-9
+        print(f"  [{'x' if degenerate else ' '}] {case + ' null is degenerate':<52} "
+              f"{'yes' if degenerate else 'NO':>21}")
+        if not degenerate:
+            failures.append(f"{case}: paper says the null is a point mass")
+    # the whole point of the section: it loses specificity
+    checks += 1
+    lost = by["null corpus"]["fires"] and not mn["has_specificity"]
+    print(f"  [{'x' if lost else ' '}] {'matched construction fires on a signal-free corpus':<52} "
+          f"{'yes' if lost else 'NO':>21}")
+    if not lost:
+        failures.append("matched null: paper says it produces a false positive")
+
+# ------------------------------------------------------- budget dependence
+nb = load("null_budget_check.json")
+print("\nsection 5.13: the blinded null collapses with budget")
+if nb:
+    rows = {r["updates"]: r for r in nb["rows"]}
+    for u, sd, z in ((20, 3.268, 0.55), (40, 2.247, 1.71), (80, 1.623, 4.23)):
+        if u in rows:
+            check(f"null sd at {u} updates", sd, rows[u]["null_std"], 0.05)
+            check(f"z at {u} updates", z, rows[u]["result"]["z_score"], 0.08)
+    checks += 1
+    flipped = not nb["verdict_stable"]
+    print(f"  [{'x' if flipped else ' '}] {'verdict flips with the null training budget':<52} "
+          f"{'yes' if flipped else 'NO':>21}")
+    if not flipped:
+        failures.append("budget check: paper says the verdict is budget-dependent")
+
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
 if failures:

@@ -998,7 +998,7 @@ is the one we would trust.
 \subsection{Hypotheses we rejected}
 \label{sec:rejected}
 
-Four predictions in this project turned out to be wrong
+Five predictions in this project turned out to be wrong
 (Table~\ref{tab:rejected}). They are collected rather than left implicit in the
 sections that tested them, because a reader assessing whether the surviving
 claims were stress-tested should be able to see what did not survive.
@@ -1038,6 +1038,14 @@ Width tracks how often random policies do well. &
 competence but \emph{equal} to the standard deviation of
 initialisation return (Section~\ref{sec:nulls}). A tendency was replaced by an
 identity. \\
+\addlinespace
+A null that holds the corpus fixed, by blinding the observation channel, is more
+principled and should replace the shared signal-free-corpus null. &
+The same verdicts against a tighter reference, and more power. &
+\textbf{Rejected.} It fires on a corpus built to contain no signal, and its
+verdict on the real market flips with the null agents' training budget
+(Section~\ref{sec:matched}). Blinding removes the capacity to respond to
+observational structure, not only the information. \\
 \bottomrule
 \end{tabular}
 \end{table*}

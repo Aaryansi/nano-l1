@@ -168,8 +168,11 @@ Given null draws with mean $\bar\Delta$ and standard deviation $s$ we report a
 rank $p$-value and $z = (\Delta_{\mathrm{obs}} - \bar\Delta)/s$, and require both
 to reject. The rank statistic assumes no shape but bottoms out at $1/(n+1)$; the
 normal statistic has resolution but assumes a shape the null need not have. If
-every null draw is identical, $s=0$ and any deviation is maximally surprising: we
-return $z=\pm\infty$ and surface the degeneracy rather than guarding it away.
+every null draw is identical, $s=0$; we return $z=\pm\infty$ and surface the
+degeneracy rather than guarding it away, but treat it as a reason to distrust
+the reference. A point-mass null has no specificity, and building one is how a
+more principled-looking null construction turned out to fire on a corpus with no
+signal in it (Section~\ref{sec:cost}).
 
 \section{Setup}
 
@@ -370,6 +373,27 @@ This differs from \citet{slack2020fooling}, who construct classifiers that detec
 the off-manifold points LIME and SHAP query. Here the agent is trained normally
 and the resulting explanation is \emph{correct} about the resulting model; the
 point is that behaviour does not pin it down.
+
+\subsection{What the corpus-matched null costs}
+\label{sec:cost}
+
+Our null trains its agents on synthetic signal-free corpora, so the corpus
+varies along with the information. Holding the corpus fixed instead, by blinding
+the observation channel of the real episodes, looks strictly better and is what
+the definition above literally says. Run on every case it produces a false
+positive: on a corpus built to contain no informative feature, span $+13.90$
+against a null of $0.00 \pm 0.00$, which fires. Its verdict on the real market
+also flips with the null agents' training budget, from $z=+0.55$ at 20 updates
+to $z=+4.23$ at 80, as those agents converge.
+
+The mechanism is that the two nulls are not the same null. A signal-free corpus
+gives agents that can see but have nothing to see; they still respond to
+observational structure and their spans are spread out. Blinding gives agents
+that cannot see; they converge to a constant policy, whose return does not
+depend on its inputs at all, so every null span is exactly zero. The agent under
+test is sighted, so the right reference is sighted agents with nothing to learn.
+We keep the signal-free-corpus null, whose fault is that it widens the reference
+and therefore errs toward declining.
 
 \section{Limitations}
 
