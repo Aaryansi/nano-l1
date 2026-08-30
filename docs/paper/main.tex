@@ -292,11 +292,19 @@ normal statistic has resolution but assumes a shape the null need not have.
 Requiring both keeps the test conservative in the direction that matters.
 
 \paragraph{Degenerate nulls.} If every null draw is identical, $s=0$ and $z$ is
-undefined. This is not an absence of information but its opposite: any deviation
-is maximally surprising. We return $z=\pm\infty$ and surface the degeneracy
-explicitly. It occurs in practice (Sections~\ref{sec:nulls}
-and~\ref{sec:robust}) whenever a task lets a blind agent converge on a single
-behaviour.
+undefined. We return $z=\pm\infty$ and surface the degeneracy rather than
+guarding it away, because silently returning $z=0$ would convert an
+overwhelming result into a null one.
+
+It is tempting to read a degenerate null as maximally informative, since any
+deviation from a point mass is infinitely surprising. An earlier version of this
+paper said exactly that, and Section~\ref{sec:matched} shows it is wrong: a
+point-mass null has no specificity, and we produce a false positive with one on
+a corpus that provably contains no signal. Degeneracy is a defect of the
+construction and a reason to distrust the reference, not a strong result. It
+occurs whenever a task lets the null agents converge on a single behaviour,
+which is a property of the null construction rather than of the agent under
+test.
 
 \section{Experimental setup}
 
@@ -859,10 +867,14 @@ both. The two-part rule is doing real work here rather than being a formality.
 
 Resampling each null (Section~\ref{sec:intervals}) shows how much weight the two
 comparisons carry. The synthetic-corpus verdict is unchanged in $100\%$ of
-replicates; the blinded-real verdict in $65\%$. We report the market result as
-undecided under the stricter construction rather than as confirmed, and we
-recommend the blinded-real form for future use: it holds the corpus fixed, which
-is what isolates information as the variable.
+replicates; the blinded-real verdict in $65\%$.
+
+At this point we intended to adopt the blinded-real construction throughout, on
+the argument just given. Section~\ref{sec:matched} reports why we did not: run
+on every case rather than on this one, it produces a false positive on a corpus
+built to contain no signal. The argument above is right about what the null
+should hold fixed and wrong about how to hold it, and we would not have found
+that by reasoning further about it.
 
 An earlier run of this comparison at $n=12$ put the two constructions on
 opposite sides of the threshold. That disagreement was a small-sample artefact
@@ -886,6 +898,59 @@ null used in Section~\ref{sec:empty}, is $[-0.16, +0.73]$: nowhere near the
 threshold in either direction. This bootstraps the null only. Uncertainty in the
 observed statistic, a mean over held-out episodes, is not included, so these
 intervals are optimistic in a way we would rather state than hide.
+
+\subsection{Correcting the null everywhere, and why we did not}
+\label{sec:matched}
+
+Section~\ref{sec:nullchoice} argues that a null should hold the corpus fixed and
+vary only the information. Taken seriously that is a per-case construction: for
+each case, train the null agents on \emph{that} case's episodes with the
+observation channel blinded, and attribute them on the same rollout as the
+observation. We built it and ran all three cases. It cannot be used.
+
+\begin{center}\footnotesize
+\begin{tabular}{lrrrl}
+\toprule
+Case & Span & Null & $z$ & Verdict \\
+\midrule
+planted signal & $+74.69$ & $0.00 \pm 0.00$ & $+\infty$ & fires \\
+\textbf{null corpus} & $\mathbf{+13.90}$ & $0.00 \pm 0.00$ & $+\infty$ &
+\textbf{fires} \\
+real market & $+7.40$ & $2.97 \pm 2.29$ & $+1.93$ & declines \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The middle row is a corpus constructed to contain no informative feature. The
+test fires on it. The construction has power and no specificity, and a test with
+no specificity is not a test.
+
+\paragraph{The two nulls are not the same null.}
+The mechanism explains the original design better than the original design
+explained itself. A \emph{signal-free corpus} gives agents that can see, in an
+environment whose observations carry no information about the outcome; they
+still respond to observational structure, so their spans are nonzero and spread
+out. A \emph{blinded channel} gives agents that cannot see; they converge to a
+constant policy, and a constant policy's return does not depend on its inputs at
+all, so every null span is exactly zero.
+
+The agent under test is sighted. The correct reference is therefore sighted
+agents with nothing to learn, not blind ones. Blinding removes the agent's
+capacity to respond to observational structure along with the information, and
+the null collapses onto a point mass at zero against which any nonzero span is
+declared significant. This is why the degeneracy noted in
+Section~\ref{sec:method} is a defect rather than a strong result, and why the
+Acrobot degeneracy in Section~\ref{sec:nulls} should be read as a warning about
+the reference rather than as a curiosity.
+
+\paragraph{What we keep.}
+The results in this paper use the signal-free-corpus null. Its weakness, that it
+also varies the corpus, is real and is measured in Section~\ref{sec:nullchoice};
+it is the lesser of the two faults, because it widens the reference and so errs
+toward declining rather than toward firing. We recommend against the blinded
+form for tasks where inaction is a viable policy, which includes every
+market-like task we know of, and we would not have learned that by reasoning
+about which null was more principled.
 
 \subsection{Implications for oversight}
 \label{sec:oversight}

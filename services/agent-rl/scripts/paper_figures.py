@@ -356,6 +356,46 @@ def fig_conjecture(d, out: Path):
     save(fig, out / "fig_conjecture.png")
 
 
+def fig_budget(d, out: Path):
+    """single column: the blinded null collapses as its agents converge.
+
+    two axes on one plot would be a dual-axis chart, which is the one chart
+    type worth refusing outright. the null width and the verdict statistic are
+    the same quantity's numerator and denominator, so the panel shows the null
+    band shrinking and marks where the verdict crosses.
+    """
+    rows = sorted(d["rows"], key=lambda r: r["updates"])
+    x = np.arange(len(rows))
+    mean = np.array([r["null_mean"] for r in rows])
+    sd = np.array([r["null_std"] for r in rows])
+    obs = d["observed_span"]
+    fires = np.array([r["fires"] for r in rows], dtype=bool)
+
+    fig, ax = plt.subplots(figsize=(COL, 2.05), facecolor="white")
+    ax.axhline(obs, color=INK, lw=1.2, zorder=4)
+    ax.annotate("observed span", xy=(x[-1], obs), xytext=(0, 4),
+                textcoords="offset points", fontsize=6.5, color=INK,
+                ha="right")
+    ax.fill_between(x, mean - sd, mean + sd, color=C1, alpha=0.18, lw=0)
+    ax.plot(x, mean, color=C1, lw=1.5, marker="o", ms=3.6,
+            markeredgecolor="white", markeredgewidth=0.8)
+    ax.text(x[0], mean[0] + sd[0], "  null, $\\pm$1 sd", fontsize=6.5,
+            color=C1, va="bottom")
+
+    # mark where the verdict changes rather than colouring every point
+    flip = np.flatnonzero(fires[1:] != fires[:-1])
+    for i in flip:
+        ax.axvline(i + 0.5, color=C2, lw=0.9, ls=":", zorder=2)
+        ax.text(i + 0.55, ax.get_ylim()[1], " verdict flips", fontsize=6.4,
+                color=C2, va="top")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(r["updates"]) for r in rows])
+    style(ax, xlabel="training updates for the null agents",
+          ylabel=r"span  $v(N)-v(\emptyset)$")
+    save(fig, out / "fig_budget.png")
+
+
 def fig_manifold(d, out: Path):
     """single column: how far each masking mode strays from the data manifold.
 
@@ -429,6 +469,7 @@ def main() -> None:
     fig_steering(L("steering.json"), out)
     fig_conjecture(L("null_width_conjecture.json"), out)
     fig_nullchoice(L("null_corpus_check.json"), out)
+    fig_budget(L("null_budget_check.json"), out)
     fig_manifold(L("manifold_masking.json"), out)
     fig_decoy(L("faithfulness.json"), out)
     print("done")

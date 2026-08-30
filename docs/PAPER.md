@@ -462,9 +462,15 @@ collapses to sd 0.04 with only two distinct values across sixteen agents: every
 blind agent converged to the same abstaining policy, so masking changes nothing.
 that is the same degenerate null seen on Acrobot, and it now has a mechanism:
 **the environment null degenerates when the task gives the agent enough time to
-learn that doing nothing is best.** degeneracy is not a defect of the
-construction, it is the null becoming maximally informative, and it is why the
-test handles zero-variance nulls explicitly rather than guarding them away.
+learn that doing nothing is best.**
+
+this used to say degeneracy was not a defect but the null becoming maximally
+informative. that was wrong, and a later experiment shows how wrong. a
+point-mass null has no specificity: a constant policy's return does not depend
+on its inputs, so every null span is exactly zero, and any nonzero span is then
+"infinitely surprising" regardless of whether it means anything. run that way,
+the test fires on a corpus built to contain no signal at all. degeneracy is a
+reason to distrust the reference distribution, not a strong result.
 
 **so the 42x is not a horizon effect.** it is an initialization effect. the
 conjecture that once stood here, that the width depends on how often a random
