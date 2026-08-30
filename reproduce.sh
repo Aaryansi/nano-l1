@@ -156,6 +156,9 @@ step "does it generalise? CartPole and Acrobot"
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
 
 # -------------------------------------------------------------------- done
+step "verifying every number in docs/paper/main.md against the artifacts"
+( cd "$RL" && "$PY" scripts/verify_paper_numbers.py )
+
 step "done"
 echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
