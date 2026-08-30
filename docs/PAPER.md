@@ -370,6 +370,51 @@ there is no IG analogue of the return-based span. testing that needs a second
 *perturbation-based* outcome method rather than a gradient one.
 
 ![method comparison](../reports/method_comparison.png)
+
+### 3.11 does the verdict depend on how credit is assigned?
+
+§3.10 could not answer this: episode return is not differentiable through the
+environment, so integrated gradients has no outcome-level analogue. two
+perturbation-based outcome schemes can, sharing Shapley's masking but not its
+credit assignment.
+
+**first, a correction to how this paper described its own statistic.** the span
+`v(all) - v(none)` is **not a Shapley quantity**. it is the difference between
+two masked rollouts. efficiency says the Shapley values sum to it, which is why
+it can be read off an attribution, but the span depends only on the masking. so
+part of the question was answered by construction and the paper should have said
+so.
+
+what remains genuinely testable is whether a scheme with a *different total*
+reaches the same verdict. leave-one-out (`phi_i = v(N) - v(N\{i})`) and
+only-one-in (`phi_i = v({i}) - v(empty)`) are the two extremes of the average
+Shapley takes, and neither satisfies efficiency, so each carries its own total.
+
+| scheme | planted signal | real market |
+|---|---|---|
+| span | +75.74 (z = **+10.66**) | +8.84 (z = -0.42) |
+| leave-one-out | +101.49 (z = **+10.96**) | -3.89 (z = -1.57) |
+| only-one-in | +93.46 (z = **+2.29**) | -0.60 (z = -0.72) |
+
+**every scheme fires on the planted signal; none fires on the real market.** the
+verdict is not a property of Shapley.
+
+**but the per-feature decomposition is.** leave-one-out and only-one-in rank
+features at only **+0.309** correlation with each other on the same agent. so the
+two questions separate cleanly:
+
+- *is there anything to explain here?* robust across schemes.
+- *which features matter?* substantially scheme-dependent, and a ranking from any
+  single scheme should not be reported as if it were the answer.
+
+that distinction is worth more than the robustness check that produced it, and it
+is a caution this paper's own §3.7 table should be read against.
+
+only-one-in is also visibly the weakest test, firing at z = +2.29 where the other
+two clear +10. it credits a feature only for what it achieves alone, so it
+under-detects features that matter in combination.
+
+![scheme robustness](../reports/scheme_robustness.png)
 ![cartpole](../reports/cartpole_competence.png)
 
 ---

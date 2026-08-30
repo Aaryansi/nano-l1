@@ -820,3 +820,57 @@ def method_comparison(
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
               loc="upper left", bbox_to_anchor=(0.0, -0.09), ncol=2)
     _save(fig, path)
+
+
+def scheme_comparison(
+    schemes: dict[str, tuple[np.ndarray, float, float]],
+    path: Path,
+    title: str = "does the verdict depend on how credit is assigned?",
+    subtitle: str = "",
+) -> None:
+    """each scheme's null spread, with the planted signal and the real agent.
+
+    one row per scheme. the shaded band is that scheme's null range; a marker
+    inside it is a statistic indistinguishable from an agent that learned
+    nothing. the schemes are on different scales, so each row is normalised by
+    its own null standard deviation and the x axis is in those units.
+    """
+    fig, ax = _new_fig(9.0, 1.5 * len(schemes) + 2.4)
+
+    for row, (name, (nulls, signal, real)) in enumerate(schemes.items()):
+        mu, sd = float(np.mean(nulls)), float(np.std(nulls, ddof=1))
+        sd = sd if sd > 1e-12 else 1.0
+        z_nulls = (np.asarray(nulls) - mu) / sd
+
+        ax.axhspan(row - 0.42, row + 0.42, xmin=0, xmax=1,
+                   color=SURFACE, zorder=0)
+        ax.plot([z_nulls.min(), z_nulls.max()], [row, row],
+                color=REFERENCE, linewidth=9, alpha=0.28,
+                solid_capstyle="round", zorder=2)
+        ax.scatter(z_nulls, np.full_like(z_nulls, row), s=24, color=REFERENCE,
+                   edgecolors=SURFACE, linewidths=1.0, zorder=3)
+
+        for val, color, label in (
+            ((signal - mu) / sd, C1, "planted signal"),
+            ((real - mu) / sd, C2, "real market"),
+        ):
+            ax.scatter([val], [row], s=150, color=color, zorder=5,
+                       edgecolors=SURFACE, linewidths=2.0,
+                       label=label if row == 0 else None)
+
+    ax.axvline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=1)
+    for x in (-1.96, 1.96):
+        ax.axvline(x, color=REFERENCE, linewidth=1.0, linestyle=":", zorder=1)
+
+    ax.set_yticks(range(len(schemes)))
+    ax.set_yticklabels(list(schemes), color=INK, fontsize=9.5)
+    ax.set_ylim(-0.7, len(schemes) - 0.3)
+    _style_axes(ax, title, "standard deviations from that scheme's null mean", "",
+                pad=26 if subtitle else 10)
+    ax.grid(axis="y", visible=False)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.14), ncol=2)
+    _save(fig, path)

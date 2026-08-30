@@ -142,6 +142,11 @@ step "a second attribution family, and per-feature values across all seeds"
     --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" \
     --updates "$EXPLAIN_UPDATES" )
 
+step "does the verdict depend on the credit-assignment scheme?"
+( cd "$RL" && "$PY" scripts/scheme_robustness.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" \
+    --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 16) )
+
 step "does it generalise? CartPole and Acrobot"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
