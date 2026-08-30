@@ -2,35 +2,35 @@
   "real_market": [
     {
       "coef": 0.0,
-      "return_mean": -0.7783667571144801,
-      "return_std": 0.7435416793237642,
-      "target_share_mean": 0.42132408775048796,
-      "target_share_std": 0.04356124638529268,
+      "return_mean": -3.4896466930203633,
+      "return_std": 2.9400041884974035,
+      "target_share_mean": 0.3992275829143206,
+      "target_share_std": 0.11124454482164356,
       "p_vs_baseline": NaN
     },
     {
       "coef": 1.0,
-      "return_mean": -2.047406715121952,
-      "return_std": 1.0398752735782857,
-      "target_share_mean": 0.0706704607031063,
-      "target_share_std": 0.021439543907266018,
-      "p_vs_baseline": 0.3322
+      "return_mean": -2.1512866392974552,
+      "return_std": 1.0284229484531386,
+      "target_share_mean": 0.09716437963239799,
+      "target_share_std": 0.0473825896564635,
+      "p_vs_baseline": 0.1828
     },
     {
       "coef": 5.0,
-      "return_mean": -1.6266867361270634,
-      "return_std": 0.746605516061849,
-      "target_share_mean": 0.02711915375329876,
-      "target_share_std": 0.006333546795940841,
-      "p_vs_baseline": 0.6837
+      "return_mean": -1.896566620156417,
+      "return_std": 1.0557828966217615,
+      "target_share_mean": 0.06686494840612271,
+      "target_share_std": 0.009077676440186366,
+      "p_vs_baseline": 0.2054
     },
     {
       "coef": 20.0,
-      "return_mean": -1.5084932842789591,
-      "return_std": 1.0696419004516298,
-      "target_share_mean": 0.019873391326268468,
-      "target_share_std": 0.003928896454470314,
-      "p_vs_baseline": 0.2798
+      "return_mean": -1.652713270249578,
+      "return_std": 0.9272778301830049,
+      "target_share_mean": 0.03152194750249748,
+      "target_share_std": 0.007624915346606989,
+      "p_vs_baseline": 0.3799
     }
   ],
   "learnable_synthetic": [

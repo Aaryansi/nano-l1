@@ -37,58 +37,58 @@
     "behaviour_top": [
       [
         "time_to_expiry_frac",
-        0.26037144684791563
+        0.24550952577590943
       ],
       [
         "spread",
-        0.055292541265487674
+        0.047242717266082764
       ],
       [
-        "spot_realized_vol",
-        -0.007861440420150757
+        "implied_prob",
+        0.015113996028900147
       ],
       [
-        "spot_implied_gap",
-        0.007467529535293579
+        "spot_ret_since_open",
+        0.009499510765075684
       ]
     ],
     "value_top": [
       [
         "time_to_expiry_frac",
-        -2.606079352378845
+        -3.723923755645752
       ],
       [
         "spread",
-        -0.4057440528869629
-      ],
-      [
-        "spot_implied_gap",
-        -0.14451378440856932
+        -0.7098262863159179
       ],
       [
         "implied_prob",
-        -0.09127784156799316
+        -0.304251482963562
+      ],
+      [
+        "spot_ret_since_open",
+        -0.19824825859069825
       ]
     ],
     "outcomes_top": [
       [
         "time_to_expiry_frac",
-        4.204736202649881
+        4.2161844476370565
       ],
       [
-        "unrealized_pnl",
-        1.3949642048536266
+        "avg_entry_price",
+        1.5586056797285155
+      ],
+      [
+        "implied_prob",
+        1.2155976546848573
       ],
       [
         "spread",
-        1.1891639814542756
-      ],
-      [
-        "volume_rate",
-        1.1498613586435986
+        1.0932492710002233
       ]
     ],
-    "value_of_observation": 5.913949670784921,
-    "behaviour_vs_outcomes_rank_corr": 0.3168214654282766
+    "value_of_observation": 10.40020003044051,
+    "behaviour_vs_outcomes_rank_corr": 0.04643962848297213
   }
 }

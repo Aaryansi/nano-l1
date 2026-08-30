@@ -49,24 +49,24 @@
       "n_null_samples": 24
     },
     "real_market": {
-      "statistic": 7.427959704159049,
+      "statistic": 9.364959692792072,
       "null_mean": 8.192663744608561,
       "null_std": 5.1085837522670445,
-      "p_rank": 0.92,
-      "p_normal": 0.8810091767254115,
+      "p_rank": 0.84,
+      "p_normal": 0.8184991877481383,
       "min_achievable_p_rank": 0.04,
-      "z_score": -0.14969002712545493,
+      "z_score": 0.22947572263316204,
       "passes": false,
       "n_null_samples": 24
     }
   },
-  "real_consistency_rank_corr": 0.34551083591331266,
+  "real_consistency_rank_corr": 0.542827657378741,
   "real_spans_per_seed": [
-    7.427959704159049,
-    7.607559704079328,
-    7.394199696161968,
-    9.632639750940502,
-    5.505999892761185
+    9.075999816293269,
+    8.965479703801796,
+    11.286959896855652,
+    9.364959692792072,
+    10.401239606729671
   ],
   "test_has_power": true,
   "test_has_specificity": true
