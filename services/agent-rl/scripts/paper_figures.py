@@ -263,6 +263,42 @@ def fig_steering(d, out: Path):
     save(fig, out / "fig_steering.png")
 
 
+def fig_manifold(d, out: Path):
+    """single column: how far each masking mode strays from the data manifold.
+
+    the shape is the argument. both curves start and end on the manifold, and
+    only the interior is off it, which is exactly the claim that the span
+    (built from the two endpoints) cannot be an off-manifold artefact.
+    """
+    rows = sorted(d["offmanifold_distance"], key=lambda r: r["n_kept"],
+                  reverse=True)
+    n_feat = len(d["feature_names"])
+
+    # the fully-masked point is dropped: those states are drawn FROM the
+    # reference sample, so their distance to it is trivially zero and plotting
+    # it would read as evidence when it is a tautology. the v(N) row is the
+    # honest baseline, drawn as a floor instead.
+    floor = next(r["marginal"] for r in rows if r["n_kept"] == n_feat)
+    body = [r for r in rows if 0 < r["n_kept"] < n_feat]
+    x = np.array([n_feat - r["n_kept"] for r in body])
+    m = np.array([r["marginal"] for r in body])
+    c = np.array([r["conditional"] for r in body])
+
+    fig, ax = plt.subplots(figsize=(COL, 2.0), facecolor="white")
+    ax.axhline(floor, color=REF, lw=0.9, ls="--", zorder=1)
+    ax.text(x.max(), floor, "real states", fontsize=6.4, color=MUTED,
+            ha="right", va="bottom")
+    for y, color, lab in ((m, C2, "marginal"), (c, C1, "conditional")):
+        ax.plot(x, y, color=color, lw=1.5, marker="o", ms=3.6,
+                markeredgecolor="white", markeredgewidth=0.8, label=lab)
+
+    style(ax, xlabel="features replaced",
+          ylabel="distance to nearest real state")
+    ax.legend(frameon=False, fontsize=6.5, labelcolor=MUTED, loc="lower left",
+              handletextpad=0.4, borderpad=0.2)
+    save(fig, out / "fig_manifold.png")
+
+
 def fig_decoy(d, out: Path):
     """single column: the decoy's share under each attribution target."""
     fig, ax = plt.subplots(figsize=(COL, 1.75), facecolor="white")
@@ -298,6 +334,7 @@ def main() -> None:
     fig_power(L("power_curve.json"), out)
     fig_null_comparison(L("generalize_gym.json"), out)
     fig_steering(L("steering.json"), out)
+    fig_manifold(L("manifold_masking.json"), out)
     fig_decoy(L("faithfulness.json"), out)
     print("done")
 

@@ -159,6 +159,20 @@ if f:
     check("deletion AUC, per-decision", -165.3, auc["per-decision"], 0.02)
     check("deletion AUC, random", 366.6, auc["random (control)"], 0.02)
 
+# ------------------------------------------------------------ off-manifold
+mm = load("manifold_masking.json")
+print("\nsection 5.8: off-manifold masking")
+if mm:
+    check("span, marginal masking", 8.838, mm["span_marginal"], 0.02)
+    check("span, conditional masking", 8.838, mm["span_conditional"], 0.02)
+    check("loo rank corr, marginal vs conditional", 0.767, mm["loo_rank_corr"], 0.05)
+    check("conditional planted-signal z", 9.61, mm["conditional_planted_signal"]["z_score"], 0.05)
+    check("conditional real-market z", -0.55, mm["conditional_real_market"]["z_score"], 0.20)
+    by_kept = {r["n_kept"]: r for r in mm["offmanifold_distance"]}
+    check("real-state distance floor", 0.381, by_kept[18]["marginal"], 0.02)
+    check("marginal distance, 14 replaced", 0.486, by_kept[4]["marginal"], 0.02)
+    check("conditional distance, 14 replaced", 0.186, by_kept[4]["conditional"], 0.02)
+
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
 if failures:

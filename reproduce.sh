@@ -152,6 +152,11 @@ step "horizon scaling: why does the weight null fail?"
 ( cd "$RL" && "$PY" scripts/horizon_scaling.py --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 16) )
 
+step "is the span an artefact of off-manifold masking?"
+( cd "$RL" && "$PY" scripts/manifold_masking.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" \
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) )
+
 step "does it generalise? CartPole and Acrobot"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )

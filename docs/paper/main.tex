@@ -618,6 +618,64 @@ sixteen agents: every blind agent converged on the same abstaining policy. This
 is the Acrobot degeneracy again, and it now has a mechanism: the environment null
 degenerates when the task affords enough time to learn that inaction is optimal.
 
+\subsection{Off-manifold masking}
+\label{sec:manifold}
+
+The standard objection to perturbation attribution applies here and deserves a
+direct answer. We define $\vfn(S)$ by replacing the features outside $S$ with
+draws that ignore the features inside $S$. Our 18 market features are
+correlated, so those draws break the joint distribution and the policy is scored
+on states that never occur. \citet{slack2020fooling} build their attack on
+precisely that gap. If the span reflected distribution shift rather than
+information, the headline result would be an artefact of the masking.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_manifold.png}
+\caption{Distance from a masked state to the nearest real state, in per-feature
+standard deviations, against the number of features replaced. The dashed line is
+where real held-out states sit relative to the reference sample. Marginal
+masking moves \emph{above} that floor as more features are replaced;
+neighbour-conditioned masking stays at or below it. The fully-masked point is
+omitted: those states are drawn from the reference sample itself, so their
+distance to it is zero by construction rather than by evidence.}
+\label{fig:manifold}
+\end{figure}
+
+\paragraph{The span cannot be an off-manifold artefact.}
+This is structural rather than empirical, and we state it as such. The statistic
+is $\Delta = \vfn(N) - \vfn(\emptyset)$, and neither coalition evaluates an
+off-manifold state. $\vfn(N)$ masks nothing. At $\vfn(\emptyset)$ our
+implementation replaces the entire observation from a \emph{single} reference
+row, so the synthetic state is itself a real observation, merely a different
+one. Conditioning is vacuous on an empty kept set, since
+$p(x \mid \emptyset) = p(x)$. A conditional masker must therefore agree with the
+marginal one on $\Delta$ exactly, and ours does: $+8.838$ under both. That
+equality confirms the implementation respects the argument; it is not
+independent evidence for it.
+
+\paragraph{The concern is real in the interior.}
+It would be convenient but false to stop there, because the argument above says
+nothing about intermediate coalitions, which is where per-feature attributions
+live. We implemented a conditional masker that draws replacements from the $k=16$
+reference rows nearest the current state in the kept features only, approximating
+$p(x_{\bar S} \mid x_S)$. Measuring the distance from masked states to the
+nearest real state (Figure~\ref{fig:manifold}) shows the two modes are not
+equivalent: with 14 of 18 features replaced, marginal masking sits at $0.486$
+against a real-state floor of $0.381$, while conditional masking sits at $0.186$.
+Marginal masking does leave the manifold, by a measurable amount, in the interior.
+
+\paragraph{Consequences.}
+Re-deriving the verdict entirely under conditional masking, against a null of 12
+conditionally-masked blind agents, reproduces it: the planted signal fires at
+$z=+9.61$ and the real market does not at $z=-0.55$. The per-feature ranking is
+another matter. Leave-one-out values under the two modes correlate at only
+$0.767$ by rank, and \emph{they disagree on which feature is most important}.
+This is the same split Section~\ref{sec:robust} found for credit assignment:
+whether there is anything to explain is robust, which feature to name is not. A
+practitioner may report the verdict; the ranking should carry the masking mode
+with it.
+
 \subsection{Reproduction from scratch}
 \label{sec:repro}
 
@@ -636,8 +694,18 @@ of \citet{adebayo2018sanity} with an RL-appropriate null; the outcomes framing i
 \citet{beechey2023sverl}'s; deletion-based fidelity is standard.
 
 \textbf{The span measures information in aggregate.} An explanation could clear
-the test and still misattribute among features; Section~\ref{sec:robust} shows the
-ranking is scheme-dependent even when the verdict is not.
+the test and still misattribute among features. Section~\ref{sec:robust} shows
+the ranking is scheme-dependent even when the verdict is not, and
+Section~\ref{sec:manifold} shows it is masking-dependent too, to the point of
+disagreeing on the most important feature. Only the verdict survives both.
+
+\textbf{Conditional masking is approximated, not solved.} Our conditional
+masker is $k$-nearest-neighbour in the kept features, which is a practical
+proxy for $p(x_{\bar S} \mid x_S)$ and inherits the usual difficulties in high
+dimension. It is adequate to show the two modes differ; it is not a claim to
+have sampled the true conditional. Neither mode fixes the deeper issue that
+replacements are redrawn each timestep, so masked \emph{states} are plausible
+while masked \emph{trajectories} are not.
 
 \textbf{Temporal credit assignment is named, not solved.} Masking a feature for a
 whole episode measures whether it mattered, not when. This is
