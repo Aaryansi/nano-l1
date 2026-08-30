@@ -874,3 +874,51 @@ def scheme_comparison(
     ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
               loc="upper left", bbox_to_anchor=(0.0, -0.14), ncol=2)
     _save(fig, path)
+
+
+def horizon_scaling(
+    horizons: np.ndarray,
+    weight_sd: np.ndarray,
+    env_sd: np.ndarray,
+    path: Path,
+    alpha_weight: float | None = None,
+    alpha_env: float | None = None,
+    title: str = "does the null's variance grow with the episode horizon?",
+    subtitle: str = "",
+) -> None:
+    """null standard deviation against horizon, log-log.
+
+    log-log because the hypothesis is a power law: if variance compounds along
+    the trajectory the relationship is linear in these coordinates and the
+    slope is the exponent. plotting it linearly would hide exactly the
+    structure being tested.
+    """
+    fig, ax = _new_fig(8.4, 5.0)
+
+    for sd, color, name, alpha in (
+        (np.asarray(weight_sd), C2, "weight randomization", alpha_weight),
+        (np.asarray(env_sd), C1, "environment randomization", alpha_env),
+    ):
+        lab = name if alpha is None else f"{name}  (slope {alpha:+.2f})"
+        ok = sd > 0
+        ax.plot(horizons[ok], sd[ok], color=color, linewidth=2.0, marker="o",
+                markersize=6, markeredgecolor=SURFACE, markeredgewidth=1.5,
+                label=lab, zorder=3)
+        if ok.any():
+            ax.annotate(
+                f"{name}", xy=(horizons[ok][-1], sd[ok][-1]),
+                xytext=(8, 0), textcoords="offset points",
+                color=INK, fontsize=9, va="center",
+            )
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    _style_axes(ax, title, "episode horizon (decision steps)",
+                "null standard deviation", pad=26 if subtitle else 10)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
+                    color=INK_MUTED, fontsize=9, va="bottom")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+              loc="upper left", bbox_to_anchor=(0.0, -0.13), ncol=2)
+    ax.set_xlim(horizons.min() * 0.8, horizons.max() * 2.2)
+    _save(fig, path)

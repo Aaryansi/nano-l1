@@ -415,6 +415,61 @@ two clear +10. it credits a feature only for what it achieves alone, so it
 under-detects features that matter in combination.
 
 ![scheme robustness](../reports/scheme_robustness.png)
+
+### 3.12 why does the weight null fail? a mechanism, tested and rejected
+
+§3.9 measured that the established null has 42x the variance of an
+environment-level one, and explained it only as "a randomly initialised policy
+behaves arbitrarily". that is an observation. the proposed mechanism was
+structural:
+
+> in supervised learning, randomising weights perturbs the **measurement**. in
+> RL it perturbs the measurement's **domain**, because return is a functional of
+> the state distribution the policy induces, and that compounds along the
+> trajectory.
+
+which predicts that the weight null's variance should grow with the episode
+horizon **faster** than the environment null's. tested on fixed-length synthetic
+episodes, where the horizon is controlled exactly (a random policy on CartPole
+drops the pole in ~20 steps whatever the time limit, so termination rather than
+the horizon sets episode length there):
+
+| horizon | weight sd | env sd | ratio |
+|---|---|---|---|
+| 4 | 3.72 | 2.06 | 1.8x |
+| 7 | 5.91 | 3.40 | 1.7x |
+| 14 | 10.81 | 6.13 | 1.8x |
+| 28 | 23.16 | 10.21 | 2.3x |
+| 56 | 46.26 | **0.04** | 1262x |
+
+**the prediction is rejected.** excluding the h=56 point, both nulls grow
+near-linearly and at indistinguishable rates: weight `alpha = +0.93`
+(r² = 0.995), environment `alpha = +0.82` (r² = 0.998). the ratio is flat at
+1.7–1.8x across a 7x range of horizons. the horizon mechanism does not explain
+the 42x gap measured on CartPole.
+
+an automated verdict in the analysis script initially reported this as
+*confirmed*, by fitting a power law to the full series and comparing exponents
+without checking fit quality: the environment fit had r² = 0.258. the script now
+gates its verdict on fit quality and flags collapsed points. the error is
+recorded because the corrected reading is the useful one.
+
+**what the experiment did establish**, unplanned. at h=56 the environment null
+collapses to sd 0.04 with only two distinct values across sixteen agents: every
+blind agent converged to the same abstaining policy, so masking changes nothing.
+that is the same degenerate null seen on Acrobot, and it now has a mechanism:
+**the environment null degenerates when the task gives the agent enough time to
+learn that doing nothing is best.** degeneracy is not a defect of the
+construction, it is the null becoming maximally informative, and it is why the
+test handles zero-variance nulls explicitly rather than guarding them away.
+
+**so the 42x on CartPole remains unexplained by horizon.** the likeliest
+remaining account, consistent with all three environments but not tested here,
+is that it depends on how often a randomly initialised network happens to be an
+accidentally competent policy: sometimes on CartPole and Acrobot, never on a
+market with no exploitable signal. that is stated as a conjecture, not a result.
+
+![horizon scaling](../reports/horizon_scaling.png)
 ![cartpole](../reports/cartpole_competence.png)
 
 ---
