@@ -943,6 +943,46 @@ Section~\ref{sec:method} is a defect rather than a strong result, and why the
 Acrobot degeneracy in Section~\ref{sec:nulls} should be read as a warning about
 the reference rather than as a curiosity.
 
+\paragraph{The collapse is a matter of convergence.}
+On the synthetic corpora the null is a point mass; on the real market it has
+width $2.29$. That difference is not about the corpora but about how far the
+blind agents got. The real training split is roughly four times the size of the
+synthetic ones, so the same 40 updates is a quarter as many passes over the
+data. Sweeping the null agents' budget with everything else fixed
+(Figure~\ref{fig:budget}) shows the null closing on zero as their return
+approaches abstention, and the verdict on the real market changing with it:
+
+\begin{center}\footnotesize
+\begin{tabular}{rrrrl}
+\toprule
+Updates & Null mean $\pm$ sd & $z$ & Blind return & Verdict \\
+\midrule
+20 & $+5.60 \pm 3.27$ & $+0.55$ & $-8.74$ & declines \\
+40 & $+3.55 \pm 2.25$ & $+1.71$ & $-4.13$ & declines \\
+80 & $+0.55 \pm 1.62$ & $\mathbf{+4.23}$ & $-0.18$ & \textbf{fires} \\
+160 & $-0.02 \pm 0.04$ & $\mathbf{+203.6}$ & $-0.05$ & \textbf{fires} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+So the construction does not merely fail on synthetic corpora. Trained to
+convergence it reports the market agent's explanation as informative at
+$z=+203.6$, which is the opposite of what every other measurement in this paper
+says, and it does so for a reason that has nothing to do with the agent: the
+null's standard deviation has fallen from $3.27$ to $0.04$ while the observed
+span has not moved at all. A reference distribution that tightens with its own
+training budget cannot be read as a property of the agent under test, and a test
+whose verdict is set by that budget is measuring the budget.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_budget.png}
+\caption{The blinded null collapses as its agents converge on abstention. The
+observed span is fixed; only the reference moves. A null that tightens with its
+own training budget cannot be read as a property of the agent under test.}
+\label{fig:budget}
+\end{figure}
+
 \paragraph{What we keep.}
 The results in this paper use the signal-free-corpus null. Its weakness, that it
 also varies the corpus, is real and is measured in Section~\ref{sec:nullchoice};

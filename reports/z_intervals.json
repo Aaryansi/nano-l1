@@ -1,5 +1,25 @@
 {
-  "planted signal": {
+  "matched: planted signal": {
+    "z": Infinity,
+    "degenerate_fraction": 1.0,
+    "n_boot": 4000
+  },
+  "matched: null corpus": {
+    "z": Infinity,
+    "degenerate_fraction": 1.0,
+    "n_boot": 4000
+  },
+  "matched: real market": {
+    "z": 1.932351032858232,
+    "z_lo": 1.415554565719524,
+    "z_hi": 2.827749834858112,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.7045,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 4000
+  },
+  "shared-null: planted signal": {
     "z": 12.272937264340852,
     "z_lo": 10.324026439768486,
     "z_hi": 16.871459329876092,
@@ -9,7 +29,7 @@
     "n_null": 24,
     "n_boot": 4000
   },
-  "null corpus": {
+  "shared-null: null corpus": {
     "z": 0.7176806672462446,
     "z_lo": 0.31592962247638856,
     "z_hi": 1.3691593299631308,
@@ -19,7 +39,7 @@
     "n_null": 24,
     "n_boot": 4000
   },
-  "real market": {
+  "shared-null: real market": {
     "z": 0.22947572263316204,
     "z_lo": -0.1582696674909033,
     "z_hi": 0.7323051220387672,
@@ -67,6 +87,46 @@
     "verdict_stability": 0.64375,
     "degenerate_fraction": 0.0,
     "n_null": 24,
+    "n_boot": 4000
+  },
+  "blinded-real, 20 updates": {
+    "z": 0.5514522559277802,
+    "z_lo": -0.029518876832314366,
+    "z_hi": 1.8357879306794531,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.9875,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 4000
+  },
+  "blinded-real, 40 updates": {
+    "z": 1.7147235025007759,
+    "z_lo": 1.096320782829437,
+    "z_hi": 3.109468045198106,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.673,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 4000
+  },
+  "blinded-real, 80 updates": {
+    "z": 4.225594946478574,
+    "z_lo": 2.3435741198797992,
+    "z_hi": 165.7551366613279,
+    "verdict": "informative",
+    "verdict_stability": 0.99775,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
+    "n_boot": 4000
+  },
+  "blinded-real, 160 updates": {
+    "z": 203.61925086884776,
+    "z_lo": 158.64881227703228,
+    "z_hi": 346.6405334353737,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 12,
     "n_boot": 4000
   },
   "market vs synthetic-corpus null": {

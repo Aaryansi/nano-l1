@@ -298,7 +298,8 @@ nb = load("null_budget_check.json")
 print("\nsection 5.13: the blinded null collapses with budget")
 if nb:
     rows = {r["updates"]: r for r in nb["rows"]}
-    for u, sd, z in ((20, 3.268, 0.55), (40, 2.247, 1.71), (80, 1.623, 4.23)):
+    for u, sd, z in ((20, 3.268, 0.55), (40, 2.247, 1.71),
+                     (80, 1.623, 4.23), (160, 0.036, 203.62)):
         if u in rows:
             check(f"null sd at {u} updates", sd, rows[u]["null_std"], 0.05)
             check(f"z at {u} updates", z, rows[u]["result"]["z_score"], 0.08)
