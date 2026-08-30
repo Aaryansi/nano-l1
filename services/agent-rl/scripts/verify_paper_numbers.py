@@ -254,6 +254,16 @@ if nc:
 zi = load("z_intervals.json")
 print("\nsection 5.11: bootstrap verdict stability")
 if zi:
+    expected_labels = {"shared-null: planted signal", "shared-null: real market",
+                       "matched: real market", "real prediction", "real trading",
+                       "market vs synthetic-corpus null",
+                       "market vs blinded-real null"}
+    missing = expected_labels - set(zi)
+    checks += 1
+    print(f"  [{'x' if not missing else ' '}] {'every expected bootstrap label is present':<52} "
+          f"{'yes' if not missing else sorted(missing)}")
+    if missing:
+        failures.append(f"z_intervals: missing labels {sorted(missing)}")
     check("blinded-real verdict stability", 0.65,
           zi["market vs blinded-real null"]["verdict_stability"], 0.08)
     check("synthetic-corpus verdict stability", 1.0,
@@ -262,10 +272,10 @@ if zi:
           zi["real prediction"]["verdict_stability"], 0.01)
     check("real trading verdict stability", 0.64,
           zi["real trading"]["verdict_stability"], 0.08)
-    check("planted signal interval, low", 10.32, zi["planted signal"]["z_lo"], 0.05)
-    check("planted signal interval, high", 16.87, zi["planted signal"]["z_hi"], 0.05)
-    check("real market interval, low", -0.16, zi["real market"]["z_lo"], 0.30)
-    check("real market interval, high", 0.73, zi["real market"]["z_hi"], 0.15)
+    check("planted signal interval, low", 10.32, zi["shared-null: planted signal"]["z_lo"], 0.05)
+    check("planted signal interval, high", 16.87, zi["shared-null: planted signal"]["z_hi"], 0.05)
+    check("real market interval, low", -0.16, zi["shared-null: real market"]["z_lo"], 0.30)
+    check("real market interval, high", 0.73, zi["shared-null: real market"]["z_hi"], 0.15)
 
 # ------------------------------------------------- the matched construction
 mn = load("matched_null_test.json")
