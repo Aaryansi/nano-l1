@@ -140,6 +140,10 @@ step "the null-model test again, with every null matched to its own corpus"
 # the third construction: permute the outcomes and leave everything else, so
 # the null agents stay sighted and the corpus stays fixed. this is the one the
 # paper adopts; the two above are what it rejected on the way.
+step "what the outcome permutation actually removes"
+( cd "$RL" && "$PY" scripts/permutation_calibration.py --corpus "$CORPUS" \
+    --out "$REPORTS" )
+
 step "the outcome-permutation null: sighted agents, fixed corpus"
 ( cd "$RL" && "$PY" scripts/permuted_null_test.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )

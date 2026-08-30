@@ -356,6 +356,59 @@ def fig_conjecture(d, out: Path):
     save(fig, out / "fig_conjecture.png")
 
 
+def fig_constructions(perm, matched, out: Path):
+    """full width: three null constructions on the same three cases.
+
+    the figure the null sections build to. each panel is one case; each row is
+    one construction; the vertical line is the observed span, which never moves.
+    what a reader should see is that the middle construction's reference has no
+    width at all on the two synthetic cases, which is why it fires on both.
+    """
+    by_case = {}
+    for label, d in (("permuted", perm), ("blinded", matched)):
+        for c in d["cases"]:
+            by_case.setdefault(c["case"], {})[label] = c
+
+    cases = ["planted signal", "null corpus", "real market"]
+    fig, axes = plt.subplots(1, len(cases), figsize=(FULL, 1.95),
+                             facecolor="white")
+
+    for i, (ax, case) in enumerate(zip(np.atleast_1d(axes), cases)):
+        rows = (("blinded", by_case[case]["blinded"], C2),
+                ("permuted", by_case[case]["permuted"], C1))
+        obs = by_case[case]["permuted"]["span"]
+
+        for y, (label, c, color) in enumerate(rows):
+            v = np.array(c["null_spans"])
+            lo, hi = v.min(), v.max()
+            if hi - lo < 1e-9:          # a point mass would draw as nothing
+                ax.scatter([lo], [y], s=46, color=color, marker="D", zorder=5,
+                           edgecolors="white", linewidths=1.0)
+                ax.annotate("point mass", xy=(lo, y), xytext=(6, 0),
+                            textcoords="offset points", fontsize=6.2,
+                            color=color, va="center")
+            else:
+                ax.plot([lo, hi], [y, y], color=color, lw=5, alpha=0.28,
+                        solid_capstyle="round", zorder=2)
+                ax.scatter(v, np.full_like(v, y), s=7, color=color, zorder=4,
+                           edgecolors="white", linewidths=0.3)
+            mark = "fires" if c["fires"] else "declines"
+            ax.annotate(mark, xy=(1.0, y), xycoords=("axes fraction", "data"),
+                        xytext=(-2, -10), textcoords="offset points",
+                        fontsize=6.2, color=MUTED, ha="right", va="top")
+
+        ax.axvline(obs, color=INK, lw=1.1, zorder=6)
+        ax.set_yticks([0, 1])
+        ax.set_yticklabels(["blinded", "permuted"] if i == 0 else ["", ""],
+                           color=INK, fontsize=7)
+        ax.set_ylim(-0.75, 1.6)
+        style(ax, xlabel=r"span  $v(N)-v(\\emptyset)$", title=case)
+        ax.grid(axis="y", visible=False)
+
+    fig.subplots_adjust(wspace=0.14)
+    save(fig, out / "fig_constructions.png")
+
+
 def fig_budget(d, out: Path):
     """single column: the blinded null collapses as its agents converge.
 
@@ -469,6 +522,8 @@ def main() -> None:
     fig_steering(L("steering.json"), out)
     fig_conjecture(L("null_width_conjecture.json"), out)
     fig_nullchoice(L("null_corpus_check.json"), out)
+    fig_constructions(L("permuted_null_test.json"),
+                      L("matched_null_test.json"), out)
     fig_budget(L("null_budget_check.json"), out)
     fig_manifold(L("manifold_masking.json"), out)
     fig_decoy(L("faithfulness.json"), out)
