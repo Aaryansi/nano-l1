@@ -64,6 +64,26 @@ def calibration(batch, n_bins: int = 8):
     return bins, (err / total if total else float("nan"))
 
 
+def fade_edge(batch, extreme: float = 0.1):
+    """per-contract edge of fading the market's terminal price.
+
+    the strategy needs nothing but the quote: sell when the market is confident
+    the answer is yes, buy when it is confident the answer is no. in a
+    calibrated market this earns nothing. after the outcomes are permuted the
+    price still moves toward the TRUE outcome while the settlement belongs to a
+    different contract, so the same rule collects the whole mispricing.
+
+    this is the mechanism behind the permutation null's failure, and it is not
+    a quirk of this market: wherever an observation is a forecast of the label,
+    permuting the label makes that forecast exploitably wrong.
+    """
+    last = 0.5 * (batch.bid[:, -1] + batch.ask[:, -1])
+    y = np.asarray(batch.settlement, dtype=float)
+    edge = np.where(last > 0.5, last - y, y - last)
+    ext = (last > 1.0 - extreme) | (last < extreme)
+    return float(edge.mean()), float(edge[ext].mean()), int(ext.sum())
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True)
@@ -98,7 +118,23 @@ def main() -> None:
     print("  prices contracts wrongly, so trading there is strictly more")
     print("  punishing than in the environment the observed agent faced.")
 
-    res = {"outcome_rate_real": outcome_rate(real),
+    print()
+    print("  per-contract edge of fading the terminal price, a rule needing")
+    print("  nothing but the quote:")
+    print(f"  {'':>11}{'all episodes':>16}{'extremes only':>17}{'n':>8}")
+    fades = {}
+    for label, b in (("real", real), ("permuted", perm)):
+        a, e, n = fade_edge(b)
+        fades[label] = {"all": a, "extremes": e, "n_extreme": n}
+        print(f"  {label:>11}{a:>16.4f}{e:>17.4f}{n:>8}")
+    print()
+    print(f"  at the 100-contract position cap that is about "
+          f"${100 * fades['permuted']['extremes']:.0f} an episode in the")
+    print("  permuted world and nothing in the real one. the null agents do not")
+    print("  have LESS to learn than the observed agent. they have far more.")
+
+    res = {"fade_edge": fades,
+           "outcome_rate_real": outcome_rate(real),
            "outcome_rate_permuted": outcome_rate(perm),
            "calibration_error_real": rerr,
            "calibration_error_permuted": perr,

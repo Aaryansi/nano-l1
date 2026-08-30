@@ -333,6 +333,7 @@ transaction costs. The test is that the planted feature ranks first with the
 majority of attribution mass, not that everything else is zero.
 
 \subsection{A market with terminal ground truth}
+\label{sec:market}
 
 Our main empirical setting is a binary contract settling to \$1.00 if BTC is
 higher after 15 minutes and \$0.00 otherwise, on a regulated prediction market.
@@ -983,14 +984,113 @@ own training budget cannot be read as a property of the agent under test.}
 \label{fig:budget}
 \end{figure}
 
+\subsection{A third construction, and a pattern}
+\label{sec:permuted}
+
+Section~\ref{sec:matched} leaves an obvious gap: hold the corpus fixed
+\emph{and} keep the null agents sighted. There is a natural way to do it, and it
+is the construction this paper claimed to be supplying all along. Permute the
+outcomes across episodes and leave everything else alone. The observation stream
+is untouched, because the feature block is a function of the quote and spot
+arrays and never reads the settlement, so no observation moves by a single bit.
+The marginal outcome rate is preserved exactly, since a relabelling is not a
+resample. This is the direct analogue of the label-permutation test of
+\citet{adebayo2018sanity}.
+
+It has power and specificity (Figure~\ref{fig:constructions}): on the planted
+signal it fires at $z=+10.48$, and
+on the signal-free corpus it declines at $z=+1.75$. No null collapses. It is
+nonetheless unusable, and the way it fails is the most instructive of the three.
+
+\begin{center}\footnotesize
+\begin{tabular}{lrrrl}
+\toprule
+Case & Span & Null & $z$ & Verdict \\
+\midrule
+planted signal & $+74.69$ & $+11.89 \pm 5.99$ & $+10.48$ & fires \\
+null corpus & $+13.90$ & $+7.96 \pm 3.39$ & $+1.75$ & declines \\
+\textbf{real market} & $\mathbf{+7.40}$ & $\mathbf{+55.85 \pm 3.12}$ &
+$\mathbf{-15.52}$ & \textbf{below null} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The market agent's span is not merely inside the reference distribution, it is
+fifteen standard deviations \emph{below} it. The null agents earn $+36.26$ per
+episode where the observed agent earns $-1.13$. They are not agents with nothing
+to learn; they are agents with a great deal to learn.
+
+\paragraph{Permuting a label that the observations forecast.}
+The price is a forecast of the outcome. Permuting the outcome leaves the
+forecast in place and attaches it to a different contract, so the market becomes
+grossly mispriced: a contract whose price has moved to $0.99$ now settles at
+$0.49$. Fading the terminal price, a rule needing nothing but the quote, earns
+$-0.005$ per contract in the real corpus and $+0.486$ in the permuted one, which
+at the position cap is roughly \$49 an episode. Calibration error rises from
+$0.007$ to $0.456$.\footnote{Terminal mid on the training split in eight
+quantile bins, which is not the estimator behind the figure in
+Section~\ref{sec:market}; only the contrast is meant to be read.} The null
+agents learn that arbitrage, it requires seeing the price, and their spans
+inflate accordingly.
+
+This is not a quirk of prediction markets. \emph{Wherever an observation is a
+forecast of the label, permuting the label makes that forecast exploitably
+wrong}, and the null agents are handed a task easier than the real one rather
+than harder. Supervised learning does not have this problem because the model
+does not act on its input and cannot trade against it.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_constructions.png}
+\caption{Two null constructions on the same three cases. The vertical line is
+the observed span and does not move; only the reference does. Blinding the
+observation channel yields a point mass on both synthetic corpora, which is why
+it fires on the one built to contain no signal. Permuting the outcomes yields a
+usable reference everywhere, and on the real market places it so far above the
+observed span that the agent lands fifteen standard deviations below its own
+null.}
+\label{fig:constructions}
+\end{figure*}
+
+\paragraph{The pattern.}
+Three constructions, three failures, and the same shape each time. Removing the
+information also perturbs something else, and the perturbation decides the
+verdict:
+
+\begin{center}\footnotesize
+\begin{tabular}{p{0.24\columnwidth}p{0.30\columnwidth}p{0.34\columnwidth}}
+\toprule
+Construction & Also changes & Consequence \\
+\midrule
+signal-free corpus & the corpus & widens the reference; errs toward declining \\
+\addlinespace
+blinded channel & the agent's capacity to respond & collapses to a point mass;
+fires on anything, budget-dependent \\
+\addlinespace
+outcome permutation & the price's calibration & creates an arbitrage; the null
+learns more than the agent \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+We report this as the finding rather than presenting a fourth construction we
+have not tested. A null for reinforcement learning has to remove the
+information while leaving the observation stream, the agent's responsiveness,
+and the task's difficulty intact, and none of the three natural ways of doing
+that manages all four. \citet{huber2022benchmarking} observed that the
+data-randomisation test has no obvious RL analogue. We set out to supply one and
+instead have an account of why it is hard.
+
 \paragraph{What we keep.}
-The results in this paper use the signal-free-corpus null. Its weakness, that it
-also varies the corpus, is real and is measured in Section~\ref{sec:nullchoice};
-it is the lesser of the two faults, because it widens the reference and so errs
-toward declining rather than toward firing. We recommend against the blinded
-form for tasks where inaction is a viable policy, which includes every
-market-like task we know of, and we would not have learned that by reasoning
-about which null was more principled.
+The results in this paper use the signal-free-corpus null, whose fault is the
+mildest of the three: it widens the reference and so errs toward declining,
+which is the conservative direction for every claim we make with it. That is a
+reason to trust our negative results more than our positive ones, and we would
+not have been able to say which way the bias ran without building the other two.
+One construction we have not tried is a \emph{stratified} permutation, shuffling
+outcomes only within price buckets, which would preserve calibration and remove
+only the information beyond the price. It asks a narrower question, whether the
+agent knows anything the market does not, and that may be the better question.
 
 \subsection{Implications for oversight}
 \label{sec:oversight}
@@ -1040,7 +1140,7 @@ is the one we would trust.
 \subsection{Hypotheses we rejected}
 \label{sec:rejected}
 
-Five predictions in this project turned out to be wrong
+Six predictions in this project turned out to be wrong
 (Table~\ref{tab:rejected}). They are collected rather than left implicit in the
 sections that tested them, because a reader assessing whether the surviving
 claims were stress-tested should be able to see what did not survive.
@@ -1088,6 +1188,14 @@ The same verdicts against a tighter reference, and more power. &
 verdict on the real market flips with the null agents' training budget
 (Section~\ref{sec:matched}). Blinding removes the capacity to respond to
 observational structure, not only the information. \\
+\addlinespace
+Permuting the outcomes fixes both faults: the corpus is held fixed and the null
+agents stay sighted. &
+Power, specificity, and a usable reference on all three cases. &
+\textbf{Rejected.} It has power and specificity and still fails. The price
+forecasts the outcome, so relabelling makes it exploitably wrong: the null
+agents earn $+36.26$ against the observed agent's $-1.13$ and the market's span
+lands 15 sd \emph{below} its own null (Section~\ref{sec:permuted}). \\
 \bottomrule
 \end{tabular}
 \end{table*}

@@ -1,4 +1,34 @@
 {
+  "permuted: planted signal": {
+    "z": 10.477577583022576,
+    "z_lo": 7.584902346949557,
+    "z_hi": 18.58249479442641,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 4000
+  },
+  "permuted: null corpus": {
+    "z": 1.751743474699246,
+    "z_lo": 1.19320579669644,
+    "z_hi": 2.92005259718339,
+    "verdict": "not distinguishable",
+    "verdict_stability": 0.741,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 4000
+  },
+  "permuted: real market": {
+    "z": -15.52461852725054,
+    "z_lo": -25.6679049133438,
+    "z_hi": -11.536059859509285,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 4000
+  },
   "matched: planted signal": {
     "z": Infinity,
     "degenerate_fraction": 1.0,

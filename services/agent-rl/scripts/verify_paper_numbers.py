@@ -320,6 +320,42 @@ if nb:
     if not flipped:
         failures.append("budget check: paper says the verdict is budget-dependent")
 
+# ------------------------------------------------ the permutation construction
+pn = load("permuted_null_test.json")
+print("\nsection 5.14: the outcome-permutation null")
+if pn:
+    by = {c["case"]: c for c in pn["cases"]}
+    check("permuted planted z", 10.48, by["planted signal"]["result"]["z_score"], 0.05)
+    check("permuted null-corpus z", 1.75, by["null corpus"]["result"]["z_score"], 0.05)
+    check("permuted real-market z", -15.52, by["real market"]["result"]["z_score"], 0.05)
+    check("permuted real-market null mean", 55.85, by["real market"]["null_mean"], 0.05)
+    check("permuted real-market null sd", 3.12, by["real market"]["null_std"], 0.08)
+    check("permuted null agents' return", 36.26, by["real market"]["null_return_mean"], 0.05)
+    # power and specificity are kept; the failure is elsewhere, and the paper
+    # says so, so both halves are asserted
+    for label, want in (("has_power", True), ("has_specificity", True),
+                        ("any_collapsed", False)):
+        checks += 1
+        ok = bool(pn[label]) is want
+        print(f"  [{'x' if ok else ' '}] {'permuted null ' + label + f' is {want}':<52} "
+              f"{'yes' if ok else 'NO':>21}")
+        if not ok:
+            failures.append(f"permuted null: {label} is not {want}")
+    checks += 1
+    below = by["real market"]["result"]["z_score"] < -1.96
+    print(f"  [{'x' if below else ' '}] {'real market lands below its own null':<52} "
+          f"{'yes' if below else 'NO':>21}")
+    if not below:
+        failures.append("permuted null: paper says the market lands below the null")
+
+pc = load("permutation_calibration.json")
+print("\nsection 5.14: what the permutation removes")
+if pc:
+    check("calibration error, real", 0.0071, pc["calibration_error_real"], 0.05)
+    check("calibration error, permuted", 0.4561, pc["calibration_error_permuted"], 0.05)
+    check("fade edge, real (extremes)", -0.0015, pc["fade_edge"]["real"]["extremes"], 0.60)
+    check("fade edge, permuted (extremes)", 0.4864, pc["fade_edge"]["permuted"]["extremes"], 0.05)
+
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
 if failures:

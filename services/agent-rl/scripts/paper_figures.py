@@ -392,7 +392,9 @@ def fig_constructions(perm, matched, out: Path):
                         solid_capstyle="round", zorder=2)
                 ax.scatter(v, np.full_like(v, y), s=7, color=color, zorder=4,
                            edgecolors="white", linewidths=0.3)
-            mark = "fires" if c["fires"] else "declines"
+            # the permuted artifact stores a three-way verdict, since a
+            # rejection BELOW the null is not the same as declining
+            mark = c.get("verdict") or ("fires" if c["fires"] else "declines")
             ax.annotate(mark, xy=(1.0, y), xycoords=("axes fraction", "data"),
                         xytext=(-2, -10), textcoords="offset points",
                         fontsize=6.2, color=MUTED, ha="right", va="top")
@@ -402,7 +404,7 @@ def fig_constructions(perm, matched, out: Path):
         ax.set_yticklabels(["blinded", "permuted"] if i == 0 else ["", ""],
                            color=INK, fontsize=7)
         ax.set_ylim(-0.75, 1.6)
-        style(ax, xlabel=r"span  $v(N)-v(\\emptyset)$", title=case)
+        style(ax, xlabel=r"span  $v(N)-v(\emptyset)$", title=case)
         ax.grid(axis="y", visible=False)
 
     fig.subplots_adjust(wspace=0.14)

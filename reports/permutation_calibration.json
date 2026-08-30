@@ -1,4 +1,16 @@
 {
+  "fade_edge": {
+    "real": {
+      "all": -0.004797087115646192,
+      "extremes": -0.001502770705427239,
+      "n_extreme": 3419
+    },
+    "permuted": {
+      "all": 0.45654178159218983,
+      "extremes": 0.48635917723256633,
+      "n_extreme": 3419
+    }
+  },
   "outcome_rate_real": 0.49870264530181885,
   "outcome_rate_permuted": 0.49870264530181885,
   "calibration_error_real": 0.007135400809801939,
