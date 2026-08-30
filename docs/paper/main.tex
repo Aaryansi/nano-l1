@@ -931,10 +931,10 @@ is the one we would trust.
 \subsection{Hypotheses we rejected}
 \label{sec:rejected}
 
-Four predictions in this project turned out to be wrong. They are collected here
-rather than left implicit in the sections that tested them, because a reader
-assessing whether the surviving claims were stress-tested should be able to see
-what did not survive.
+Four predictions in this project turned out to be wrong
+(Table~\ref{tab:rejected}). They are collected rather than left implicit in the
+sections that tested them, because a reader assessing whether the surviving
+claims were stress-tested should be able to see what did not survive.
 
 \begin{table*}[t]
 \centering\small
@@ -1028,12 +1028,23 @@ content is.
 
 An attribution can be stable, precisely estimated, plausible, and empty. The
 checks practitioners apply (consistency across runs, separation beyond
-estimation error, semantic legibility) do not detect this, because none of
-them ask whether the explained agent learned anything. A null-model test does,
-using a statistic the attribution framework already provides. The established
-test for this purpose does not survive the move to reinforcement learning, and we
-recommend against its use there without the measurement in
-Section~\ref{sec:nulls}.
+estimation error, semantic legibility) do not detect this, because none of them
+ask whether the explained agent learned anything. A null-model test does, using
+a statistic the attribution framework already provides, and it separates tasks
+rather than datasets: on identical real episodes it fires for an objective the
+observations can serve and declines for one they cannot.
+
+Two findings bear on using attributions as evidence. They are cheap to forge,
+at a price equal to the importance of the feature being hidden, which is zero
+exactly where a guarantee would be worth having, and no deception or attack on
+the explainer is required to do it. And the verdict depends on a reference
+distribution that is currently neither standardised nor usually reported; the
+established construction for reinforcement learning has almost no power, because
+its width is the standard deviation of random initialisation rather than
+anything about the explanation. We recommend against its use without the
+measurement in Section~\ref{sec:nulls}, and we recommend reporting the null
+construction alongside any attribution offered as evidence, having found in
+Section~\ref{sec:nullchoice} that our own choice was worth checking.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
