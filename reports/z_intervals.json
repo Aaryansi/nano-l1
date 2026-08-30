@@ -50,9 +50,9 @@
     "n_boot": 4000
   },
   "real prediction": {
-    "z": 3.3903211411753396,
-    "z_lo": 2.5182708625731305,
-    "z_hi": 5.289083125084771,
+    "z": 3.3962180623329354,
+    "z_lo": 2.5219120032998177,
+    "z_hi": 5.30328543524501,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,

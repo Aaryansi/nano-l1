@@ -73,7 +73,7 @@
   schemes already satisfy, comparing an agent's attribution span against agents
   trained where the observation channel carries no information. It rejects a
   planted signal at $z=12.27$, fails to reject the market agent at $z=+0.23$,
-  and fires at $z=+3.39$ on a genuinely learnable task built from the same real
+  and fires at $z=+3.40$ on a genuinely learnable task built from the same real
   episodes. Explanations are also cheap to forge: an auxiliary training penalty
   drives a feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no
   measurable cost in return, with no deception and no attack on the explainer.
@@ -268,7 +268,7 @@ highly informative \emph{about the outcome} while offering nothing to trade
 against once a $9\%$ round-trip fee is paid. Scoring the same architecture on
 the same real episodes for \emph{calling} the settlement rather than trading it,
 against a null of 24 agents trained on those episodes with observations
-blinded, gives a span of $+7.47$ against $-0.47 \pm 2.34$: $z=+3.39$,
+blinded, gives a span of $+7.46$ against $-0.48 \pm 2.34$: $z=+3.40$,
 informative, unchanged in all $4{,}000$ resamples. The trading agent on
 identical episodes and an identical null gives $+7.41$ against $+2.47 \pm 2.29$,
 $z=+2.16$, which the two-part rule declines, though only $64\%$ of resamples

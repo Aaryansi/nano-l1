@@ -76,4 +76,6 @@ docs/paper/*.bbl
 docs/paper/*.blg
 docs/paper/*.log
 docs/paper/*.out
-docs/paper/*page-*.png
+# rendered page images used to eyeball the pdf. the tracked figures live
+# in docs/paper/figures/, which this does not match.
+docs/paper/*.png

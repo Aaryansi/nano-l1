@@ -124,9 +124,15 @@ class PredictionRollout(VectorizedRollout):
             new_calls = _CALLS[np.asarray(policy(obs), dtype=int)]
 
             mark = 0.5 * (self.batch.bid[:, t] + self.batch.ask[:, t])
-            changed = new_calls != calls
+            # mirrors PredictionEnv.step exactly: abstaining resets the counter
+            # to zero, but switching to a NEW call starts it at one, because the
+            # env increments after assigning the position. an earlier version
+            # reset to zero on a change, which left this feature one step behind
+            # the env for the whole episode. constant-policy parity tests cannot
+            # see that, since a constant policy ignores its observation.
             steps_in = np.where(
-                (new_calls == 0.0) | changed, 0.0, steps_in + 1.0
+                new_calls == 0.0, 0.0,
+                np.where(new_calls != calls, 1.0, steps_in + 1.0),
             )
             avg_entry = np.where(new_calls != 0.0, mark, 0.0)
             calls = new_calls

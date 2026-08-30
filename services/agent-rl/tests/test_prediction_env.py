@@ -91,6 +91,66 @@ class TestRolloutParity:
             want.append(sum(env.step(action)[1] for _ in range(batch.n_steps)))
         np.testing.assert_allclose(got, np.asarray(want), atol=1e-9)
 
+    def test_observations_match_the_env_under_a_varying_policy(self, corpus):
+        """the test that matters, and the one a constant policy cannot do.
+
+        a constant policy ignores its observation, so constant-action parity
+        passes even when the rollout serves a different state than the env. it
+        did: time_in_position was a step behind for a whole episode, because
+        the rollout reset the counter on a change of call while the env starts
+        it at one. attribution measured on the rollout would then have been
+        measured on observations the agent never saw.
+        """
+        batch, norm = corpus
+        actions = [2, 2, 0, 1, 2, 2][: batch.n_steps]
+
+        env = PredictionEnv(batch, normalizer=norm, max_position=100.0)
+        expected = []
+        for ep in range(len(batch)):
+            obs, _ = env.reset(seed=0, options={"episode": ep})
+            row = [obs.copy()]
+            for a in actions[:-1]:
+                obs = env.step(a)[0]
+                row.append(obs.copy())
+            expected.append(row)
+        expected = np.asarray(expected)
+
+        roll = PredictionRollout(batch, normalizer=norm, max_position=100.0)
+        seen: list[np.ndarray] = []
+        state = {"i": 0}
+
+        def policy(obs):
+            seen.append(obs.copy())
+            a = actions[state["i"]]
+            state["i"] += 1
+            return np.full(len(obs), a)
+
+        roll.run(policy)
+        np.testing.assert_allclose(
+            np.stack(seen, axis=1), expected, atol=1e-6
+        )
+
+    def test_returns_match_the_env_under_a_varying_policy(self, corpus):
+        batch, norm = corpus
+        actions = [2, 2, 0, 1, 2, 2][: batch.n_steps]
+
+        env = PredictionEnv(batch, normalizer=norm, max_position=100.0)
+        want = []
+        for ep in range(len(batch)):
+            env.reset(seed=0, options={"episode": ep})
+            want.append(sum(env.step(a)[1] for a in actions))
+
+        roll = PredictionRollout(batch, normalizer=norm, max_position=100.0)
+        state = {"i": 0}
+
+        def policy(obs):
+            a = actions[state["i"]]
+            state["i"] += 1
+            return np.full(len(obs), a)
+
+        got = roll.run(policy)["returns"]
+        np.testing.assert_allclose(got, np.asarray(want), atol=1e-9)
+
     def test_observations_have_the_shared_feature_layout(self, corpus):
         batch, norm = corpus
         roll = PredictionRollout(batch, normalizer=norm, max_position=100.0)

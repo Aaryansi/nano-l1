@@ -4,6 +4,21 @@
 % documentclass and geometry block with that venue's style file; the body needs
 % no changes.
 %
+% Length: about ten and a half pages of body, with the bibliography running to
+% twelve. That suits arXiv or a journal. For a conference limit of eight pages
+% excluding references, cut in this order, which is by how much each section
+% would cost in review if it were missing:
+%
+%   1. the horizon experiment (5.7). it tests a hypothesis that was rejected
+%      and superseded by the initialisation identity, so it now documents a
+%      dead end rather than supporting a claim.
+%   2. the certified-ranking subsection (5.4). the point survives as one
+%      sentence in the limitations.
+%   3. the integrated-gradients comparison in 5.7, keeping its conclusion.
+%
+% Do not cut the null-construction audit (5.10) or the rejected-hypotheses
+% ledger (5.9) for length. They are the parts a sceptical reader checks first.
+%
 % Build:  tectonic main.tex
 
 \documentclass[10pt,twocolumn]{article}
@@ -65,7 +80,7 @@ We introduce a null-model test that detects this, built on the additivity
 identity attribution schemes already satisfy: compare an agent's attribution
 span against the spans of agents trained where the observation channel carries
 no information. It rejects a planted signal at $z=12.27$, fails to reject the
-market agent at $z=+0.23$, and fires at $z=+3.39$ on a genuinely learnable task
+market agent at $z=+0.23$, and fires at $z=+3.40$ on a genuinely learnable task
 built from the same real episodes, so it separates tasks by whether their
 observations carry usable information rather than by whether the corpus is
 synthetic. Two results then concern practice. Explanations are cheap to forge:
@@ -117,31 +132,37 @@ not work.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
-\item \textbf{An environment-level null for RL.} Rather than corrupting the model
-or the labels, we corrupt the environment's \emph{observation channel}, leaving
-dynamics and reward intact. The agent trains normally, on a real objective, with
-nothing to condition on. This requires no access to task internals
-(Section~\ref{sec:method}).
-
-\item \textbf{The established null fails in RL, measurably.} Parameter
-randomisation yields a reference distribution $42\times$ wider on CartPole and
-degenerate on Acrobot. Across sixteen checkpoints it never exceeds $z=2.45$,
-including on a converged CartPole policy scoring 404 of 500, while the
-environment null reaches $z=117$. The two disagree on five of sixteen
-(Section~\ref{sec:nulls}).
-
-\item \textbf{A validation protocol with ground truth.} Explanation evaluation is
-hampered by the absence of ground truth~\citep{cheng2025survey}. We construct
-environments where the correct attribution is known by construction
-(Sections~\ref{sec:synthetic} and~\ref{sec:groundtruth}).
+\item \textbf{An environment-level null for RL.} Rather than corrupting the
+model or the labels, we corrupt the environment's \emph{observation channel},
+leaving dynamics and reward intact. The agent trains normally, on a real
+objective, with nothing to condition on, and this requires no access to task
+internals (Section~\ref{sec:method}).
 
 \item \textbf{A worked case} of an uninformative explanation passing every
-conventional check (Section~\ref{sec:empty}).
+conventional check: stable across seeds, separated beyond its own estimation
+error, and legible (Section~\ref{sec:empty}).
 
-\item \textbf{Attribution is not identified by behaviour.} An auxiliary training
-penalty drives the market agent's dominant feature from $39.9\%$ to $3.2\%$ of
-attribution mass at no measurable cost in return; the same intervention on a
-load-bearing feature costs $81\%$ of return (Section~\ref{sec:steering}).
+\item \textbf{Attribution is not identified by behaviour.} An auxiliary
+training penalty drives the market agent's dominant feature from $39.9\%$ to
+$3.2\%$ of attribution mass at no measurable cost in return; the same
+intervention on a load-bearing feature costs $81\%$ of return. No deception and
+no attack on the explainer is involved (Section~\ref{sec:steering}).
+
+\item \textbf{The established null fails in RL, and we show why.} Parameter
+randomisation never exceeds $z=2.45$ across sixteen checkpoints, including on a
+converged CartPole policy scoring 404 of 500, while the environment null reaches
+$z=117$. Its width equals the standard deviation of random-initialisation return
+to three significant figures, so it measures the variance of initialisation
+(Section~\ref{sec:nulls}).
+
+\item \textbf{Validation with ground truth, synthetic and real.} We construct
+environments where the correct attribution is known by construction
+(Sections~\ref{sec:synthetic} and~\ref{sec:groundtruth}), and a positive control
+on real market episodes where only the objective varies
+(Section~\ref{sec:positive}).
+
+\item \textbf{An audit of our own null construction}, which our thesis implies
+must matter and does (Section~\ref{sec:nullchoice}).
 \end{enumerate}
 
 \paragraph{What we do not claim.}
@@ -575,8 +596,8 @@ $131.42$ on Pendulum, and $0.00$ against $0.00$ on MountainCar.
 
 The reason is visible in the decomposition $\Delta = \vfn(N) - \vfn(\emptyset)$.
 For a randomly initialised network the masked term is nearly constant across
-draws --- its standard deviation is $1.8\%$ of the unmasked term's on CartPole,
-$5.4\%$ on Acrobot --- because a policy that was not using its observations
+draws (its standard deviation is $1.8\%$ of the unmasked term's on CartPole and
+$5.4\%$ on Acrobot) because a policy that was not using its observations
 loses almost nothing when they are removed. The span therefore inherits the
 variance of the unmasked term entire. \emph{Parameter randomisation measures the
 variance of initialisation, not anything about the explanation being tested},
@@ -770,8 +791,8 @@ so the observation construction and normalizer handling are literally the same
 code and a difference in results cannot be a difference in the environment.
 
 Against a null of 24 agents trained on these same real episodes with the
-observation channel blinded, the prediction agent's span is $+7.47$ against a
-null of $-0.47 \pm 2.34$, giving $z=+3.39$: informative, and unchanged in every
+observation channel blinded, the prediction agent's span is $+7.46$ against a
+null of $-0.48 \pm 2.34$, giving $z=+3.40$: informative, and unchanged in every
 one of 4{,}000 resamples. The trading agent on the identical episodes, against
 the identical null construction, gives $+7.41$ against $+2.47 \pm 2.29$ and
 $z=+2.16$, which the two-part rule declines. Note that the two spans are almost
