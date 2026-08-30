@@ -6,7 +6,7 @@
 # no api keys and no accounts. every data source is public:
 #   kalshi     api.elections.kalshi.com   read-only, unauthenticated
 #   binance    data.binance.vision        static daily files
-#   gymnasium  CartPole-v1, Acrobot-v1    installed with the deps
+#   gymnasium  four classic-control tasks  installed with the deps
 #
 # note: kalshi serves a moving window, so a rebuild on a different day returns
 # a slightly different set of markets. verified: overlapping episodes are
@@ -152,6 +152,18 @@ step "horizon scaling: why does the weight null fail?"
 ( cd "$RL" && "$PY" scripts/horizon_scaling.py --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 16) )
 
+step "positive control: does the test fire on a learnable REAL task?"
+( cd "$RL" && "$PY" scripts/positive_control.py --corpus "$CORPUS" \
+    --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) )
+
+# the paper's headline verdict turned out to depend on this, so it is measured
+# rather than assumed. same agent, same measurement corpus, two null
+# constructions.
+step "which null construction does the market verdict depend on?"
+( cd "$RL" && "$PY" scripts/null_corpus_check.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" \
+    --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 32) )
+
 step "is the span an artefact of off-manifold masking?"
 ( cd "$RL" && "$PY" scripts/manifold_masking.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" \
@@ -166,6 +178,10 @@ step "does it generalise? four control tasks"
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
 
 # -------------------------------------------------------------------- done
+step "confidence intervals on every reported z-score"
+( cd "$RL" && "$PY" scripts/bootstrap_z.py --reports "$REPORTS" \
+    --out "$REPORTS" )
+
 step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$ROOT/docs/paper/figures" )

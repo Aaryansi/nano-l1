@@ -23,10 +23,13 @@ learn (z = -0.15, p = 0.92), while correctly flagging a planted signal
 cost, and that this is possible **exactly** where the feature is not
 load-bearing: suppressing a genuinely necessary feature costs 81% of return,
 suppressing the market agent's dominant feature costs nothing measurable.
-Finally, on CartPole and Acrobot we find that the established weight-
+Finally, on four control tasks we find that the established weight-
 randomization null of Adebayo et al. produces a reference distribution 42x wider
 than an environment-level null, and consequently has almost no power: across
-eight checkpoints it never exceeds z = 2.45, including on a converged agent.
+sixteen checkpoints it never exceeds z = 2.45, including on a converged agent.
+its width turns out to equal the spread of random-initialization return, so it
+measures the variance of initialization rather than anything about the
+explanation under test.
 
 ## 1. what is and is not claimed
 
@@ -463,11 +466,19 @@ learn that doing nothing is best.** degeneracy is not a defect of the
 construction, it is the null becoming maximally informative, and it is why the
 test handles zero-variance nulls explicitly rather than guarding them away.
 
-**so the 42x on CartPole remains unexplained by horizon.** the likeliest
-remaining account, consistent with all three environments but not tested here,
-is that it depends on how often a randomly initialised network happens to be an
-accidentally competent policy: sometimes on CartPole and Acrobot, never on a
-market with no exploitable signal. that is stated as a conjecture, not a result.
+**so the 42x is not a horizon effect.** it is an initialization effect. the
+conjecture that once stood here, that the width depends on how often a random
+network happens to be accidentally competent, was roughly right and imprecise.
+recording each random network's unmasked return beside its span shows the
+parameter null's width does not merely track competence, it equals the standard
+deviation of random-initialization return to three significant figures on every
+task: 138.38 against 138.92 on CartPole, 123.04 against 124.94 on Acrobot,
+135.49 against 131.42 on Pendulum, 0.00 against 0.00 on MountainCar. the reason
+is visible in the span's own definition. for a random network the masked term is
+near-constant across draws, its sd being 1.8% of the unmasked term's on
+CartPole, because a policy that was not using its observations loses almost
+nothing when they are removed. the span inherits the unmasked term's variance
+entire. a tendency has been replaced by an identity.
 
 ![horizon scaling](../reports/horizon_scaling.png)
 ![cartpole](../reports/cartpole_competence.png)
@@ -535,4 +546,4 @@ seeds.
 ./reproduce.sh --explain-only   # reuse checkpoints, regenerate the analyses
 ```
 
-226 tests: `cd services/agent-rl && .venv/bin/python -m pytest`
+the test suite: `cd services/agent-rl && .venv/bin/python -m pytest`

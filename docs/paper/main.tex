@@ -744,6 +744,49 @@ Every conclusion is identical on both. Buy-and-hold moved from $+0.068$ to
 $-1.608$, confirming its earlier positive figure reflected that period's $52.3\%$
 outcome rate rather than an edge.
 
+\subsection{Implications for oversight}
+\label{sec:oversight}
+
+The case for interpretability as an oversight mechanism is that seeing which
+inputs drive a policy tells us something about whether to trust it. Three of
+our results bear on that argument, and none of them requires an adversary.
+
+\paragraph{Passing every check is not evidence.}
+On a corpus where the correct answer is known to be ``nothing'', an agent's
+attribution is stable across seeds, separated beyond its own estimation error,
+and semantically legible. Every property a practitioner would check is present
+and the explanation is empty. Stability in particular is worth naming: it is
+the most commonly reported evidence that an explanation is trustworthy, and
+Section~\ref{sec:rejected} records that we expected instability to be the tell
+and were wrong. Emptiness and instability are unrelated.
+
+\paragraph{Explanations are cheap to forge, without deception.}
+Section~\ref{sec:steering} drives a feature's attribution from $39.9\%$ to
+$3.2\%$ of total mass at no measurable cost in return. This needs no deceptive
+policy, no attack on the explainer, and no knowledge of who will audit the
+model: an auxiliary training term is enough, and the resulting explanation is
+\emph{correct} about the resulting agent. The cost of forgery is exactly the
+importance of the feature, which is zero for features that do not matter. An
+oversight regime that reads attributions as evidence of what a model relies on
+is therefore reading a quantity the developer can set, in the region where it
+would most want a guarantee.
+
+\paragraph{The verdict depends on a choice nobody reports.}
+Section~\ref{sec:nulls} shows the established sanity check has almost no power
+in RL, and Section~\ref{sec:nullchoice} shows that our own headline verdict
+moves when the null construction is corrected. A reported attribution is not
+interpretable without the reference distribution it was measured against, and
+that reference is currently neither standardised nor, in most papers, stated.
+
+\paragraph{What we would ask for.}
+Report the null construction alongside any attribution offered as evidence.
+Treat a per-feature ranking as a joint property of the attribution scheme and
+the masking distribution, since Sections~\ref{sec:robust}
+and~\ref{sec:manifold} show it moves under both, to the point of disagreeing on
+the most important feature. The aggregate verdict, whether there is anything to
+explain at all, is the part that survives; it is also the weaker claim, and it
+is the one we would trust.
+
 \subsection{Hypotheses we rejected}
 \label{sec:rejected}
 
