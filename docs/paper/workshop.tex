@@ -62,26 +62,25 @@
   \begin{quote}
   \small
   \textbf{Abstract.}
-  Interpretability is proposed as a basis for oversight: if we can see which
-  inputs drive a policy, we can decide whether to trust it. That argument needs
-  attributions to carry information about the agent, and we show they need not.
-  On an empirically efficient prediction market, a PPO agent whose return is
-  statistically indistinguishable from abstention produces attributions with
-  cross-seed rank correlation $0.849$ and unanimous agreement on the most
-  important feature; every conventional check passes and the explanation is
-  empty. We give a null-model test built on the additivity identity attribution
-  schemes already satisfy, comparing an agent's attribution span against agents
-  trained where the observation channel carries no information. It rejects a
-  planted signal at $z=12.27$, fails to reject the market agent at $z=+0.23$,
-  and fires at $z=+3.40$ on a genuinely learnable task built from the same real
-  episodes. Explanations are also cheap to forge: an auxiliary training penalty
-  drives a feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no
-  measurable cost in return, with no deception and no attack on the explainer.
-  The established sanity check for this purpose, randomising network
-  parameters, does not transfer: across sixteen checkpoints on four control
-  tasks it never exceeds $z=2.45$, because its reference distribution equals the
-  spread of random-initialisation return to three significant figures and so
-  measures the variance of initialisation, not the explanation.
+  Deciding whether an explanation of a reinforcement learning agent means
+  anything requires a reference distribution: what it would have looked like had
+  the agent learned nothing. Reinforcement learning has no agreed way to build
+  one, and the problem is harder than it appears. The construction the field
+  already uses, randomising network parameters, has almost no power: across
+  sixteen checkpoints on four control tasks it never exceeds $z=2.45$, and its
+  width \emph{equals} the standard deviation of random-initialisation return to
+  three significant figures, so it measures the variance of initialisation
+  rather than the explanation. We then build the three natural replacements and
+  each fails differently. A signal-free corpus varies the corpus as well as the
+  information. Blinding the observation channel removes the agent's capacity to
+  respond, collapsing the reference onto a point mass and firing on a corpus
+  built to contain no signal. Permuting the outcomes, the direct analogue of the
+  supervised label-permutation test, leaves the price forecasting a label it no
+  longer matches and hands the null agents an arbitrage worth \$49 an episode.
+  Removing the information always perturbs something else, and the perturbation
+  decides the verdict. We motivate this with an agent whose explanation is
+  stable across seeds, semantically legible, and empty, and which can be driven
+  from $39.9\%$ to $3.2\%$ of attribution mass at no measurable cost in return.
   \end{quote}
   \vspace{1.1em}
   \end{@twocolumnfalse}
@@ -89,33 +88,37 @@
 
 \section{Introduction}
 
-Interpretability is proposed as a basis for oversight: if we can see which inputs
-drive a policy, we can decide whether to trust it. This requires that an
-attribution mean something, and attribution methods return an answer regardless.
-Given any policy and state, Shapley values~\citep{shapley1953value,lundberg2017unified}
-and integrated gradients~\citep{sundararajan2017axiomatic} produce a ranked,
-signed vector. Nothing in the output separates an attribution reflecting
-structure the agent exploits from one reflecting nothing.
+Interpretability is proposed as a basis for oversight: if we can see which
+inputs drive a policy, we can decide whether to trust it. That needs an
+attribution to mean something, and attribution methods return an answer whether
+or not it does. Given any policy and state, Shapley
+values~\citep{shapley1953value,lundberg2017unified} and integrated
+gradients~\citep{sundararajan2017axiomatic} produce a ranked, signed vector.
+Nothing in the output separates an attribution reflecting structure the agent
+exploits from one reflecting nothing.
 
-Supervised learning handles this with randomisation tests.
-\citet{adebayo2018sanity} compare explanations of a trained model against a model
-with randomised parameters, and against a model trained on permuted labels.
-Reinforcement learning has adopted only the first.
-\citet{huber2022benchmarking} apply the parameter test to Atari saliency and
-observe that the data-randomisation test has no obvious RL analogue: there is no
-labelled dataset to permute.
+Telling them apart needs a \emph{reference distribution}: what the explanation
+would have looked like had the agent learned nothing. Supervised learning has
+two standard ones, both from \citet{adebayo2018sanity}: randomise the
+parameters, or train on permuted labels. Reinforcement learning has adopted the
+first and not the second. \citet{huber2022benchmarking} apply the parameter test
+to Atari saliency and observe that the data-randomisation test has no obvious RL
+analogue.
 
-We supply that analogue, and show the half already adopted does not work.
+We set out to supply one. The result is negative and the negative result is the
+contribution: the construction already in use has almost no power, and each of
+the three natural replacements fails in its own way.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
-\item An environment-level null for RL: corrupt the observation channel, leaving
-dynamics and reward intact, so the agent trains normally with nothing to
-condition on. No access to task internals is required.
-\item Evidence that parameter randomisation has near-zero power in RL.
-\item A ground-truth validation protocol using environments where the correct
-attribution is known by construction.
-\item A demonstration that attribution is not identified by behaviour.
+\item The incumbent null has near-zero power in RL, and its width is an identity:
+it equals the standard deviation of random-initialisation return.
+\item Three replacements, three distinct failures, each with a measured
+mechanism.
+\item A worked case of an explanation that passes every conventional check and
+carries no information.
+\item Attribution is not identified by behaviour: it can be forged at a price
+equal to the importance of the feature being hidden.
 \end{enumerate}
 
 \paragraph{What we do not claim.}
@@ -374,26 +377,41 @@ the off-manifold points LIME and SHAP query. Here the agent is trained normally
 and the resulting explanation is \emph{correct} about the resulting model; the
 point is that behaviour does not pin it down.
 
-\subsection{What the corpus-matched null costs}
+\subsection{Three replacements, three failures}
 \label{sec:cost}
 
 Our null trains its agents on synthetic signal-free corpora, so the corpus
-varies along with the information. Holding the corpus fixed instead, by blinding
-the observation channel of the real episodes, looks strictly better and is what
-the definition above literally says. Run on every case it produces a false
-positive: on a corpus built to contain no informative feature, span $+13.90$
-against a null of $0.00 \pm 0.00$, which fires. Its verdict on the real market
-also flips with the null agents' training budget, from $z=+0.55$ at 20 updates
-to $z=+4.23$ at 80, as those agents converge.
+varies along with the information. Two constructions hold it fixed instead, and
+both fail.
 
-The mechanism is that the two nulls are not the same null. A signal-free corpus
-gives agents that can see but have nothing to see; they still respond to
-observational structure and their spans are spread out. Blinding gives agents
-that cannot see; they converge to a constant policy, whose return does not
-depend on its inputs at all, so every null span is exactly zero. The agent under
-test is sighted, so the right reference is sighted agents with nothing to learn.
-We keep the signal-free-corpus null, whose fault is that it widens the reference
-and therefore errs toward declining.
+\textbf{Blinding the observation channel} is what the definition above literally
+says. Run on every case it produces a false positive: on a corpus built to
+contain no informative feature, span $+13.90$ against a null of
+$0.00 \pm 0.00$, which fires. Its verdict on the real market also flips with the
+null agents' training budget, from $z=+0.55$ at 20 updates to $z=+203.6$ at 160,
+as those agents converge. Blinding gives agents that cannot see; they converge
+to a constant policy, whose return does not depend on its inputs at all, so
+every null span is exactly zero. The agent under test is sighted, so the right
+reference is sighted agents with nothing to learn.
+
+\textbf{Permuting the outcomes} keeps them sighted and is the direct analogue of
+the supervised test. Observations are untouched to the bit and the outcome rate
+is preserved exactly. It has power ($z=+10.48$ on the planted signal) and
+specificity ($z=+1.75$ on the signal-free corpus) and still fails: on the real
+market the agent's span lands \emph{fifteen standard deviations below} its own
+null, because the null agents earn $+36.26$ an episode where it earns $-1.13$.
+The price forecasts the outcome, so relabelling leaves the forecast attached to
+a different contract and the market becomes grossly mispriced. Fading the
+terminal price, a rule needing only the quote, earns $-0.002$ per contract in
+the real corpus and $+0.486$ in the permuted one. The null agents learn that
+arbitrage and it requires seeing the price. Wherever an observation forecasts
+the label, permuting the label makes the forecast exploitably wrong.
+
+\textbf{The pattern.} Removing the information also perturbs something else, and
+the perturbation decides the verdict: the corpus, the agent's responsiveness, or
+the difficulty of the task. We keep the signal-free-corpus null because its
+fault is the mildest and runs in the conservative direction, which is a reason
+to trust our negative results more than our positive ones.
 
 \section{Limitations}
 
