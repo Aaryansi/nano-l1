@@ -143,6 +143,13 @@ step "the null-model test again, with every null matched to its own corpus"
 # the stratified variant, and whether any bucket width makes it usable. costs
 # seconds because it trains nothing: if no window exists there is nothing to
 # run a null test on.
+# does the null-construction failure hold across SVERL's three explanatory
+# targets, or only for the outcome-level statistic the rest of the paper uses?
+step "the three SVERL targets against both null constructions"
+( cd "$RL" && "$PY" scripts/sverl_targets.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" \
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 16) )
+
 step "is there a stratified permutation that works?"
 ( cd "$RL" && "$PY" scripts/stratified_sweep.py --corpus "$CORPUS" \
     --out "$REPORTS" )
