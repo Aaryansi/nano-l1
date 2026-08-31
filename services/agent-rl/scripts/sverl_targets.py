@@ -220,24 +220,36 @@ def main() -> None:
 
     banner("WHAT THIS SETTLES")
     degen = [t for t in TARGETS if results[t]["blinded_degenerate"]]
-    agree_A = len({results[t]["null_signal_free"]["result"]["passes"] for t in TARGETS}) == 1
-    print(f"  the three targets agree under the paper's null : {agree_A}")
-    print(f"  blinding degenerates for                        : "
-          f"{', '.join(degen) if degen else 'no target'}")
+    verdicts_A = {t: results[t]["null_signal_free"]["result"]["passes"]
+                  for t in TARGETS}
+    agree_A = len(set(verdicts_A.values())) == 1
+    fires = [t for t, v in verdicts_A.items() if v]
+
+    print("  under the paper's null, the three targets say:")
+    for t in TARGETS:
+        z = results[t]["null_signal_free"]["result"]["z_score"]
+        print(f"    {t:<12} z {z:>+7.2f}   "
+              f"{'informative' if verdicts_A[t] else 'not distinguishable'}")
     print()
-    if len(degen) == len(TARGETS):
-        print("  blinding collapses the reference for EVERY target, so the")
-        print("  failure is a property of the construction rather than of the")
-        print("  outcome-level statistic, and the paper's claim generalises")
-        print("  across SVERL's three explanatory targets.")
-    elif degen:
-        print("  blinding collapses for some targets and not others. the")
-        print("  paper's claim is narrower than stated and must be scoped to")
-        print(f"  {', '.join(degen)}.")
+    if agree_A:
+        print("  the three agree, so the verdict does not depend on which")
+        print("  question about the agent is being asked.")
     else:
-        print("  blinding does not collapse for any target here, which")
-        print("  contradicts the outcome-level result and needs explaining")
-        print("  before the paper can keep either claim.")
+        print(f"  THE THREE DISAGREE. {', '.join(fires) or 'none'} fires while the")
+        print("  others decline, on one agent, one corpus and one null. so the")
+        print("  choice of explanatory target decides the verdict, exactly as")
+        print("  the choice of null construction does, and neither is usually")
+        print("  reported. that is a second degree of freedom, orthogonal to")
+        print("  the first.")
+
+    print()
+    print("  on degeneracy, this run establishes less than it may appear.")
+    print(f"  blinding degenerated for: {', '.join(degen) if degen else 'no target'}.")
+    print("  that is expected and is NOT evidence against the outcome-level")
+    print("  result: the collapse reported elsewhere was found on synthetic")
+    print("  corpora, and on the real corpus only once the blind agents had")
+    print("  converged, near 160 updates. this run uses the real corpus at 40,")
+    print("  which is neither condition. it is not a test of that claim.")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

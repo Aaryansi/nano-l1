@@ -999,6 +999,52 @@ and is vacuous in this market, though for a reason that may not hold elsewhere.
 
 \section{What survives the choice of null}
 
+\subsection{The explanatory target decides it too}
+\label{sec:targets}
+
+Everything above varies the null and holds the statistic fixed. The statistic is
+also a choice. \citet{beechey2023sverl} identify three explanatory targets, and
+they are different questions about the same agent: what the observation did to
+the action taken, $\pi(a^\star \mid s)$; to the critic's estimate, $V(s)$; and to
+the return actually collected. We implement all three and measure the span under
+each, on one agent, one corpus, and one null.
+
+\begin{center}\footnotesize
+\begin{tabular}{lrrrl}
+\toprule
+Target & Span & Null & $z$ & Verdict \\
+\midrule
+behaviour & $+0.177$ & $+0.059 \pm 0.019$ & $\mathbf{+6.33}$ & \textbf{informative} \\
+prediction & $-0.053$ & $-0.078 \pm 0.207$ & $+0.12$ & declines \\
+outcomes & $+7.40$ & $+10.24 \pm 5.42$ & $-0.52$ & declines \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+They disagree. The agent's \emph{behaviour} depends on its observations to a
+degree the null cannot account for; its critic's estimates and its returns do
+not. All three statements are true of the same agent at the same time, and they
+are not in tension: an agent can respond sharply to a feature that changes
+nothing about how well it does. That is precisely the behaviour-versus-outcomes
+distinction \citet{beechey2023sverl} draw, and the null test turns it from a
+conceptual point into a measured one, since it is the difference between an
+explanation that clears a significance threshold and one that does not.
+
+The practical consequence compounds with the rest of this section. A reported
+attribution is uninterpretable without both the reference distribution it was
+measured against \emph{and} the target it explains. These are orthogonal
+choices, each of which can flip the verdict, and neither is usually stated. A
+practitioner who reports ``the explanation is significant'' has made two
+unreported decisions, and reversing either one reverses the claim.
+
+We note what this run does not show. Blinding does not degenerate for any target
+here, which is expected rather than contradictory: the collapse documented in
+Section~\ref{sec:matched} occurs on synthetic corpora, and on the real corpus
+only once the null agents have converged, near 160 updates. This run is the real
+corpus at 40, which is neither condition, so it is not a test of that claim.
+
+
+
 Not everything in this paper depends on the null. Three results do not: they
 compare an agent against itself or against a second attribution method, so the
 reference distribution never enters. They are the results we would defend

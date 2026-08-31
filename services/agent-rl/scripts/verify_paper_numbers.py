@@ -384,6 +384,26 @@ if ss:
     if not none_usable:
         failures.append("stratified sweep: paper says no window exists")
 
+# --------------------------------------------------------- the SVERL targets
+sv = load("sverl_targets.json")
+print("\nsection 7.x: the three explanatory targets")
+if sv:
+    t = sv["targets"]
+    for name, span, z in (("behaviour", 0.177, 6.33),
+                          ("prediction", -0.053, 0.12),
+                          ("outcomes", 7.405, -0.52)):
+        check(f"{name} span", span, t[name]["span"], 0.05)
+        check(f"{name} z", z, t[name]["null_signal_free"]["result"]["z_score"],
+              0.05 if abs(z) > 1 else 1.0)
+    # the finding: they disagree, and only behaviour fires
+    checks += 1
+    ok = (not sv["targets_agree_under_signal_free_null"]
+          and sv["targets_that_fire"] == ["behaviour"])
+    print(f"  [{'x' if ok else ' '}] {'targets disagree; only behaviour fires':<52} "
+          f"{'yes' if ok else 'NO':>21}")
+    if not ok:
+        failures.append("sverl targets: paper says only behaviour fires")
+
 # ----------------------------------------------------------- the test count
 # the paper states a test count, which is the one claim with no json artifact
 # behind it, so it drifted three times before this check existed. asking pytest
