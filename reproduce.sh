@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# regenerate every figure and number in docs/PAPER.md and docs/REPORT.md from a
+# regenerate every figure and number in docs/paper/ and docs/REPORT.md from a
 # clean checkout.
 #
 # no api keys and no accounts. every data source is public:
@@ -240,5 +240,5 @@ step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"
 echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
 echo
-echo "docs/PAPER.md   the interpretability findings"
+echo "docs/paper/main.pdf   the paper"
 echo "docs/REPORT.md  the trading project"

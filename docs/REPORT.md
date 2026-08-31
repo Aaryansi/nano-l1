@@ -119,7 +119,7 @@ function trained on ±50 noise will.
 ## 3. explanations
 
 the explainability work outgrew this document. it is written up separately in
-**[docs/PAPER.md](PAPER.md)**, which covers the Shapley implementation and its
+**[docs/paper/main.pdf](paper/main.pdf)**, which covers the Shapley implementation and its
 validation, the null-model test, the power curve, the steering result, and the
 generalisation to CartPole and Acrobot.
 
