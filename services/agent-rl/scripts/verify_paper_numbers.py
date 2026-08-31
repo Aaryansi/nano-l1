@@ -12,6 +12,7 @@ usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -382,6 +383,35 @@ if ss:
           f"{'yes' if none_usable else 'NO':>21}")
     if not none_usable:
         failures.append("stratified sweep: paper says no window exists")
+
+# ----------------------------------------------------------- the test count
+# the paper states a test count, which is the one claim with no json artifact
+# behind it, so it drifted three times before this check existed. asking pytest
+# is cheap and makes it drift-proof.
+print("\nsection 4.4: the test suite")
+try:
+    import subprocess
+    out = subprocess.run(
+        # no -q: the quiet format prints per-file counts, not a total
+        [sys.executable, "-m", "pytest", "-p", "no:warnings", "--collect-only"],
+        cwd=str(Path(__file__).resolve().parents[1]),
+        capture_output=True, text=True, timeout=300,
+    ).stdout
+    m = re.search(r"(\d+) tests collected", out)
+    collected = int(m.group(1)) if m else None
+except Exception:
+    collected = None
+
+claimed = None
+paper = ROOT / "docs" / "paper" / "main.tex"
+if paper.exists():
+    m = re.search(r"(\d+) tests cover", paper.read_text())
+    claimed = int(m.group(1)) if m else None
+
+if collected is None or claimed is None:
+    print("  [ ] could not read one side of the comparison; skipping")
+else:
+    check("tests the paper claims", claimed, collected, 0.0)
 
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)

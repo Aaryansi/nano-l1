@@ -30,6 +30,9 @@ services/**/yarn-error.log*
 data/raw/*
 data/processed/*
 data/binance/*.csv
+# bulk kline archives. reproduce.sh re-downloads these from data.binance.vision,
+# so tracking them adds ~147 MB to every clone for no reproducibility benefit.
+data/binance_klines/
 services/rl-py/nano_rl/checkpoints/*
 services/agent-py/*.pkl
 !data/raw/.keep
