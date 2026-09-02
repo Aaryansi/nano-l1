@@ -1,0 +1,82 @@
+{
+  "coef": 20.0,
+  "n_states": 4096,
+  "per_seed": [
+    {
+      "seed": 0,
+      "action_agreement": 0.717529296875,
+      "mean_kl": 0.05875048041343689,
+      "mean_js": 0.015336081385612488,
+      "marginal_base": [
+        0.25016313791275024,
+        0.42868077754974365,
+        0.32115569710731506
+      ],
+      "marginal_steered": [
+        0.322173535823822,
+        0.36033689975738525,
+        0.31749066710472107
+      ],
+      "base": {
+        "return_mean": -0.6318749045901925,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.14654995392002163,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 1,
+      "action_agreement": 0.79345703125,
+      "mean_kl": 0.12042051553726196,
+      "mean_js": 0.030150312930345535,
+      "marginal_base": [
+        0.2485813945531845,
+        0.49499139189720154,
+        0.25642722845077515
+      ],
+      "marginal_steered": [
+        0.3218017518520355,
+        0.3501778244972229,
+        0.3280215859413147
+      ],
+      "base": {
+        "return_mean": -0.8019499358437489,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -1.9119247769049368,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 2,
+      "action_agreement": 0.46826171875,
+      "mean_kl": 0.03980662301182747,
+      "mean_js": 0.010358130559325218,
+      "marginal_base": [
+        0.36426007747650146,
+        0.36769506335258484,
+        0.2680439352989197
+      ],
+      "marginal_steered": [
+        0.3185136616230011,
+        0.3588238060474396,
+        0.32266226410865784
+      ],
+      "base": {
+        "return_mean": -6.541950052005054,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -2.3284999931661883,
+        "trades_per_episode": NaN
+      }
+    }
+  ],
+  "action_agreement": 0.6597493489583334,
+  "mean_kl": 0.07299253965417545,
+  "mean_js": 0.018614841625094414,
+  "behaviourally_equivalent": false
+}

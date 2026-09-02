@@ -1,0 +1,147 @@
+{
+  "n_states": 25,
+  "seeds": 5,
+  "market": {
+    "cascading": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.6268595041322315,
+        "rank_corr_std": 0.060032661920273005,
+        "cosine_mean": 0.7033804725444228,
+        "cosine_std": 0.06277272325846717
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2"
+        ],
+        "rank_corr_mean": 0.40537190082644636,
+        "rank_corr_std": 0.1580782410010514,
+        "cosine_mean": 0.6245390701784282,
+        "cosine_std": 0.17316985394172735
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2",
+          "trunk.0"
+        ],
+        "rank_corr_mean": 0.38057851239669427,
+        "rank_corr_std": 0.09065893455769033,
+        "cosine_mean": 0.5167383466597257,
+        "cosine_std": 0.1687231278343166
+      }
+    ],
+    "independent": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.6268595041322315,
+        "rank_corr_std": 0.060032661920273005,
+        "cosine_mean": 0.7033804725444228,
+        "cosine_std": 0.06277272325846717
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "trunk.2"
+        ],
+        "rank_corr_mean": 0.3305785123966942,
+        "rank_corr_std": 0.1051001194428037,
+        "cosine_mean": 0.5174240664772676,
+        "cosine_std": 0.12229093495137115
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "trunk.0"
+        ],
+        "rank_corr_mean": 0.3347107438016529,
+        "rank_corr_std": 0.14036211426166773,
+        "cosine_mean": 0.450992492921883,
+        "cosine_std": 0.16363447297813857
+      }
+    ]
+  },
+  "planted": {
+    "cascading": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.9923865300146412,
+        "rank_corr_std": 0.004382614801492225,
+        "cosine_mean": 0.8825560585378387,
+        "cosine_std": 0.09488626288107928
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2"
+        ],
+        "rank_corr_mean": 0.9708470905265967,
+        "rank_corr_std": 0.032031908360108136,
+        "cosine_mean": 0.7128501247962948,
+        "cosine_std": 0.14483931238198033
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2",
+          "trunk.0"
+        ],
+        "rank_corr_mean": 0.9959004392386529,
+        "rank_corr_std": 0.002342606149341142,
+        "cosine_mean": 0.8759403342628914,
+        "cosine_std": 0.10798052294391146
+      }
+    ],
+    "independent": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.9923865300146412,
+        "rank_corr_std": 0.004382614801492225,
+        "cosine_mean": 0.8825560585378387,
+        "cosine_std": 0.09488626288107928
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "trunk.2"
+        ],
+        "rank_corr_mean": 0.9912152269399707,
+        "rank_corr_std": 0.0041411817346210696,
+        "cosine_mean": 0.861281720315929,
+        "cosine_std": 0.1205339935208722
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "trunk.0"
+        ],
+        "rank_corr_mean": 0.9847730600292828,
+        "rank_corr_std": 0.010041832034835826,
+        "cosine_mean": 0.7303772153539947,
+        "cosine_std": 0.2289429073636975
+      }
+    ]
+  },
+  "separates_agents": true,
+  "fully_randomized_rank_corr": {
+    "market": 0.38057851239669427,
+    "planted": 0.9959004392386529
+  }
+}

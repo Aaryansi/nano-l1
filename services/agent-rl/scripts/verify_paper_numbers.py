@@ -1,4 +1,4 @@
-"""cross-check every number in docs/paper/main.md against reports/*.json.
+"""cross-check every number in docs/paper/main.tex against reports/*.json.
 
 a paper with a mistranscribed number is worse than no paper, and the numbers in
 this one were copied by hand across many editing passes. this asserts each
@@ -43,7 +43,7 @@ def check(label: str, claimed: float, actual: float | None, tol: float = 0.005) 
 
 
 print("=" * 78)
-print("verifying docs/paper/main.md against reports/")
+print("verifying docs/paper/main.tex against reports/")
 print("=" * 78)
 
 # ---------------------------------------------------------------- table 1
@@ -73,6 +73,29 @@ if s:
     check("null span mean", 8.19, float(ns.mean()), 0.02)
     check("null span sd", 5.11, float(ns.std(ddof=1)), 0.02)
     check("n null samples", 24, len(ns), 0.001)
+
+# the n=99 rerun quoted in 7.5. the point of the check is that the verdicts do
+# not move, so the verdicts are asserted, not just the numbers.
+n99 = load("sanity_test_n99.json")
+print("\nsection 7.5: the headline at n=99")
+if n99:
+    import numpy as np
+    ns = np.array(n99["null_spans"])
+    check("n99 null samples", 99, len(ns), 0.001)
+    check("n99 null span mean", 8.08, float(ns.mean()), 0.02)
+    check("n99 null span sd", 5.08, float(ns.std(ddof=1)), 0.02)
+    r = n99["results"]
+    check("n99 planted z", 12.35, r["planted_signal"]["z_score"], 0.02)
+    check("n99 null corpus z", 0.74, r["held_out_null"]["z_score"], 0.10)
+    check("n99 real market z", 0.25, r["real_market"]["z_score"], 0.20)
+    checks += 1
+    ok = (r["planted_signal"]["passes"]
+          and not r["held_out_null"]["passes"]
+          and not r["real_market"]["passes"])
+    print(f"  [{'x' if ok else ' '}] {'all three verdicts unchanged at n=99':<52} "
+          f"{'yes' if ok else 'NO':>21}")
+    if not ok:
+        failures.append("n=99 rerun: paper says every verdict is unchanged")
 
 # ---------------------------------------------------------------- steering
 st = load("steering.json")
@@ -113,7 +136,7 @@ if g:
 
 # ------------------------------------------------- initialisation variance
 nw = load("null_width_conjecture.json")
-print("\nsection 5.5: why the parameter null is wide")
+print("\nsection 6.1: why the parameter null is wide")
 if nw and g:
     byenv = dict(zip([e.split("-")[0].lower() for e in nw["env_ids"]],
                      nw["random_return_sd"]))
@@ -133,9 +156,25 @@ if nw and g:
         check(f"{e} masked/unmasked sd ratio",
               0.018 if e == "cartpole" else 0.054, frac, 0.10)
 
+# the variance-decomposition bound quoted in 6.1. asserted because it was
+# wrong in a draft: the covariance term is bounded by 2r, not by r^2, and the
+# first version of that sentence claimed both were under a percent.
+if g:
+    import numpy as np
+    print("\nsection 6.1: the variance decomposition bound")
+    for row in g:
+        e = row["env_id"].split("-")[0].lower()
+        if e not in ("cartpole", "acrobot"):
+            continue
+        un = np.array(row["random_init_return"]["returns"])
+        ma = un - np.array(row["weight_null"]["spans"])
+        r = float(ma.std(ddof=1) / un.std(ddof=1))
+        check(f"{e} neglected-term bound (r^2 + 2r)",
+              0.036 if e == "cartpole" else 0.111, r * r + 2 * r, 0.10)
+
 # ---------------------------------------------------------------- schemes
 sc = load("scheme_robustness.json")
-print("\nsection 5.7: credit-assignment schemes")
+print("\nsection 7.3: credit-assignment schemes")
 if sc:
     for k, sig, real in (("span", 75.74, 8.84),
                          ("leave_one_out", 101.49, -3.89),
@@ -146,7 +185,7 @@ if sc:
 
 # ---------------------------------------------------------------- horizon
 h = load("horizon_scaling.json")
-print("\nsection 5.7: horizon scaling")
+print("\nsection 9.1: horizon scaling (rejected hypothesis)")
 if h:
     check("weight null exponent (full fit)", 0.96, h["alpha_weight"], 0.05)
     import numpy as np
@@ -162,7 +201,7 @@ if h:
 
 # ------------------------------------------------------------ second method
 sm = load("second_method.json")
-print("\nsection 5.7: attribution family")
+print("\nsection 7.3: attribution family")
 if sm:
     check("shapley vs IG rank correlation", 0.981, sm["shapley_vs_ig_rank_corr"], 0.03)
     check("cross-seed consistency, shapley", 0.750, sm["consistency_shapley"], 0.05)
@@ -175,7 +214,7 @@ sb = load("stability.json")
 print("\nsection 5.1: cross-seed stability")
 if sb:
     beh = next(r for r in sb["stability"] if "behaviour" in r["target"])
-    check("behaviour rank correlation", 0.849, beh["rank_corr_mean"], 0.02)
+    check("behaviour rank correlation", 0.850, beh["rank_corr_mean"], 0.02)
     check("behaviour min rank correlation", 0.761, beh["rank_corr_min"], 0.02)
     check("behaviour top-1 agreement", 1.0, beh["top1_agreement"], 0.001)
     check("indistinguishable seed pairs", 10, sb["n_indistinguishable_pairs"], 0.001)
@@ -195,7 +234,7 @@ if f:
 
 # ------------------------------------------------------------ off-manifold
 mm = load("manifold_masking.json")
-print("\nsection 5.8: off-manifold masking")
+print("\nsection 7.4: off-manifold masking")
 if mm:
     check("span, marginal masking", 8.838, mm["span_marginal"], 0.02)
     check("span, conditional masking", 8.838, mm["span_conditional"], 0.02)
@@ -209,7 +248,7 @@ if mm:
 
 # --------------------------------------------------------- positive control
 pc = load("positive_control.json")
-print("\nsection 5.9: positive control on real data")
+print("\nsection 5.3: positive control on real data")
 if pc:
     by = {t["task"]: t for t in pc["tasks"]}
     check("prediction span", 7.463, by["prediction"]["span"], 0.02)
@@ -231,7 +270,7 @@ if pc:
 
 # ------------------------------------------------------- null construction
 nc = load("null_corpus_check.json")
-print("\nsection 5.10: which null construction")
+print("\nsection 6.3: which null construction")
 if nc:
     check("observed span", 7.405, nc["observed_span"], 0.02)
     for key, mean, sd, z in (("null_synthetic", 9.07, 4.91, -0.34),
@@ -253,7 +292,7 @@ if nc:
 
 # ------------------------------------------------------------- z intervals
 zi = load("z_intervals.json")
-print("\nsection 5.11: bootstrap verdict stability")
+print("\nsection 7.5: bootstrap verdict stability")
 if zi:
     expected_labels = {"shared-null: planted signal", "shared-null: real market",
                        "matched: real market", "real prediction", "real trading",
@@ -280,7 +319,7 @@ if zi:
 
 # ------------------------------------------------- the matched construction
 mn = load("matched_null_test.json")
-print("\nsection 5.13: correcting the null everywhere")
+print("\nsection 6.4: correcting the null everywhere")
 if mn:
     by = {c["case"]: c for c in mn["cases"]}
     check("matched planted span", 74.69, by["planted signal"]["span"], 0.02)
@@ -306,7 +345,7 @@ if mn:
 
 # ------------------------------------------------------- budget dependence
 nb = load("null_budget_check.json")
-print("\nsection 5.13: the blinded null collapses with budget")
+print("\nsection 6.4: the blinded null collapses with budget")
 if nb:
     rows = {r["updates"]: r for r in nb["rows"]}
     for u, sd, z in ((20, 3.268, 0.55), (40, 2.247, 1.71),
@@ -323,7 +362,7 @@ if nb:
 
 # ------------------------------------------------ the permutation construction
 pn = load("permuted_null_test.json")
-print("\nsection 5.14: the outcome-permutation null")
+print("\nsection 6.5: the outcome-permutation null")
 if pn:
     by = {c["case"]: c for c in pn["cases"]}
     check("permuted planted z", 10.48, by["planted signal"]["result"]["z_score"], 0.05)
@@ -350,7 +389,7 @@ if pn:
         failures.append("permuted null: paper says the market lands below the null")
 
 pc = load("permutation_calibration.json")
-print("\nsection 5.14: what the permutation removes")
+print("\nsection 6.5: what the permutation removes")
 if pc:
     check("calibration error, real", 0.0071, pc["calibration_error_real"], 0.05)
     check("calibration error, permuted", 0.4561, pc["calibration_error_permuted"], 0.05)
@@ -359,7 +398,7 @@ if pc:
 
 # ------------------------------------------------ the stratified permutation
 ss = load("stratified_sweep.json")
-print("\nsection 5.14: the stratified permutation")
+print("\nsection 6.5: the stratified permutation")
 if ss:
     rows = {r["n_buckets"]: r for r in ss["rows"]}
     for n, moved, corr in ((1, 0.506, -0.012), (2, 0.063, 0.873),
@@ -386,7 +425,7 @@ if ss:
 
 # --------------------------------------------------------- the SVERL targets
 sv = load("sverl_targets.json")
-print("\nsection 7.x: the three explanatory targets")
+print("\nsection 7.1: the three explanatory targets")
 if sv:
     t = sv["targets"]
     for name, span, z in (("behaviour", 0.177, 6.33),
@@ -403,6 +442,41 @@ if sv:
           f"{'yes' if ok else 'NO':>21}")
     if not ok:
         failures.append("sverl targets: paper says only behaviour fires")
+
+# ------------------------------- the canonical parameter-randomization check
+pr = load("parameter_randomization.json")
+print("\nsection 6.2: the canonical parameter-randomization check")
+if pr:
+    for who, cas, ind in (
+        ("market", [0.627, 0.405, 0.381], [0.627, 0.331, 0.335]),
+        ("planted", [0.992, 0.971, 0.996], [0.992, 0.991, 0.985]),
+    ):
+        for mode, vals in (("cascading", cas), ("independent", ind)):
+            for row, claimed in zip(pr[who][mode], vals):
+                check(f"{who} {mode} {row['stage']}", claimed,
+                      row["rank_corr_mean"], 0.06)
+    # the finding: the canonical check points the opposite way to the null test
+    checks += 1
+    fr = pr["fully_randomized_rank_corr"]
+    ok = fr["market"] < 0.6 < fr["planted"]
+    print(f"  [{'x' if ok else ' '}] {'canonical check points opposite to the null test':<52} "
+          f"{'yes' if ok else 'NO':>21}")
+    if not ok:
+        failures.append("parameter randomization: paper says the verdicts invert")
+
+# ------------------------------------------- steered vs unsteered behaviour
+be = load("behavioural_equivalence.json")
+print("\nsection 7.2: are the steered and unsteered agents the same policy?")
+if be:
+    check("greedy action agreement", 0.660, be["action_agreement"], 0.02)
+    check("mean KL(base || steered)", 0.073, be["mean_kl"], 0.30)
+    check("mean Jensen-Shannon", 0.019, be["mean_js"], 0.30)
+    checks += 1
+    ok = not be["behaviourally_equivalent"]
+    print(f"  [{'x' if ok else ' '}] {'not behaviourally equivalent, so the claim is':<52} "
+          f"{'performance' if ok else 'NO':>21}")
+    if not ok:
+        failures.append("behavioural equivalence: paper narrows to task performance")
 
 # ----------------------------------------------------------- the test count
 # the paper states a test count, which is the one claim with no json artifact

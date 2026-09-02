@@ -5,26 +5,30 @@
 % documentclass and geometry block with that venue's style file; the body needs
 % no changes.
 %
-% Length: about thirteen pages of body, with the bibliography running to
-% fifteen. That suits arXiv or a journal. The paper grew when the null-
-% construction result went from one construction to four, and the structure
-% follows that result rather than the order it was discovered in.
+% Length: about fifteen pages of body, with the bibliography running to
+% seventeen. TMLR sets no page limit, which is the intended venue; the length
+% is what it costs to report four null constructions and their failures.
 %
-% For a conference limit of eight pages excluding references, cut in this order,
-% which is by how much each section would cost in review if it were missing:
+% For a conference limit of nine pages excluding references (ICLR), cut in this
+% order, which is by how much each section would cost in review if it were
+% missing:
 %
-%   1. "How much edge is required" and "Estimation guarantees do not
-%      substitute". Both are single points that survive as one sentence each in
-%      the limitations.
-%   2. the integrated-gradients comparison inside "What the verdict does and
+%   1. Sections 5.4 "How much edge is required" and 5.5 "Estimation guarantees
+%      do not substitute". Both are single points that survive as one sentence
+%      each in the limitations.
+%   2. the integrated-gradients comparison inside 7.3 "What the verdict does and
 %      does not depend on", keeping its conclusion.
-%   3. "Off-manifold masking", keeping the two-sentence version of its result:
-%      the span is immune by construction, the ranking is not.
-%   4. "Confidence intervals on the verdicts", folding the two unstable numbers
-%      into the sections that report them.
+%   3. Section 7.4 "Off-manifold masking", keeping the two-sentence version of
+%      its result: the span is immune by construction, the ranking is not.
+%   4. Section 7.5 "Confidence intervals on the verdicts", folding the two
+%      unstable numbers into the sections that report them.
+%   5. Section 6.4 "Correcting the null everywhere, and why we did not",
+%      keeping its verdict in 6.3.
 %
-% Do not cut the null-construction audit (5.10) or the rejected-hypotheses
-% ledger (5.9) for length. They are the parts a sceptical reader checks first.
+% Do not cut Section 6.5 (the fourth construction and the pattern), Section 6.2
+% (the canonical check, which is what stops a reviewer reading 6.1 as a straw
+% man), or Section 9.1 (the rejected-hypotheses ledger). Those are the parts a
+% sceptical reader checks first.
 %
 % Build:  tectonic main.tex
 
@@ -36,6 +40,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{microtype}
 \usepackage{caption}
 \usepackage[hidelinks]{hyperref}
@@ -79,11 +84,14 @@ Deciding whether an explanation of a reinforcement learning agent means
 anything requires a reference distribution: what the explanation would have
 looked like had the agent learned nothing. Reinforcement learning has no agreed
 way to build one, and we show the problem is harder than it appears. The
-construction the field already uses, randomising network parameters, has almost
-no power: across sixteen checkpoints on four control tasks it never exceeds
-$z=2.45$, and its width \emph{equals} the standard deviation of
+construction available off the shelf, randomising network parameters to generate
+reference draws, has almost no power: across sixteen checkpoints on four control
+tasks it never exceeds $z=2.45$, and its width matches the standard deviation of
 random-initialisation return to three significant figures, so it measures the
-variance of initialisation rather than anything about the explanation. We then
+variance of initialisation rather than anything about the explanation. Run
+instead in its canonical form, as a similarity check on a single explanation, it
+answers a different question and points the opposite way: it clears the empty
+explanation and flags the informative one. We then
 build the three natural replacements and each fails differently. Training on a
 signal-free corpus varies the corpus as well as the information. Blinding the
 observation channel removes the agent's capacity to respond, collapsing the
@@ -92,8 +100,8 @@ signal. Permuting the outcomes, the direct analogue of the supervised
 label-permutation test, leaves the market price forecasting a label it no longer
 matches and hands the null agents an arbitrage worth \$49 an episode, so the
 agent under test lands fifteen standard deviations \emph{below} its own null.
-The pattern is that removing the information always perturbs something else, and
-the perturbation decides the verdict. We motivate this with a worked case in
+In each construction we built, removing the information also perturbed something
+else, and the perturbation decided the verdict. We motivate this with a worked case in
 which an agent with no measurable edge produces an explanation that is stable
 across seeds, separated beyond its own estimation error, and semantically
 legible, and with a demonstration that such an explanation can be driven from
@@ -111,7 +119,8 @@ A common argument for interpretability is oversight: if we can see which inputs
 drive a policy, we can decide whether to trust it. That requires an attribution
 to mean something, and every attribution method returns an answer whether or not
 it does. Given any policy and any state, Shapley
-values~\citep{shapley1953value,lundberg2017unified}, integrated
+values~\citep{shapley1953value,lundberg2017unified}, local surrogate
+models~\citep{ribeiro2016lime}, integrated
 gradients~\citep{sundararajan2017axiomatic}, and permutation importance all
 produce a vector of numbers, ranked, signed, and plottable. Nothing in the
 output distinguishes an attribution reflecting structure the agent exploits from
@@ -129,24 +138,27 @@ there is no labelled dataset to permute, and it is unclear how a sequential
 decision maker should respond to artificially corrupted features.
 
 We set out to supply that analogue. The result is mostly negative, and the
-negative result is the contribution. The construction reinforcement learning
-already uses has almost no power, for a reason that turns out to be an identity
-rather than a tendency. Each of the three natural ways to build a better one
-fails, and each fails differently: removing the information also perturbs
-something else, and it is the perturbation, not the information, that decides
-the verdict. \emph{Choosing the reference distribution is the hard part of
+negative result is the contribution. Parameter randomisation, repurposed to
+generate reference draws, has almost no power, for a reason a variance
+decomposition makes explicit. Kept in its original form it stays sound, but it
+answers a different question, and on our two agents it points the other way. Each of the three natural ways to build a better reference fails, and each
+fails differently: removing the information also perturbs something else, and
+the perturbation decides the verdict. \emph{Choosing the reference distribution is the hard part of
 explaining a reinforcement learning agent, and it is a choice almost no paper
 reports making.}
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
-\item \textbf{The incumbent has no power, and we give the mechanism.} Parameter
-randomisation never exceeds $z=2.45$ across sixteen checkpoints on four control
-tasks, including on a converged CartPole policy scoring 404 of 500, where an
-environment-level null reaches $z=117$. Its width \emph{equals} the standard
-deviation of random-initialisation return to three significant figures, so it
-measures the variance of initialisation and not the explanation
-(Section~\ref{sec:nulls}).
+\item \textbf{Parameter randomisation is underpowered as a reference, and we give
+the mechanism.} Used to generate reference draws it never exceeds $z=2.45$ across
+sixteen checkpoints on four control tasks, including on a converged CartPole
+policy scoring 404 of 500, where an environment-level null reaches $z=117$. A
+variance decomposition explains it: the masked term is near-constant across
+random initialisations, so the span inherits the spread of initialisation
+return, which it matches to three significant figures (Section~\ref{sec:nulls}).
+Run in its canonical form \citep{adebayo2018sanity} it is sound but orthogonal,
+clearing our empty explanation at $\rho=0.38$ and failing our informative one at
+$\rho=1.00$ (Section~\ref{sec:canonical}).
 
 \item \textbf{Three replacements, three distinct failures.} A signal-free
 corpus varies the corpus and widens the reference. Blinding the observation
@@ -158,12 +170,12 @@ and hands the null agents an arbitrage worth \$49 an episode
 
 \item \textbf{A worked case of an empty explanation.} On an efficient market an
 agent with no measurable edge produces attributions that are stable across
-seeds, separated beyond their own estimation error, and legible. Every
-conventional check passes (Section~\ref{sec:empty}), and a positive control on
-the same real episodes shows the test separates tasks rather than datasets
+seeds, separated beyond their own estimation error, and legible. Every check we
+knew to apply passes (Section~\ref{sec:empty}), and a positive control on the
+same real episodes shows the test separates tasks and not datasets
 (Section~\ref{sec:positive}).
 
-\item \textbf{Attribution is not identified by behaviour.} An auxiliary training
+\item \textbf{Attribution is not identified by task performance.} An auxiliary training
 penalty drives a feature's attribution from $39.9\%$ to $3.2\%$ of total mass at
 no measurable cost in return, with no deception and no attack on the explainer.
 The cost of forging an explanation is the importance of the feature, which is
@@ -171,8 +183,8 @@ zero exactly where a guarantee would matter (Section~\ref{sec:steering}).
 
 \item \textbf{An audit of our own choices.} Our thesis implies that our own null
 must matter, so we checked, found it measuring spans on a different corpus from
-the observation, and report what that is worth. Six predictions this project
-made were rejected on its own evidence and are collected rather than dropped
+the observation, and report what that is worth. Seven predictions this project
+made were rejected on its own evidence and are collected here
 (Section~\ref{sec:rejected}).
 \end{enumerate}
 
@@ -197,12 +209,19 @@ FastSVERL~\citep{beechey2025fastsverl} makes the approach tractable and addresse
 temporal dependence and off-policy data. We adopt the outcomes framing and
 implement it independently; we do not extend the theory.
 
-\paragraph{Sanity checks.}
+\paragraph{Sanity checks and the reliability of attributions.}
 \citet{adebayo2018sanity} introduced parameter- and data-randomisation tests;
-\citet{binder2023shortcomings} examine their limitations.
-\citet{huber2022benchmarking} apply the parameter test to perturbation-based
-saliency for Atari agents and note the data test lacks an RL analogue. We propose
-one, and show the parameter test is the weaker of the two in this setting.
+\citet{binder2023shortcomings} examine the limitations of the top-down
+randomisation variant, and \citet{sixt2020lie} show a family of modified
+backpropagation methods that pass superficial inspection while being largely
+insensitive to later layers. Related failures are documented for input
+transformations~\citep{kindermans2019unreliability}, small
+perturbations~\citep{ghorbani2019fragile}, and the detection of spurious
+correlations~\citep{adebayo2022spurious}. \citet{huber2022benchmarking} apply the
+parameter test to perturbation-based saliency for Atari agents and note the data
+test lacks an RL analogue. We supply a candidate, report that it fails, and in
+Section~\ref{sec:canonical} run the canonical parameter test alongside it to
+show the two answer different questions.
 
 \paragraph{Manipulating explanations.}
 \citet{slack2020fooling} construct adversarial classifiers that detect the
@@ -211,18 +230,39 @@ innocuous explanations for biased models. That is an attack on the explainer's
 sampling. Our steering result differs in kind: we train a normal agent with an
 invariance penalty, the resulting explanation is \emph{correct} about the
 resulting model, and the point is that behaviour does not pin the explanation
-down. It is a non-identifiability result rather than an attack.
+down. It is a non-identifiability result, not an attack.
 
 \paragraph{Uncertainty in Shapley estimation.}
 \citet{goldwasser2024significance} certify top-$k$ Shapley rankings against Monte
 Carlo error. These guarantees concern the estimator. Section~\ref{sec:certified}
 shows they are orthogonal to whether the explained model learned anything.
 
+\paragraph{Saliency for RL agents.}
+\citet{greydanus2018visualizing} popularised perturbation saliency for Atari
+policies. \citet{atrey2020exploratory} then showed that such maps support
+plausible but unfalsified hypotheses about what an agent attends to, and argued
+they are exploratory rather than explanatory. Our result is adjacent and
+distinct: their concern is that a map invites unverified claims about a
+competent agent, ours is that the same machinery produces a stable, legible map
+for an agent with no measurable edge.
+
+\paragraph{Removal-based attribution and its reference distribution.}
+Masking a feature requires a distribution to replace it from, and the choice
+between the marginal and the conditional changes what the attribution
+means~\citep{chen2020true,janzing2020causal}. \citet{frye2021manifold} sample on
+the data manifold to keep masked inputs plausible;
+\citet{covert2021removing} unify the removal-based family and make the reference
+choice explicit. Section~\ref{sec:manifold} inherits that debate: our span is
+invariant to the mode by construction, our ranking is not.
+
 \paragraph{Evaluation in XRL.}
 Surveys note that the absence of ground-truth explanations is a central obstacle,
 and that perturbation-based fidelity is the common
-recourse~\citep{cheng2025survey,milani2024xrl}. We use deletion curves in that
-established sense and do not claim them as a contribution.
+recourse~\citep{cheng2025survey,milani2024xrl}. Deletion-style benchmarks and
+their pitfalls are established in the supervised
+setting~\citep{hooker2019benchmark,yeh2019infidelity,bhatt2020evaluating}. We use
+deletion curves in that established sense and do not claim them as a
+contribution.
 
 \section{Method}
 \label{sec:method}
@@ -257,7 +297,7 @@ observation channel (Figure~\ref{fig:method}).
 \centering
 \includegraphics[width=\textwidth]{figures/fig_method.png}
 \caption{Two ways to build a reference distribution of explanations for an agent
-that learned nothing. The established check (a) randomises the policy's
+that learned nothing. Construction (a) randomises the policy's
 parameters, leaving a network that was never trained. Ours (b) leaves the policy
 and its training untouched and corrupts the environment's observation channel,
 so the agent optimises a real reward with nothing to condition on. Only (b)
@@ -301,10 +341,14 @@ $p=0.111$ for a signal lying $10.5$ standard deviations outside the null. The
 normal statistic has resolution but assumes a shape the null need not have.
 Requiring both keeps the test conservative in the direction that matters.
 
-\paragraph{Degenerate nulls.} If every null draw is identical, $s=0$ and $z$ is
-undefined. We return $z=\pm\infty$ and surface the degeneracy rather than
-guarding it away, because silently returning $z=0$ would convert an
-overwhelming result into a null one.
+\paragraph{Degenerate nulls.} If every null draw is identical, $s=0$ and the
+$z$-score is undefined. We report it as undefined, and
+record separately that the observation lies outside the null's empirical
+support. The implementation surfaces the degeneracy instead of guarding it
+away, because silently returning $z=0$ would convert an observation outside the
+reference distribution into a null result. Reporting an infinite $z$ would be
+the opposite error, presenting the collapse of a reference distribution as
+overwhelming evidence.
 
 It is tempting to read a degenerate null as maximally informative, since any
 deviation from a point mass is infinitely surprising. An earlier version of this
@@ -315,6 +359,21 @@ construction and a reason to distrust the reference, not a strong result. It
 occurs whenever a task lets the null agents converge on a single behaviour,
 which is a property of the null construction rather than of the agent under
 test.
+
+\paragraph{What a verdict does and does not establish.}
+\label{par:scope}
+The test is about the observation channel in aggregate, not about any one
+feature. A rejection says the agent's attribution span is distinguishable from
+the spans of agents trained where the observation channel carries no
+exploitable structure, which is evidence that there is something outcome-relevant
+to explain. It is not evidence that the per-feature decomposition is correct,
+and Sections~\ref{sec:robust} and~\ref{sec:manifold} show the ranking moving
+under choices that leave the verdict alone. Four claims are worth keeping
+separate, because the argument slides between them if they are not: that the
+observations carry information, that the agent learned it, that the observations
+affect behaviour, and that they contribute to return. This test speaks to the
+last of those, and Section~\ref{sec:targets} shows the first three can disagree
+with it on the same agent.
 
 \section{Experimental setup}
 
@@ -348,15 +407,32 @@ majority of attribution mass, not that everything else is zero.
 Our main empirical setting is a binary contract settling to \$1.00 if BTC is
 higher after 15 minutes and \$0.00 otherwise, on a regulated prediction market.
 We use 6{,}425 settled contracts over 68 days (89{,}950 transitions, outcome rate
-$0.4999$), with a walk-forward split by time and purge gaps; the test split is
-evaluated once.
+$0.4999$), with a walk-forward split by time and purge gaps.
+
+The test split is used once in the sense that matters: no model selection,
+hyperparameter choice, architecture change, or experimental design decision in
+this paper was made by looking at test outcomes. Hyperparameters were fixed a
+priori on synthetic sweeps with analytically known answers, and the null
+constructions were designed and debugged on the synthetic corpora. The test
+episodes are then read repeatedly, once per independently trained seed and once
+per null agent, under a protocol frozen before any of them ran. Reporting
+several numbers off the same held-out episodes is not the same as tuning
+against them, and only the second would invalidate the split.
 
 This instrument was chosen for one property: every episode resolves to a known
 value, so a critic's $V(s)$ can be checked against realised settlement frequency.
 Agents are trained with PPO~\citep{schulman2017ppo}. State is 18 causal
 features. Actions are target inventory in
-$\{-1,0,+1\}\times q_{\max}$. Reward is the change in mark-to-market equity net
-of costs, which telescopes exactly to net episode P\&L.
+$\{-1,0,+1\}\times q_{\max}$ with $q_{\max}=100$ contracts. Reward is the change
+in mark-to-market equity net of costs, which telescopes exactly to net episode
+P\&L.
+
+\paragraph{Units.} Every return, span and P\&L figure in this paper is US
+dollars per episode at a position cap of 100 contracts, unless a number is
+explicitly marked per contract. A contract settles at \$1.00 or \$0.00, so a
+per-contract edge of \$0.01 is \$1.00 per episode at the cap. Control-task
+returns are in each environment's own native reward units and are never mixed
+with the market's.
 
 Transaction costs use the exchange's published taker schedule,
 $\lceil 0.07\,C\,P(1-P)\rceil$, maximised at $P=0.5$ where this contract trades by
@@ -378,7 +454,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 295 tests cover the environment, the attribution implementations, and
+command; 312 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -400,9 +476,10 @@ $\gamma=1.0$; $\gamma$ is unity because episodes are finite-horizon and reward
 telescopes exactly to terminal P\&L, so discounting would bias the objective
 away from the quantity of interest. Market agents train for 100 updates over 5
 seeds; explanation-time agents for 60 updates; null draws use $n=24$ for the
-main test and 12--16 for the environment and robustness experiments. Full
+main test, 12--16 for the environment and robustness experiments, and $n=99$ for
+the budget check in Section~\ref{sec:intervals}. Full
 values, including network widths, learning rate, clip range and entropy
-coefficient, are in the configuration files in the repository rather than
+coefficient, are in the configuration files in the repository, not
 restated here.
 
 The exchange serves a moving window, so re-running the ingest returns a different
@@ -431,14 +508,14 @@ we use has power and specificity where the answer is known by construction, and
 that on real episodes it separates tasks by what their observations are worth
 rather than by whether the corpus is synthetic.
 
-\subsection{An explanation that passes every check and says nothing}
+\subsection{An explanation that passes every check we could apply}
 \label{sec:empty}
 
 The market is empirically efficient: its implied probability has a weighted mean
 absolute calibration error of $0.0172$ across ten bins, and spot return
 correlates $0.476$ with the outcome but only $0.016$ with the residual after the
-price is accounted for. No policy beats abstention (Table~\ref{tab:baselines});
-losses track turnover.
+price is accounted for. None of the policies we evaluate beats abstention
+(Table~\ref{tab:baselines}); losses track turnover.
 
 \begin{table}[t]
 \centering\small
@@ -462,11 +539,12 @@ random             & $-18.532$ & 9.33 & $<$0.0001 \\
 
 PPO's shortfall is its own. On synthetic data containing no signal by
 construction the same agent scores $-0.47 \pm 0.47$; here it scores
-$-0.595 \pm 0.176$. Nothing is left to attribute to the market.
+$-0.595 \pm 0.176$. We find no evidence that the agent extracts outcome-relevant
+information beyond the abstention baseline.
 
 Yet its explanations look entirely reasonable. Across five seeds whose pairwise
 performance differences are statistically indistinguishable in all ten pairs:
-behaviour attributions have cross-seed rank correlation $0.849$ (min $0.761$)
+behaviour attributions have cross-seed rank correlation $0.850$ (min $0.761$)
 with $100\%$ agreement on the top feature and $100\%$ sign agreement; the top-5
 ranking is fully certified, all four adjacent gaps exceeding their combined
 standard errors; and the ranking is semantically legible, time-to-expiry
@@ -520,8 +598,9 @@ attribution of $\pi(a\mid s)$ gives it $6.5\%$ of mass, rank 3 of 18;
 outcome-based attribution gives it $1.1\%$, rank 10.
 
 Both statements are true. The policy does key on the decoy, so per-decision
-attribution is correct about behaviour and misleading about value. An auditor
-asking what an agent relies on that does not work gets the wrong answer from it.
+attribution is correct about behaviour and misleading about value. An auditor asking which
+features the agent relies on \emph{profitably} would be misled by the
+per-decision answer.
 
 Deletion curves agree: removing features in the order each ranking considers
 important, the outcome ranking degrades return faster (AUC $-187.8$ against
@@ -609,8 +688,17 @@ construction reinforcement learning already uses has almost no power and give
 the mechanism, then build the three natural replacements in turn. Each fails,
 and no two fail the same way.
 
-\subsection{The established null does not transfer to RL}
+\subsection{Parameter randomisation is an underpowered reference}
 \label{sec:nulls}
+
+Randomising network parameters is used in two different ways, and the
+difference matters for what follows. \citet{adebayo2018sanity} use it to
+degrade a \emph{single} explanation and ask whether it changes; we take that up
+in Section~\ref{sec:canonical}. Here we use it the other way, as a source of
+\emph{reference draws}: randomise the parameters many times, record each random
+policy's attribution span, and ask where the trained agent's span falls in that
+distribution. This is the construction available to a practitioner who wants a
+null for an RL attribution, and it is the one we compare against.
 
 We construct both nulls for the same task (Table~\ref{tab:nulls},
 Figure~\ref{fig:nullcmp}). Shapley values here are exact.
@@ -649,7 +737,7 @@ test has almost no power. Across sixteen checkpoints the parameter null never
 exceeds $z=2.45$, including on a converged CartPole policy scoring 404 of 500,
 while the environment null reaches $z=+117.6$. The two disagree on five of the
 sixteen. The choice of null is not a detail; it decides the verdict, and the
-incumbent construction is the one that fails.
+construction already available is substantially the weaker of the two.
 
 Two environments qualify the claim rather than extend it. MountainCar is
 degenerate under \emph{both} constructions, at $0.00 \pm 0.00$: within our step
@@ -677,32 +765,126 @@ $138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot, $135.49$ against
 $131.42$ on Pendulum, and $0.00$ against $0.00$ on MountainCar.
 
 The reason is visible in the decomposition $\Delta = \vfn(N) - \vfn(\emptyset)$.
-For a randomly initialised network the masked term is nearly constant across
-draws (its standard deviation is $1.8\%$ of the unmasked term's on CartPole and
-$5.4\%$ on Acrobot) because a policy that was not using its observations
-loses almost nothing when they are removed. The span therefore inherits the
-variance of the unmasked term entire. \emph{Parameter randomisation measures the
-variance of initialisation, not anything about the explanation being tested},
-which is why its reference distribution is wide wherever random networks vary
-and why a test built on it has no power. An environment null does not have this
-problem because its agents are trained to convergence and land near a common
-blind-optimal return.
+Taking the variance over random initialisations,
+\begin{equation}
+\label{eq:decomp}
+\operatorname{Var}[\Delta] = \operatorname{Var}[\vfn(N)]
+  + \operatorname{Var}[\vfn(\emptyset)]
+  - 2\operatorname{Cov}\!\left(\vfn(N), \vfn(\emptyset)\right),
+\end{equation}
+so whenever $\operatorname{Var}[\vfn(\emptyset)] \ll \operatorname{Var}[\vfn(N)]$
+the last two terms are negligible and
+$\operatorname{Var}[\Delta] \approx \operatorname{Var}[\vfn(N)]$: the width of
+the parameter null is the width of random-initialisation return. The antecedent
+holds here because a policy that was not using its observations loses almost
+nothing when they are removed, so the masked term is nearly constant across
+draws. Its standard deviation is $1.8\%$ of the unmasked term's on CartPole and $5.4\%$
+on Acrobot. Writing $r$ for that ratio, the second term is $r^2$ of
+$\operatorname{Var}[\vfn(N)]$ and Cauchy-Schwarz bounds the third by $2r$, so the
+two together are at most $3.6\%$ on CartPole and $11.1\%$ on Acrobot. That bound
+is loose, and the realised discrepancy is smaller still: the two standard
+deviations differ by $0.4\%$ on CartPole and $1.5\%$ on Acrobot. The span
+therefore inherits the variance of the unmasked term almost entire.
+\emph{Parameter randomisation measures the variance of initialisation, not
+anything about the explanation being tested}, which is why its reference
+distribution is wide wherever random networks vary and why a test built on it
+has little power. The environment null is narrower here because its agents are
+trained to convergence and land near a common blind-optimal return; that makes
+it the better of the two references, and Section~\ref{sec:nullchoice} onward
+shows it is still not one we would defend.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_conjecture.png}
 \caption{The parameter null's width against the spread of random-initialisation
-return, one point per environment. The points lie on $y=x$: the established
-null's reference distribution is the variance of initialisation.}
+return, one point per environment. The points lie on $y=x$: the parameter
+null's reference distribution is the spread of initialisation return.}
 \label{fig:conjecture}
 \end{figure}
 
 This supersedes the conjecture we offered in an earlier draft, that the width
 depended on how often a random network is accidentally competent. That is
-roughly right but imprecise: what matters is not competence but \emph{variance}
-in competence, and the relationship is an identity rather than a tendency. Four
-environments is too few to fit anything, and we report the correspondence rather
-than a correlation coefficient for that reason.
+roughly right but imprecise: what matters is variance in competence rather than
+competence itself, and Equation~\ref{eq:decomp} makes the relationship a
+near-equality with a stated antecedent rather than a tendency. We call it a
+near-equality and not an identity because the neglected terms are small here by
+measurement, not zero by construction. Four environments is too few to fit
+anything, so we report the correspondence itself and no fitted coefficient.
+
+\subsection{The canonical check, and what it answers instead}
+\label{sec:canonical}
+
+Section~\ref{sec:nulls} measures parameter randomisation as a reference
+distribution. That is not what \citet{adebayo2018sanity} propose. Their test
+degrades one trained model by progressively re-initialising its layers and asks
+whether the explanation moves; an explanation that does not move cannot be
+reporting anything the model learned. Since our thesis is that the choice of
+reference decides the verdict, we owe the reader the canonical version and not
+just our reading of it.
+
+We ran it on two agents, cascading from the output layer inward and
+independently one layer at a time, re-initialising with the network's own
+orthogonal scheme so the comparison is against a network this architecture could
+have started from. The similarity metric is Spearman rank correlation on the
+absolute per-feature attributions, the vector analogue of their rank correlation
+on saliency maps, over five randomisation seeds. The explanation degraded is the
+behaviour-level attribution of $\pi(a \mid s)$, which is the closest analogue to
+the saliency map the check was designed for and the only target cheap enough to
+recompute thirty times per agent; outcome-level attribution costs a full batch
+replay per coalition.
+
+\begin{center}\footnotesize
+\begin{tabular}{llrr}
+\toprule
+Agent & Randomised & Cascading $\rho$ & Independent $\rho$ \\
+\midrule
+\multirow{3}{*}{market}
+  & policy head & $+0.627$ & $+0.627$ \\
+  & \, + layer 2 & $+0.405$ & $+0.331$ \\
+  & \, + layer 1 & $\mathbf{+0.381}$ & $+0.335$ \\
+\addlinespace
+\multirow{3}{*}{planted}
+  & policy head & $+0.992$ & $+0.992$ \\
+  & \, + layer 2 & $+0.971$ & $+0.991$ \\
+  & \, + layer 1 & $\mathbf{+0.996}$ & $+0.985$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The two verdicts run opposite to the ones our test gives. The market agent,
+whose outcome-attribution span is indistinguishable from agents trained where
+there is nothing to learn, \emph{passes}: fully randomised, its explanation
+retains only $\rho=0.38$ of the original ranking, so it does depend on the
+learned weights. The planted-signal agent, whose span fires at $z=12.27$,
+\emph{fails}: at $\rho=1.00$ its explanation is the same whether the network is
+trained or random. The two tests are applied to different explanatory targets,
+behaviour for the canonical check and outcomes for ours, so this is not one
+statistic contradicting itself. It is the sharper problem that a practitioner
+running the canonical check on the market agent would find nothing wrong and
+would be no closer to knowing whether there was anything to explain.
+
+Both results follow from one mechanism. On the planted corpus a single feature
+carries the signal by construction and dominates the input scale, so perturbing it moves the policy
+output most whatever the weights are. The attribution ranking is recoverable
+from the input distribution alone, which is exactly the failure mode the
+canonical check is built to expose, and it exposes it. Our own null test is
+blind to that failure, because a span can be large for input-driven reasons.
+
+So the two tests answer different questions, and neither subsumes the other. The canonical check asks whether an explanation depends on
+the learned parameters. The null test asks whether there is outcome-relevant
+information to explain at all. An explanation can depend on the weights and
+describe nothing, which is the market agent, or be largely input-determined
+while sitting on a real signal, which is the planted agent. A practitioner who
+runs only the canonical check would clear the empty explanation and flag the
+informative one.
+
+Three caveats. The agents live on different corpora, so agent and corpus are not
+separated by this comparison; the fully randomised $\rho$ is what identifies the
+mechanism, since it measures directly how much of the ranking survives with no
+trained weights at all. The two tests target different explanations, as above,
+so the comparison is between what a practitioner would conclude from each and
+not between two estimates of one quantity. And two agents are an existence proof
+that the conclusions can point opposite ways, not a rate at which they do.
 
 \subsection{Our own null construction, checked}
 \label{sec:nullchoice}
@@ -766,8 +948,8 @@ observation. We built it and ran all three cases. It cannot be used.
 \toprule
 Case & Span & Null & $z$ & Verdict \\
 \midrule
-planted signal & $+74.69$ & $0.00 \pm 0.00$ & $+\infty$ & fires \\
-\textbf{null corpus} & $\mathbf{+13.90}$ & $0.00 \pm 0.00$ & $+\infty$ &
+planted signal & $+74.69$ & $0.00 \pm 0.00$ & undef. & fires \\
+\textbf{null corpus} & $\mathbf{+13.90}$ & $0.00 \pm 0.00$ & undef. &
 \textbf{fires} \\
 real market & $+7.40$ & $2.97 \pm 2.29$ & $+1.93$ & declines \\
 \bottomrule
@@ -794,13 +976,13 @@ the null collapses onto a point mass at zero against which any nonzero span is
 declared significant. This is why the degeneracy noted in
 Section~\ref{sec:method} is a defect rather than a strong result, and why the
 Acrobot degeneracy in Section~\ref{sec:nulls} should be read as a warning about
-the reference rather than as a curiosity.
+the reference, not as a curiosity.
 
 An independent horizon sweep found the same collapse before we understood it.
 Extending the episode to 56 steps drives the blinded null to a standard
 deviation of $0.04$ with two distinct values across sixteen agents: every blind
 agent converged on the same abstaining policy. That is the Acrobot degeneracy
-again, and the mechanism is the one above rather than anything about horizon.
+again, and the mechanism is the one above; horizon plays no part.
 
 \paragraph{The collapse is a matter of convergence.}
 On the synthetic corpora the null is a point mass; on the real market it has
@@ -951,7 +1133,7 @@ There is almost none of it here to remove.
 We report this as a fourth failure with a fourth mechanism, and note that unlike
 the other three it is contingent: in a domain where observations carry
 substantial information beyond the single best predictor, stratified permutation
-may well work. We have no evidence either way, and say so rather than
+may well work. We have no evidence either way, and say so instead of
 generalising from one market.
 
 \paragraph{The pattern.}
@@ -1050,7 +1232,7 @@ compare an agent against itself or against a second attribution method, so the
 reference distribution never enters. They are the results we would defend
 hardest.
 
-\subsection{Attribution is not identified by behaviour}
+\subsection{Attribution is not identified by task performance}
 \label{sec:steering}
 
 We add an auxiliary penalty during training on the divergence between
@@ -1087,6 +1269,19 @@ Explanations are steerable at no cost exactly where they are not tracking
 anything, corroborating Section~\ref{sec:empty} by a route sharing no machinery
 with the null test. The control matters: had steering succeeded on both corpora,
 the penalty would merely be defeating the attribution method.
+
+\paragraph{Equal return is not equal behaviour.} An earlier version of this
+paper called the result \emph{attribution is not identified by behaviour}. That
+overstates what return alone can show, since two policies can earn the same and
+act differently, so we measured it. On $4{,}096$ held-out states the steered and
+unsteered agents agree on the greedy action only $66.0\%$ of the time, with mean
+$\mathrm{KL} = 0.073$ nats and Jensen-Shannon $0.019$ between their action
+distributions. The distributions are close because a policy with no edge sits
+near uniform, which also makes its argmax easy to flip. They are not the same
+policy, and the claim is therefore about task performance: a feature's
+attribution can be suppressed almost entirely at no measurable cost in return.
+That is the claim the oversight argument in Section~\ref{sec:oversight} needs,
+and it is the one the evidence supports.
 
 \subsection{What the verdict does and does not depend on}
 \label{sec:robust}
@@ -1136,7 +1331,7 @@ distance to it is zero by construction rather than by evidence.}
 \end{figure}
 
 \paragraph{The span cannot be an off-manifold artefact.}
-This is structural rather than empirical, and we state it as such. The statistic
+This is a structural claim, not an empirical one, and we state it as such. The statistic
 is $\Delta = \vfn(N) - \vfn(\emptyset)$, and neither coalition evaluates an
 off-manifold state. $\vfn(N)$ masks nothing. At $\vfn(\emptyset)$ our
 implementation replaces the entire observation from a \emph{single} reference
@@ -1172,8 +1367,8 @@ with it.
 \subsection{Confidence intervals on the verdicts}
 \label{sec:intervals}
 
-Every $z$ in this paper divides by a standard deviation estimated from 12 to 32
-null agents. Reporting it to two decimals hides that. We resample the null
+Every $z$ in the paper's main tables divides by a standard deviation estimated
+from 12 to 32 null agents. Reporting it to two decimals hides that. We resample the null
 draws with replacement and re-apply the full two-part decision rule to each
 replicate, which gives a percentile interval for $z$ and, more usefully, the
 fraction of replicates in which the verdict is unchanged.
@@ -1185,6 +1380,17 @@ null used in Section~\ref{sec:empty}, is $[-0.16, +0.73]$: nowhere near the
 threshold in either direction. This bootstraps the null only. Uncertainty in the
 observed statistic, a mean over held-out episodes, is not included, so these
 intervals are optimistic in a way we would rather state than hide.
+
+\paragraph{The headline does not depend on the null being small.}
+A reference distribution estimated from 24 draws invites the question of what
+happens at more. We reran the headline test with 99 null agents, which lowers
+the rank floor from $0.040$ to $0.010$. The reference barely moves, from
+$+8.19 \pm 5.11$ to $+8.08 \pm 5.08$, and all three verdicts are unchanged: the
+planted signal fires at $z=+12.35$ against $+12.27$, the null corpus declines at
+$+0.74$ against $+0.72$, and the market declines at $+0.25$ against $+0.23$. We
+report the $n=24$ figures throughout because every other experiment in the paper
+is budgeted against them, and note here that quadrupling the null changes
+nothing that matters.
 
 \section{Implications for oversight}
 
@@ -1215,8 +1421,9 @@ is therefore reading a quantity the developer can set, in the region where it
 would most want a guarantee.
 
 \paragraph{The verdict depends on a choice nobody reports.}
-Section~\ref{sec:nulls} shows the established sanity check has almost no power
-in RL. Section~\ref{sec:nullchoice} shows our own headline is sensitive to the
+Section~\ref{sec:nulls} shows parameter randomisation is an underpowered
+reference in RL, and Section~\ref{sec:canonical} shows the canonical form of the
+same check answers a different question. Section~\ref{sec:nullchoice} shows our own headline is sensitive to the
 construction, and Section~\ref{sec:matched} shows that the alternative which
 looks more principled is broken, in a way visible only by running it rather than
 by reasoning about it. A reported attribution is not interpretable without the
@@ -1230,7 +1437,10 @@ the masking distribution, since Sections~\ref{sec:robust}
 and~\ref{sec:manifold} show it moves under both, to the point of disagreeing on
 the most important feature. The aggregate verdict, whether there is anything to
 explain at all, is the part that survives; it is also the weaker claim, and it
-is the one we would trust.
+is the one we would trust. Where the decision is consequential enough that none
+of this is reassuring, \citet{rudin2019stop} argues for models that do not need
+a post-hoc explanation in the first place, and nothing here counts against
+that.
 
 \section{What did not survive}
 
@@ -1241,8 +1451,8 @@ that happen to mention it.
 \subsection{Hypotheses we rejected}
 \label{sec:rejected}
 
-Six predictions in this project turned out to be wrong
-(Table~\ref{tab:rejected}). They are collected rather than left implicit in the
+Seven predictions in this project turned out to be wrong
+(Table~\ref{tab:rejected}). They are collected here instead of being left in the
 sections that tested them, because a reader assessing whether the surviving
 claims were stress-tested should be able to see what did not survive.
 
@@ -1277,10 +1487,10 @@ Its variance grows with horizon faster than the environment null's. &
 The parameter null is wide because a randomly initialised network is sometimes
 an accidentally competent policy. &
 Width tracks how often random policies do well. &
-\textbf{Superseded.} Roughly right but imprecise: the width is not related to
-competence but \emph{equal} to the standard deviation of
-initialisation return (Section~\ref{sec:nulls}). A tendency was replaced by an
-identity. \\
+\textbf{Superseded.} Roughly right but imprecise: the width tracks the
+\emph{variance} of initialisation return rather than competence, and matches its
+standard deviation to three significant figures (Section~\ref{sec:nulls}). A
+tendency was replaced by a decomposition with a stated antecedent. \\
 \addlinespace
 A null that holds the corpus fixed, by blinding the observation channel, is more
 principled and should replace the shared signal-free-corpus null. &
@@ -1289,6 +1499,15 @@ The same verdicts against a tighter reference, and more power. &
 verdict on the real market flips with the null agents' training budget
 (Section~\ref{sec:matched}). Blinding removes the capacity to respond to
 observational structure, not only the information. \\
+\addlinespace
+The canonical parameter-randomisation check, run on our own agents, will agree
+with the null test or be silent. &
+Both flag the planted signal; neither flags the market agent. &
+\textbf{Rejected.} They point opposite ways. The market agent's explanation
+depends on its weights ($\rho=0.38$) while carrying no detectable
+outcome-relevant information; the planted agent's is nearly unchanged by full
+randomisation ($\rho=1.00$) while sitting on a real signal
+(Section~\ref{sec:canonical}). \\
 \addlinespace
 Permuting the outcomes fixes both faults: the corpus is held fixed and the null
 agents stay sighted. &
@@ -1301,7 +1520,7 @@ lands 15 sd \emph{below} its own null (Section~\ref{sec:permuted}). \\
 \end{tabular}
 \end{table*}
 
-One further claim is stated in the paper as structural rather than empirical.
+One further claim is stated in the paper as structural, not empirical.
 The span's invariance to the masking mode (Section~\ref{sec:manifold}) follows
 from the construction, since $p(x \mid \emptyset) = p(x)$; the measured equality
 confirms the implementation respects that argument and is not independent
@@ -1320,7 +1539,7 @@ the ranking is scheme-dependent even when the verdict is not, and
 Section~\ref{sec:manifold} shows it is masking-dependent too, to the point of
 disagreeing on the most important feature. Only the verdict survives both.
 
-\textbf{Conditional masking is approximated, not solved.} Our conditional
+\textbf{Our conditional masker is an approximation.} Our conditional
 masker is $k$-nearest-neighbour in the kept features, which is a practical
 proxy for $p(x_{\bar S} \mid x_S)$ and inherits the usual difficulties in high
 dimension. It is adequate to show the two modes differ; it is not a claim to
@@ -1328,7 +1547,7 @@ have sampled the true conditional. Neither mode fixes the deeper issue that
 replacements are redrawn each timestep, so masked \emph{states} are plausible
 while masked \emph{trajectories} are not.
 
-\textbf{Temporal credit assignment is named, not solved.} Masking a feature for a
+\textbf{Temporal credit assignment is out of scope.} Masking a feature for a
 whole episode measures whether it mattered, not when. This is
 FastSVERL's~\citep{beechey2025fastsverl} territory.
 
@@ -1336,7 +1555,7 @@ FastSVERL's~\citep{beechey2025fastsverl} territory.
 different policy and therefore a different state distribution; estimates are
 on-policy for the masked policy, not counterfactuals about the unmasked one.
 
-\textbf{The width identity is measured on four environments.} The correspondence
+\textbf{The width correspondence is measured on four environments.} The correspondence
 between the parameter null's width and initialisation-return variance is close
 to exact on each task we ran, and it has a mechanism, but four points cannot
 establish a law. We report the correspondence, not a fitted relationship.
@@ -1348,6 +1567,12 @@ fault is that it varies the corpus as well as the information, which widens the
 reference and biases toward declining. A construction that holds the corpus
 fixed \emph{and} keeps the null agents sighted would dominate both, and we do
 not have one.
+
+\textbf{The canonical check is run on one explanatory target.} Section~\ref{sec:canonical}
+degrades behaviour-level attributions, because outcome-level attribution costs a
+full batch replay per coalition and the check needs thirty recomputations per
+agent. Whether the same opposition holds when both tests read the same target is
+open, and it is the experiment we would run next with more compute.
 
 \textbf{Scope.} One real domain and four classic-control tasks; one attribution
 family for the outcome-level tests. All four control tasks have small
@@ -1362,8 +1587,10 @@ content is.
 
 An attribution of a reinforcement learning agent is uninterpretable without the
 reference distribution it was measured against, and reinforcement learning does
-not have one it can rely on. The construction the field uses measures the
-variance of initialisation. Of the three natural replacements, one varies the
+not have one it can rely on. Repurposing parameter randomisation to supply
+reference draws measures the variance of initialisation; run as its authors
+intended it stays sound, but it answers a different question and on our two
+agents points the other way. Of the three natural replacements, one varies the
 corpus, one removes the agent's capacity to respond and fires on a corpus built
 to contain no signal, and one hands the null agents an arbitrage. In each case
 removing the information perturbed something else, and the perturbation decided
@@ -1377,7 +1604,8 @@ why the failures were not predictable from first principles. We found them by
 building all three.
 
 That matters because attributions are being offered as evidence. An explanation
-can pass every conventional check and be empty, and it can be driven to say
+can pass every check we knew to apply and still carry no detectable
+outcome-relevant information, and it can be driven to say
 something else at a price equal to the importance of the feature being hidden,
 which is zero exactly where a guarantee would be worth having. Neither of those
 is detectable without a reference distribution, and choosing one is not a

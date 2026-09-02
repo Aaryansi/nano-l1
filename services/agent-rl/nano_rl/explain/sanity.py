@@ -2,21 +2,29 @@
 
 the motivating observation, measured in scripts/stability.py and
 scripts/evaluate.py: five independently trained agents produce highly
-consistent explanations (rank correlation 0.865, 100% agreement on the single
-most important feature) of a policy that earns -0.418 per episode and is
-statistically indistinguishable from doing nothing (p = 0.13). the explanations
-are stable, structured, and about nothing.
+consistent explanations (rank correlation 0.850, 100% agreement on the single
+most important feature) of a policy that earns -0.595 per episode on the test
+split and is statistically indistinguishable from doing nothing (p = 0.10).
+the explanations are stable, structured, and carry no detectable
+outcome-relevant information.
 
 that matters because consistency across runs is widely used as a proxy for
 trustworthiness. here it is high precisely where the explanation is empty, so
 it cannot serve that role.
 
-the test below is the reinforcement-learning analogue of the randomization
-tests of adebayo et al. (2018), with one difference that is the point. in
-supervised learning the null is artificial: randomize weights, or permute
-labels. reinforcement learning admits a null that actually occurs in
-deployment, namely an agent trained normally on real data whose environment
-contains no exploitable structure. that is the null used here.
+the test below adapts the randomization tests of adebayo et al. (2018) to rl.
+in supervised learning the null is artificial: randomize weights, or permute
+labels. this module implements the machinery for an environment-level null,
+where the null agents are trained normally on a corpus whose observation
+channel carries no exploitable structure.
+
+what this module does NOT supply is a null construction the paper endorses
+without qualification. the accompanying scripts build four of them and each
+perturbs something besides the information: the signal-free corpus varies the
+corpus, blinding collapses the reference to a point mass, outcome permutation
+destroys price calibration, and the stratified repair removes almost nothing.
+the test is only as good as the reference handed to it, which is the paper's
+argument rather than a caveat on it.
 
 the test statistic comes from the shapley framework itself. by efficiency,
 
@@ -80,9 +88,10 @@ class SanityResult:
             floor = f" (at the {self.min_achievable_p_rank:.3f} rank floor)"
         if self.degenerate_null:
             floor += " [degenerate null: zero variance]"
+        z = "undef" if self.degenerate_null else f"{self.z_score:+.2f}"
         return (
             f"span {self.statistic:+.4f} vs null {self.null_mean:+.4f} "
-            f"+/- {self.null_std:.4f}  z={self.z_score:+.2f}  "
+            f"+/- {self.null_std:.4f}  z={z}  "
             f"p_rank={self.p_rank:.4f}{floor}  p_norm={self.p_normal:.2e}  "
             f"-> {verdict}"
         )
@@ -133,13 +142,20 @@ def test_span_against_null(
     centred = np.abs(nulls - mean)
     p_rank = float((np.sum(centred >= abs(stat - mean)) + 1) / (len(nulls) + 1))
 
-    # a degenerate null (every sample identical) is not "no information", it is
-    # the opposite: any deviation from it is infinitely surprising. an earlier
-    # version returned z = 0.0 here to avoid dividing by zero, which silently
-    # converted an overwhelming result into a null one. that is the same
-    # failure class as the rank-floor bug, and it was caught on Acrobot, where
-    # blind agents score -500 whether or not they can see, so every null span
-    # is exactly 0.
+    # a degenerate null (every sample identical) has no scale, so z is
+    # undefined rather than large. we carry +/-inf as the sentinel so that
+    # callers cannot silently read it as z = 0, which would convert an
+    # observation lying outside the reference distribution into a null result;
+    # `degenerate_null` is the flag reports should branch on, and summary()
+    # prints the z as undefined.
+    #
+    # what this must NOT be read as is strong evidence. an earlier version of
+    # this project treated a point mass as maximally informative, since any
+    # deviation from it looks infinitely surprising. scripts/matched_null_test.py
+    # falsifies that: a point-mass null fires on a corpus built to contain no
+    # signal. degeneracy is a defect of the null construction and a reason to
+    # distrust the reference. it was first seen on Acrobot, where blind agents
+    # score -500 whether or not they can see, so every null span is exactly 0.
     from math import erfc, inf, isinf, sqrt
 
     if std > 1e-12:

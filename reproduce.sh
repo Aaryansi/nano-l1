@@ -170,6 +170,14 @@ step "is the matched null's width a property of the task or of the budget?"
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) \
     --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "20 40 80 160") )
 
+# the headline null is 24 draws. rerun at 99 to show the verdicts do not move,
+# written to a separate artifact so the paper's budgeted numbers stay put.
+step "does the headline survive a four-times larger null?"
+( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS/n99" \
+    --n-null $([ "$QUICK" = 1 ] && echo 12 || echo 99) )
+cp "$REPORTS/n99/sanity_test.json" "$REPORTS/sanity_test_n99.json"
+
 step "power curve, and estimation certainty vs validity"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" )
@@ -177,6 +185,22 @@ step "power curve, and estimation certainty vs validity"
 step "can an explanation be steered at fixed performance?"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
     --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" )
+
+# steering holds return fixed, which is weaker than holding behaviour fixed.
+# measured rather than asserted, because the paper's claim depends on which.
+step "are the steered and unsteered agents the same policy?"
+( cd "$RL" && "$PY" scripts/behavioural_equivalence.py --corpus "$CORPUS" \
+    --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" \
+    --n-states $([ "$QUICK" = 1 ] && echo 512 || echo 4096) )
+
+# the canonical adebayo check, as distinct from using parameter randomisation
+# to generate reference draws. the two answer different questions and the
+# paper needs to have run the one it discusses.
+step "the canonical parameter-randomization sanity check"
+( cd "$RL" && "$PY" scripts/parameter_randomization.py --corpus "$CORPUS" \
+    --runs runs/ppo --out "$REPORTS" --updates "$EXPLAIN_UPDATES" \
+    --seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) \
+    --n-states $([ "$QUICK" = 1 ] && echo 8 || echo 25) )
 
 step "a second attribution family, and per-feature values across all seeds"
 ( cd "$RL" && "$PY" scripts/second_method.py --corpus "$CORPUS" \
@@ -226,7 +250,7 @@ step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$ROOT/docs/paper/figures" )
 
-step "verifying every number in docs/paper/main.md against the artifacts"
+step "verifying every number in docs/paper/main.tex against the artifacts"
 ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py )
 
 # the paper states a wall-clock figure. record the real one rather than leaving
