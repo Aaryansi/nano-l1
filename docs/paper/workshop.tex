@@ -49,9 +49,15 @@
 
 \title{\vspace{-1.6em}\bfseries No Free Null: Reference Distributions for Explaining\\Reinforcement Learning Agents}
 % Replace with the venue's anonymous block if submitting double-blind.
+\newif\ifanon
+%\anontrue
+\ifanon
+  \author{}
+\else
 \author{Aaryan Singh\\[2pt]
   \normalsize Independent Researcher\\[1pt]
   \normalsize\texttt{singha9@rose-hulman.edu}}
+\fi
 \date{}
 
 \begin{document}
@@ -66,20 +72,22 @@
   Deciding whether an explanation of a reinforcement learning agent means
   anything requires a reference distribution: what it would have looked like had
   the agent learned nothing. Reinforcement learning has no agreed way to build
-  one, and the problem is harder than it appears. The construction the field
-  already uses, randomising network parameters, has almost no power: across
-  sixteen checkpoints on four control tasks it never exceeds $z=2.45$, and its
-  width \emph{equals} the standard deviation of random-initialisation return to
-  three significant figures, so it measures the variance of initialisation
-  rather than the explanation. We then build the three natural replacements and
+  one, and the problem is harder than it appears. The construction available off the
+  shelf, randomising network parameters to generate reference draws, has almost
+  no power: across sixteen checkpoints on four control tasks it never exceeds
+  $z=2.45$, and its width matches the standard deviation of
+  random-initialisation return to three significant figures, so it measures the
+  variance of initialisation and not the explanation. Run instead in its
+  canonical form it answers a different question and clears the explanation we
+  show to be empty. We then build the three natural replacements and
   each fails differently. A signal-free corpus varies the corpus as well as the
   information. Blinding the observation channel removes the agent's capacity to
   respond, collapsing the reference onto a point mass and firing on a corpus
   built to contain no signal. Permuting the outcomes, the direct analogue of the
   supervised label-permutation test, leaves the price forecasting a label it no
   longer matches and hands the null agents an arbitrage worth \$49 an episode.
-  Removing the information always perturbs something else, and the perturbation
-  decides the verdict. We motivate this with an agent whose explanation is
+  In each construction we built, removing the information also perturbed
+  something else, and the perturbation decided the verdict. We motivate this with an agent whose explanation is
   stable across seeds, semantically legible, and empty, and which can be driven
   from $39.9\%$ to $3.2\%$ of attribution mass at no measurable cost in return.
   \end{quote}
@@ -113,8 +121,8 @@ We set out to supply one. The result is negative and the negative result is the
 contribution: parameter randomisation, repurposed to generate reference draws,
 has almost no power, and each of the three natural replacements fails in its own
 way. Kept in its original form as a similarity check the parameter test remains
-sound, but it answers a different question, and on our two agents its verdicts
-are the reverse of ours.
+sound, but it answers a different question and clears the explanation we show to
+be empty.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
@@ -125,8 +133,8 @@ return, which it matches to three significant figures.
 mechanism.
 \item A worked case of an explanation that passes every conventional check and
 carries no information.
-\item Attribution is not identified by task performance: it can be forged at a price
-equal to the importance of the feature being hidden.
+\item Attribution is not identified by task performance: it can be steered at a
+cost that, in our controls, tracks whether the feature is load-bearing.
 \end{enumerate}
 
 \paragraph{What we do not claim.}
@@ -135,7 +143,7 @@ outputs is due to \citet{beechey2023sverl}; FastSVERL~\citep{beechey2025fastsver
 addresses the scalability, off-policy and temporal problems we only name. Our
 test adapts \citet{adebayo2018sanity}. Deletion-based fidelity is established
 practice in XRL~\citep{cheng2025survey,milani2024xrl}. Our contribution is the RL
-construction, the demonstration that four of them fail and why, and the
+construction, the demonstration that four references fail and why, and the
 consequences.
 
 \section{Method}
@@ -163,22 +171,19 @@ is the failure mode that occurs in deployment.}
 \label{fig:method}
 \end{figure*}
 
-\medskip
-\noindent\textbf{Blind-observation null.} \emph{Replace every observation with an
-independent draw from a fixed distribution matched to the environment's
-observation moments. Leave dynamics and reward untouched. Train normally}
-(Figure~\ref{fig:method}).
-\medskip
-
-Such an agent faces the real task and receives real return but cannot condition
-on anything. Unlike parameter randomisation it yields a \emph{normally trained}
-policy: the failure mode that occurs in deployment. Matching the reference
-moments matters, or the network fails for reasons of scale rather than
-information.
+The statistic needs a reference distribution but does not say how to build one,
+which is this paper's subject. Every construction we try corrupts the
+observation channel somewhere between corpus and agent
+(Figure~\ref{fig:method}), differing in where and so in what else it disturbs.
+Their failures give three requirements: preserve the observation stream, the
+agent's responsiveness, and the difficulty of the task. Each construction below
+sacrifices exactly one.
 
 Given null draws with mean $\bar\Delta$ and standard deviation $s$ we report a
-rank $p$-value and $z = (\Delta_{\mathrm{obs}} - \bar\Delta)/s$, and require both
-to reject. The rank statistic assumes no shape but bottoms out at $1/(n+1)$; the
+rank statistic and $z = (\Delta_{\mathrm{obs}} - \bar\Delta)/s$, and require both
+to reject. We write the first as a rank rather than a calibrated $p$-value: an
+exact randomisation $p$-value needs exchangeability under the null, which is
+what this paper puts in doubt. The rank statistic assumes no shape but bottoms out at $1/(n+1)$; the
 normal statistic has resolution but assumes a shape the null need not have. If
 every null draw is identical, $s=0$; we return $z=\pm\infty$ and surface the
 degeneracy rather than guarding it away, but treat it as a reason to distrust

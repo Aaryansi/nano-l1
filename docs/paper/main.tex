@@ -30,7 +30,12 @@
 % man), or Section 9.1 (the rejected-hypotheses ledger). Those are the parts a
 % sceptical reader checks first.
 %
-% Build:  tectonic main.tex
+% Build:  tectonic main.tex                    (identified, for arXiv/repo)
+%         sed 's|^%.anontrue$|\\anontrue|' main.tex > main-anon.tex && \
+%           tectonic main-anon.tex              (anonymised, for TMLR)
+%
+% TMLR requires anonymised submissions. The anon build drops the author block
+% and withholds the repository URL, which carries the author's username.
 
 \documentclass[10pt,twocolumn]{article}
 
@@ -72,10 +77,18 @@
 
 \title{\vspace{-1.5em}\bfseries No Free Null: Reference Distributions for Explaining\\Reinforcement Learning Agents}
 
-% Replace with the venue's anonymous block if submitting double-blind.
-\author{Aaryan Singh\\[2pt]
-  \normalsize Independent Researcher\\[1pt]
-  \normalsize\texttt{singha9@rose-hulman.edu}}
+% TMLR is double-blind and requires anonymised submissions. Uncomment the
+% \anontrue line below to build the submission PDF; leave it commented for the
+% arXiv and repository copies.
+\newif\ifanon
+%\anontrue
+\ifanon
+  \author{}
+\else
+  \author{Aaryan Singh\\[2pt]
+    \normalsize Independent Researcher\\[1pt]
+    \normalsize\texttt{singha9@rose-hulman.edu}}
+\fi
 \date{}
 
 \begin{document}
@@ -304,7 +317,8 @@ rather than $2^{|N|}$.
 The test compares an observed $\Delta$ against the distribution of $\Delta$ for
 agents that had nothing to learn. The statistic requires such a distribution but
 does not determine how to build one, and that gap is the paper's subject:
-Section~\ref{sec:nullhard} constructs four candidates and each one fails. This
+Section~\ref{sec:nullhard} evaluates four: the parameter randomisation the field
+already has, and the three natural replacements for it. Each one fails. This
 section states what a candidate has to do, and fixes the decision rule that will
 be applied to all of them.
 
@@ -501,7 +515,8 @@ the pipeline's final stage.
 
 \paragraph{Code and compute.} Code, data-ingest scripts and the exact commands
 that produce every figure and table are at
-\url{https://github.com/Aaryansi/nano-l1}. All experiments run on CPU: an
+\ifanon\emph{[repository URL withheld for anonymous review]}\else
+\url{https://github.com/Aaryansi/nano-l1}\fi. All experiments run on CPU: an
 8-core Apple M1 with 8\,GB of memory, no GPU at any stage. The complete pipeline
 takes roughly two hours from a cold cache, of which about 27 minutes is
 rate-limited market ingest, and roughly one hour warm. Policies are two-layer
