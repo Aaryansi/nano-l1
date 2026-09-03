@@ -6,10 +6,10 @@ in advance.
 
 **the result.** an agent with no measurable edge, on a provably efficient
 market, produces feature attributions that are stable across seeds (rank
-correlation 0.865, unanimous on the most important feature), structured, and
+correlation 0.850, unanimous on the most important feature), structured, and
 semantically plausible. a null-model test built from the Shapley efficiency
 axiom shows those attributions are **indistinguishable from explanations of
-agents with nothing to learn** (z = -0.15, p = 0.92), while correctly flagging a
+agents with nothing to learn** (z = +0.23, p = 0.83), while correctly flagging a
 planted signal as informative (z = +12.27). consistency across runs is therefore
 not evidence that an explanation means anything (section 3.5), the ranking can
 be certified stable under the standard estimation criterion while being
@@ -125,9 +125,15 @@ generalisation to CartPole and Acrobot.
 
 the one finding that belongs here, because it changes how section 2 should be
 read: the agent's explanations are **not distinguishable from explanations of
-agents trained where there is nothing to learn** (z = -0.15, p = 0.92). an
+agents trained where there is nothing to learn** (z = +0.23, p = 0.83). an
 earlier draft of this report stated that the whole observation was "worth +5.914
 per episode against being blind" and presented it as a result. it was noise.
+
+> the figures here track the corpus rebuilt from scratch, which is the one the
+> paper reports. an earlier corpus collected five days before gave z = -0.15 and
+> rank correlation 0.865; every conclusion is identical on both, and the paper's
+> section 4.5 documents the comparison. numbers in this file are checked by
+> `verify_paper_numbers.py` only where the paper also states them.
 
 ## 4. limitations
 
