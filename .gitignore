@@ -89,3 +89,7 @@ docs/paper/*.png
 docs/paper/tmlr/main.tex
 docs/paper/tmlr/figures/
 docs/paper/tmlr/references.bib
+
+# submission artifacts, regenerable
+docs/paper/tmlr/supplementary.zip
+docs/paper/tmlr/abstract.txt
