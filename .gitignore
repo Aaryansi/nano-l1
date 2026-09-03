@@ -82,3 +82,10 @@ docs/paper/*.out
 # rendered page images used to eyeball the pdf. the tracked figures live
 # in docs/paper/figures/, which this does not match.
 docs/paper/*.png
+
+# the TMLR submission build is generated from docs/paper/main.tex by
+# make_tmlr.py. the PDF is tracked as the submission artifact; the derived
+# LaTeX is not, so it cannot drift out of sync with its source.
+docs/paper/tmlr/main.tex
+docs/paper/tmlr/figures/
+docs/paper/tmlr/references.bib
