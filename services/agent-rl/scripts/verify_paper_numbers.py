@@ -456,13 +456,23 @@ if pr:
                 check(f"{who} {mode} {row['stage']}", claimed,
                       row["rank_corr_mean"], 0.06)
     # the finding: the canonical check points the opposite way to the null test
+    for who, vals in (("market", [0.067, -0.084, -0.016]),
+                      ("planted", [0.283, 0.471, 0.464])):
+        for row, claimed in zip(pr[f"{who}_outcomes"]["cascading"], vals):
+            check(f"{who} outcomes {row['stage']}", claimed,
+                  row["rank_corr_mean"], 0.10 if abs(claimed) > 0.1 else 1.0)
     checks += 1
     fr = pr["fully_randomized_rank_corr"]
-    ok = fr["market"] < 0.6 < fr["planted"]
-    print(f"  [{'x' if ok else ' '}] {'canonical check points opposite to the null test':<52} "
+    fo = pr["fully_randomized_rank_corr_outcomes"]
+    # the claim the paper now makes: the check clears the empty explanation on
+    # BOTH targets, and the opposition itself is target-dependent.
+    ok = (fr["market"] < 0.6 and fo["market"] < 0.2
+          and fr["planted"] > 0.9 and fo["planted"] < 0.9
+          and not pr["outcome_target_agrees_with_behaviour"])
+    print(f"  [{'x' if ok else ' '}] {'clears the empty one on both; opposition is target-dep':<52} "
           f"{'yes' if ok else 'NO':>21}")
     if not ok:
-        failures.append("parameter randomization: paper says the verdicts invert")
+        failures.append("parameter randomization: paper says the opposition is target-dependent")
 
 # ------------------------------------------- steered vs unsteered behaviour
 be = load("behavioural_equivalence.json")

@@ -139,6 +139,79 @@
       }
     ]
   },
+  "market_outcomes": {
+    "cascading": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.06707946336429309,
+        "rank_corr_std": 0.30170892408043926,
+        "cosine_mean": 0.636923347065965
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2"
+        ],
+        "rank_corr_mean": -0.08427932576539386,
+        "rank_corr_std": 0.27161757821160554,
+        "cosine_mean": 0.5231912517119007
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2",
+          "trunk.0"
+        ],
+        "rank_corr_mean": -0.016167870657034733,
+        "rank_corr_std": 0.1773451781159891,
+        "cosine_mean": 0.6066807510964266
+      }
+    ]
+  },
+  "planted_outcomes": {
+    "cascading": [
+      {
+        "stage": "policy_head",
+        "layers_randomized": [
+          "policy_head"
+        ],
+        "rank_corr_mean": 0.283109735122119,
+        "rank_corr_std": 0.29644979503902485,
+        "cosine_mean": 0.4997733285983423
+      },
+      {
+        "stage": "trunk.2",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2"
+        ],
+        "rank_corr_mean": 0.4709322325421396,
+        "rank_corr_std": 0.1369230045837922,
+        "cosine_mean": 0.4774419804673107
+      },
+      {
+        "stage": "trunk.0",
+        "layers_randomized": [
+          "policy_head",
+          "trunk.2",
+          "trunk.0"
+        ],
+        "rank_corr_mean": 0.4640522875816994,
+        "rank_corr_std": 0.26707836455577944,
+        "cosine_mean": 0.6755685793357603
+      }
+    ]
+  },
+  "fully_randomized_rank_corr_outcomes": {
+    "market": -0.016167870657034733,
+    "planted": 0.4640522875816994
+  },
+  "outcome_target_agrees_with_behaviour": false,
   "separates_agents": true,
   "fully_randomized_rank_corr": {
     "market": 0.38057851239669427,

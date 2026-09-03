@@ -200,7 +200,10 @@ step "the canonical parameter-randomization sanity check"
 ( cd "$RL" && "$PY" scripts/parameter_randomization.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" --updates "$EXPLAIN_UPDATES" \
     --seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) \
-    --n-states $([ "$QUICK" = 1 ] && echo 8 || echo 25) )
+    --n-states $([ "$QUICK" = 1 ] && echo 8 || echo 25) \
+    --outcome-seeds $([ "$QUICK" = 1 ] && echo 1 || echo 3) \
+    --outcome-coalitions $([ "$QUICK" = 1 ] && echo 16 || echo 64) \
+    --outcome-episodes $([ "$QUICK" = 1 ] && echo 40 || echo 150) )
 
 step "a second attribution family, and per-feature values across all seeds"
 ( cd "$RL" && "$PY" scripts/second_method.py --corpus "$CORPUS" \

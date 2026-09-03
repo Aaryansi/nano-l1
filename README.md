@@ -65,12 +65,15 @@ reference distribution is, to three significant figures, the spread of
 random-initialization return, so it measures the variance of initialization and
 not the explanation.
 
-**the canonical version of that check points the other way.** run as adebayo et
-al. actually propose, degrading one explanation by progressively randomizing
-layers, it clears the empty market explanation (rank correlation 0.38 after full
-randomization, so the explanation does depend on the weights) and flags the
-informative planted-signal one (0.996, barely moved). the two tests answer
-different questions and neither subsumes the other.
+**the canonical version of that check clears the empty explanation.** run as
+adebayo et al. actually propose, degrading one explanation by progressively
+randomizing layers, it clears the empty market explanation on both explanatory
+targets we tried (rank correlation 0.38 on behaviour, -0.02 on outcomes, so the
+explanation does depend on the weights) while our null test finds nothing
+outcome-relevant to explain. passing it is not evidence there is anything to
+explain. on behaviour it also flags the informative planted-signal agent (0.996,
+barely moved), but that inversion does not survive the change of target (0.46),
+so what the check flags depends on which explanation you degrade.
 
 **the span survives off-manifold masking; the ranking does not.** the test
 statistic is built from two coalitions that are both on the data manifold, so it

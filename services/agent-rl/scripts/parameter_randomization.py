@@ -55,6 +55,10 @@ from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E40
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.explain.trajectory import (  # noqa: E402
+    OutcomeAttributionConfig,
+    explain_outcomes,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from steer_explanation import global_attribution  # noqa: E402
@@ -101,6 +105,66 @@ def similarity(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
     denom = float(np.linalg.norm(a) * np.linalg.norm(b))
     cos = float(a @ b / denom) if denom > 0 else float("nan")
     return rho, cos
+
+
+def outcome_attribution(
+    agent: PPOAgent, batch, bg: np.ndarray, norm, coalitions: int,
+    episodes: int, seed: int,
+) -> np.ndarray:
+    """per-feature OUTCOME attribution, the target our null test actually uses.
+
+    the reviewer objection this answers: section 6.2 degrades behaviour-level
+    attributions while the null test reads outcome-level ones, so the two could
+    be pointing opposite ways because they read different objects rather than
+    because they ask different questions. this runs the canonical check on the
+    same target the null test uses, at reduced coalition and episode budgets
+    because each coalition costs a full batch replay.
+    """
+    att = explain_outcomes(
+        agent, batch, bg, normalizer=norm, max_position=100.0,
+        cfg=OutcomeAttributionConfig(
+            n_coalitions=coalitions, n_episodes=episodes, seed=seed
+        ),
+    )
+    return np.abs(att.values)
+
+
+def run_agent_outcomes(
+    label: str, agent: PPOAgent, batch, bg: np.ndarray, norm,
+    coalitions: int, episodes: int, seeds: int, base_seed: int,
+) -> dict:
+    """the cascading check only, on the outcome target."""
+    banner(f"{label}  [outcome-level target]")
+    baseline = outcome_attribution(agent, batch, bg, norm, coalitions,
+                                   episodes, base_seed)
+    print(f"  baseline attribution mass {baseline.sum():.4f}")
+
+    original = {k: v.detach().clone() for k, v in agent.net.state_dict().items()}
+    rows = []
+    for depth, layer in enumerate(LAYERS, start=1):
+        names = LAYERS[:depth]
+        rhos, coss = [], []
+        for s_ in range(seeds):
+            agent.net.load_state_dict(original)
+            randomize(agent.net, names, seed=7_000 + 97 * s_ + depth)
+            att = outcome_attribution(agent, batch, bg, norm, coalitions,
+                                      episodes, base_seed + s_)
+            rho, cos = similarity(baseline, att)
+            rhos.append(rho)
+            coss.append(cos)
+        row = {
+            "stage": layer,
+            "layers_randomized": names,
+            "rank_corr_mean": float(np.nanmean(rhos)),
+            "rank_corr_std": float(np.nanstd(rhos)),
+            "cosine_mean": float(np.nanmean(coss)),
+        }
+        rows.append(row)
+        print(f"  cascading    {layer:<12} "
+              f"rho {row['rank_corr_mean']:>+7.3f} +/- {row['rank_corr_std']:.3f}   "
+              f"cos {row['cosine_mean']:>+7.3f}")
+    agent.net.load_state_dict(original)
+    return {"cascading": rows}
 
 
 def run_agent(
@@ -154,6 +218,10 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--updates", type=int, default=150)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--outcome-seeds", type=int, default=3)
+    ap.add_argument("--outcome-coalitions", type=int, default=64)
+    ap.add_argument("--outcome-episodes", type=int, default=150)
+    ap.add_argument("--skip-outcomes", action="store_true")
     args = ap.parse_args()
 
     batch = EpisodeBatch.load(args.corpus)
@@ -189,6 +257,24 @@ def main() -> None:
                              pbg, args.n_states, args.seeds, args.seed),
     }
 
+    # the same check on the target the null test actually reads. answers the
+    # objection that 6.2 compares behaviour-level degradation against an
+    # outcome-level verdict.
+    if not args.skip_outcomes:
+        result["market_outcomes"] = run_agent_outcomes(
+            "market agent", market, test, mbg, norm,
+            args.outcome_coalitions, args.outcome_episodes,
+            args.outcome_seeds, args.seed)
+        result["planted_outcomes"] = run_agent_outcomes(
+            "planted-signal agent", pagent, planted, pbg, pnorm,
+            args.outcome_coalitions, args.outcome_episodes,
+            args.outcome_seeds, args.seed)
+        mo = result["market_outcomes"]["cascading"][-1]["rank_corr_mean"]
+        po = result["planted_outcomes"]["cascading"][-1]["rank_corr_mean"]
+        result["fully_randomized_rank_corr_outcomes"] = {
+            "market": mo, "planted": po}
+        result["outcome_target_agrees_with_behaviour"] = bool(mo < 0.6 < po)
+
     # the comparison the paper needs: does the check separate the two agents?
     def deepest(d):
         return d["cascading"][-1]["rank_corr_mean"]
@@ -201,6 +287,12 @@ def main() -> None:
     print(f"  fully randomized, market  rho = {m:+.3f}")
     print(f"  fully randomized, planted rho = {p:+.3f}")
     print(f"  separates the two agents: {result['separates_agents']}")
+    if not args.skip_outcomes:
+        o = result["fully_randomized_rank_corr_outcomes"]
+        print(f"\n  outcome target, market  rho = {o['market']:+.3f}")
+        print(f"  outcome target, planted rho = {o['planted']:+.3f}")
+        print(f"  same direction as behaviour: "
+              f"{result['outcome_target_agrees_with_behaviour']}")
     print("\n  the canonical check asks whether an explanation depends on the")
     print("  learned weights. it does not ask whether the thing explained is")
     print("  worth explaining, and these two agents differ on the second.")
