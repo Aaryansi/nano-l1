@@ -367,6 +367,23 @@ z &= \frac{\Delta_{\mathrm{obs}} - \bar\Delta}{s},
 \end{align}
 and require both to reject.
 
+\paragraph{A comparison can also fail to decide.}
+The rule has three outcomes, not two. A reference whose rank floor $1/(n+1)$
+exceeds $\alpha$ cannot reject at $\alpha$ however extreme the observation, and
+a reference that has collapsed to a point mass has no scale against which to
+measure one. Neither case yields a negative result; both yield no result, and we
+record them as \emph{unresolved} rather than as either verdict.
+
+This matters because we got it wrong twice. An early run recorded a signal
+$10.5$ standard deviations outside its null as not significant, because at $n=8$
+the floor is $0.111$. The correction was to compare against
+$\max(\alpha, 1/(n+1))$, which is the opposite error: it raises the threshold to
+whatever the floor happens to be, so the size of the test depends on how many
+null draws were drawn, and at $n=12$ a rank score of $0.0769$ counted as a
+rejection at $\alpha=0.05$. Every comparison in this paper now uses a fixed
+$\alpha$ and a reference large enough to resolve it, except where we report the
+outcome as unresolved and say why.
+
 Two statistics are reported because neither suffices. The rank statistic assumes
 no distributional shape but bottoms out at $1/(n+1)$: with $n=8$ it cannot reject
 at $\alpha=0.05$ however extreme the observation, and in an early run it reported
@@ -513,7 +530,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 314 tests cover the environment, the attribution implementations, and
+command; 318 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -535,9 +552,12 @@ scale to pose.
 $\gamma=1.0$; $\gamma$ is unity because episodes are finite-horizon and reward
 telescopes exactly to terminal P\&L, so discounting would bias the objective
 away from the quantity of interest. Market agents train for 100 updates over 5
-seeds; explanation-time agents for 60 updates; null draws use $n=24$ for the
-main test, 12--16 for the environment and robustness experiments, and $n=99$ for
-the budget check in Section~\ref{sec:intervals}. Full
+seeds; explanation-time agents for 60 updates; null draws use $n=24$ throughout, except the
+environment sweep at 12--16 and the budget check at $n=99$
+(Section~\ref{sec:intervals}). The decision rule requires the rank floor
+$1/(n+1)$ to be at or below $\alpha$, which $n=24$ satisfies and $n=16$ does
+not; comparisons that cannot meet it are reported as unresolved rather than
+decided. Full
 values, including network widths, learning rate, clip range and entropy
 coefficient, are in the configuration files in the repository, not
 restated here.
@@ -1292,9 +1312,9 @@ each, on one agent, one corpus, and one null.
 \toprule
 Target & Span & Null & $z$ & Verdict \\
 \midrule
-behaviour & $+0.177$ & $+0.059 \pm 0.019$ & $\mathbf{+6.33}$ & \textbf{informative} \\
-prediction & $-0.053$ & $-0.078 \pm 0.207$ & $+0.12$ & declines \\
-outcomes & $+7.40$ & $+10.24 \pm 5.42$ & $-0.52$ & declines \\
+behaviour & $+0.177$ & $+0.060 \pm 0.020$ & $\mathbf{+5.80}$ & \textbf{informative} \\
+prediction & $-0.053$ & $-0.065 \pm 0.202$ & $+0.06$ & declines \\
+outcomes & $+7.40$ & $+9.26 \pm 5.09$ & $-0.36$ & declines \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1405,8 +1425,8 @@ behaviour does respond to its observations; that responsiveness earns nothing.
 \paragraph{Credit assignment.} Leave-one-out ($\vfn(N)-\vfn(N\setminus i)$) and
 only-one-in ($\vfn(\{i\})-\vfn(\emptyset)$) are the extremes of the average
 Shapley takes, and neither satisfies efficiency, so each carries its own total.
-On the planted signal all three fire ($z = +10.66$, $+10.96$, $+2.29$); on the
-market none does ($z = -0.42$, $-1.57$, $-0.72$). The verdict is
+On the planted signal all three fire ($z = +11.29$, $+10.50$, $+2.29$); on the
+market none does ($z = -0.14$, $-1.15$, $-0.55$). The verdict is
 scheme-independent. \emph{The per-feature ranking is not}: leave-one-out and
 only-one-in rank features at only $0.309$ correlation with each other on the same
 agent. Holding the null fixed, whether there is anything to explain is robust; which features matter is
@@ -1460,9 +1480,9 @@ against a real-state floor of $0.381$, while conditional masking sits at $0.186$
 Marginal masking does leave the manifold, by a measurable amount, in the interior.
 
 \paragraph{Consequences.}
-Re-deriving the verdict entirely under conditional masking, against a null of 12
+Re-deriving the verdict entirely under conditional masking, against a null of 24
 conditionally-masked blind agents, reproduces it: the planted signal fires at
-$z=+9.61$ and the real market does not at $z=-0.55$. The per-feature ranking is
+$z=+11.29$ and the real market does not at $z=-0.14$. The per-feature ranking is
 another matter. Leave-one-out values under the two modes correlate at only
 $0.767$ by rank, and \emph{they disagree on which feature is most important}.
 This is the same split Section~\ref{sec:robust} found for credit assignment.

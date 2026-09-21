@@ -262,8 +262,8 @@ if mm:
     check("span, marginal masking", 8.838, mm["span_marginal"], 0.02)
     check("span, conditional masking", 8.838, mm["span_conditional"], 0.02)
     check("loo rank corr, marginal vs conditional", 0.767, mm["loo_rank_corr"], 0.05)
-    check("conditional planted-signal z", 9.61, mm["conditional_planted_signal"]["z_score"], 0.05)
-    check("conditional real-market z", -0.55, mm["conditional_real_market"]["z_score"], 0.20)
+    check("conditional planted-signal z", 11.29, mm["conditional_planted_signal"]["z_score"], 0.05)
+    check("conditional real-market z", -0.14, mm["conditional_real_market"]["z_score"], 0.20)
     by_kept = {r["n_kept"]: r for r in mm["offmanifold_distance"]}
     check("real-state distance floor", 0.381, by_kept[18]["marginal"], 0.02)
     check("marginal distance, 14 replaced", 0.486, by_kept[4]["marginal"], 0.02)
@@ -451,16 +451,17 @@ sv = load("sverl_targets.json")
 print("\nsection 7.1: the three explanatory targets")
 if sv:
     t = sv["targets"]
-    for name, span, z in (("behaviour", 0.177, 6.33),
-                          ("prediction", -0.053, 0.12),
-                          ("outcomes", 7.405, -0.52)):
+    for name, span, z in (("behaviour", 0.177, 5.80),
+                          ("prediction", -0.053, 0.06),
+                          ("outcomes", 7.405, -0.36)):
         check(f"{name} span", span, t[name]["span"], 0.05)
         check(f"{name} z", z, t[name]["null_signal_free"]["result"]["z_score"],
               0.05 if abs(z) > 1 else 1.0)
     # the finding: they disagree, and only behaviour fires
     checks += 1
-    ok = (not sv["targets_agree_under_signal_free_null"]
-          and sv["targets_that_fire"] == ["behaviour"])
+    fires = [n for n, t in sv["targets"].items()
+             if t["null_signal_free"]["result"]["passes"]]
+    ok = (not sv["targets_agree_under_signal_free_null"] and fires == ["behaviour"])
     print(f"  [{'x' if ok else ' '}] {'targets disagree; only behaviour fires':<52} "
           f"{'yes' if ok else 'NO':>21}")
     if not ok:
