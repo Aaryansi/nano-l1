@@ -19,7 +19,13 @@ import math
 import numpy as np
 import pytest
 
-from nano_rl.explain.sanity import SanityResult, consistency_across_runs
+from nano_rl.explain.sanity import (
+    INFORMATIVE,
+    NOT_DISTINGUISHABLE,
+    UNRESOLVED,
+    SanityResult,
+    consistency_across_runs,
+)
 # aliased on import: pytest collects any module-level name beginning with
 # "test_", so importing this one under its real name makes pytest try to run
 # the function under test as if it were a test, and error on its arguments.
@@ -88,9 +94,17 @@ class TestBothCriteriaAreRequired:
 class TestTheRankFloor:
     """with few null samples the rank p-value cannot reach 0.05 at all.
 
-    this bit the project once: a signal 10.5 sd outside its null was reported
-    as not significant because n = 8 puts the smallest achievable p at 0.111.
-    the fix was to compare against max(alpha, floor), and it must stay.
+    the project has been on both wrong sides of this. first a signal 10.5 sd
+    outside its null was recorded as not significant, because n = 8 puts the
+    smallest achievable p at 0.111. the fix was to compare against
+    max(alpha, floor), which was the second error: it raises the threshold to
+    whatever the floor happens to be, so the size of the test depends on how
+    many null draws were drawn. at n = 12 that made 0.0769 count as a rejection
+    at alpha = 0.05.
+
+    neither outcome is right, because neither is available. a reference too
+    small to resolve alpha supports no decision, and UNRESOLVED records that
+    rather than manufacturing one in either direction.
     """
 
     @pytest.mark.parametrize("n,floor", [(4, 0.2), (8, 1 / 9), (24, 0.04)])
@@ -98,10 +112,25 @@ class TestTheRankFloor:
         r = span_test(1.0, spread(n=n))
         assert r.min_achievable_p_rank == pytest.approx(floor)
 
-    def test_a_huge_signal_still_passes_with_a_small_null(self):
+    def test_a_huge_signal_is_unresolved_when_the_floor_exceeds_alpha(self):
         r = span_test(500.0, spread(n=8))
-        assert r.p_rank > 0.05, "the floor should make the raw p-value large"
-        assert r.passes, "and the test must reject anyway"
+        assert r.p_rank > 0.05
+        assert r.verdict == UNRESOLVED
+        assert not r.passes, "a reference that cannot resolve alpha decides nothing"
+
+    def test_the_same_signal_resolves_once_the_reference_is_large_enough(self):
+        r = span_test(500.0, spread(n=24))
+        assert r.min_achievable_p_rank <= 0.05
+        assert r.verdict == INFORMATIVE
+        assert r.passes
+
+    def test_alpha_is_never_relaxed_to_the_floor(self):
+        # the exact regression: n = 12 puts the floor at 0.0769, and the old
+        # rule let that count as a rejection at alpha = 0.05.
+        r = span_test(500.0, spread(n=12))
+        assert r.p_rank == pytest.approx(1 / 13)
+        assert r.p_rank > 0.05
+        assert not r.passes
 
 
 class TestDegenerateNulls:

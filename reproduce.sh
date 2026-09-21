@@ -148,7 +148,7 @@ step "the null-model test again, with every null matched to its own corpus"
 step "the three SVERL targets against both null constructions"
 ( cd "$RL" && "$PY" scripts/sverl_targets.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" \
-    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 16) )
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 step "is there a stratified permutation that works?"
 ( cd "$RL" && "$PY" scripts/stratified_sweep.py --corpus "$CORPUS" \
@@ -213,7 +213,7 @@ step "a second attribution family, and per-feature values across all seeds"
 step "does the verdict depend on the credit-assignment scheme?"
 ( cd "$RL" && "$PY" scripts/scheme_robustness.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" \
-    --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 16) )
+    --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 step "horizon scaling: why does the weight null fail?"
 ( cd "$RL" && "$PY" scripts/horizon_scaling.py --out "$REPORTS" \
@@ -234,7 +234,7 @@ step "which null construction does the market verdict depend on?"
 step "is the span an artefact of off-manifold masking?"
 ( cd "$RL" && "$PY" scripts/manifold_masking.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" \
-    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) )
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 # four classic-control tasks, not two. box2d environments are deliberately not
 # used: they need a system swig binary to build, which would trade the

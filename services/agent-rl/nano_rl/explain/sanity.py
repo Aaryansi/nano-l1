@@ -43,6 +43,14 @@ import numpy as np
 
 from nano_rl.explain.shapley import Attribution
 
+# the three outcomes a comparison against a reference can have. UNRESOLVED is
+# not a failure to reject: it records that the reference cannot support a
+# decision at this alpha, either because it is too small or because it has
+# collapsed.
+INFORMATIVE = "INFORMATIVE"
+NOT_DISTINGUISHABLE = "NOT DISTINGUISHABLE FROM NULL"
+UNRESOLVED = "UNRESOLVED (reference cannot decide at this alpha)"
+
 
 @dataclass
 class SanityResult:
@@ -55,7 +63,8 @@ class SanityResult:
     p_rank: float  # two-sided, by null-distribution rank
     p_normal: float  # two-sided, normal approximation
     z_score: float
-    passes: bool  # True when distinguishable from the null
+    passes: bool  # True only when verdict is INFORMATIVE
+    verdict: str = INFORMATIVE  # one of the three outcomes above
 
     @property
     def degenerate_null(self) -> bool:
@@ -82,7 +91,7 @@ class SanityResult:
         return 1.0 / (len(self.null_samples) + 1)
 
     def summary(self) -> str:
-        verdict = "INFORMATIVE" if self.passes else "NOT DISTINGUISHABLE FROM NULL"
+        verdict = self.verdict
         floor = ""
         if self.p_rank <= self.min_achievable_p_rank + 1e-12:
             floor = f" (at the {self.min_achievable_p_rank:.3f} rank floor)"
@@ -106,6 +115,7 @@ class SanityResult:
             "min_achievable_p_rank": self.min_achievable_p_rank,
             "z_score": self.z_score,
             "passes": self.passes,
+            "verdict": self.verdict,
             "n_null_samples": len(self.null_samples),
         }
 
@@ -167,8 +177,34 @@ def test_span_against_null(
 
     p_normal = 0.0 if isinf(z) else float(erfc(abs(z) / sqrt(2.0)))
 
+    # the decision rule. three outcomes, not two.
+    #
+    # the previous version read
+    #
+    #     passes = (p_rank <= max(alpha, min_rank)) and (p_normal < alpha)
+    #
+    # which raises the threshold to the rank floor whenever the reference is
+    # too small to resolve alpha. at n=12 the floor is 0.0769, so a rank score
+    # of 0.0769 was recorded as a rejection at alpha=0.05. that is not a
+    # conservative reading of a weak reference, it is a different test whose
+    # size depends on how many null draws happened to be drawn.
+    #
+    # a reference that cannot resolve alpha does not produce a negative result
+    # either. it produces no result, which is what UNRESOLVED records. the same
+    # applies to a degenerate reference: a point mass has no scale, so the
+    # observation is outside its support by construction and the comparison is
+    # not a test. scripts/matched_null_test.py shows such a reference firing on
+    # a corpus built to contain no signal.
     min_rank = 1.0 / (len(nulls) + 1)
-    passes = (p_rank <= max(alpha, min_rank)) and (p_normal < alpha)
+    degenerate = bool(std <= 1e-12)
+
+    if min_rank > alpha or degenerate:
+        verdict = UNRESOLVED
+    elif p_rank <= alpha and p_normal < alpha:
+        verdict = INFORMATIVE
+    else:
+        verdict = NOT_DISTINGUISHABLE
+    passes = verdict == INFORMATIVE
 
     return SanityResult(
         statistic=float(stat),
@@ -179,6 +215,7 @@ def test_span_against_null(
         p_normal=p_normal,
         z_score=z,
         passes=passes,
+        verdict=verdict,
     )
 
 
