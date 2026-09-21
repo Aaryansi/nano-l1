@@ -1324,14 +1324,14 @@ measures (Table~\ref{tab:steer}, Figure~\ref{fig:steer}).
 
 \begin{table}[t]
 \centering\small
-\caption{Steering one feature's attribution.}
+\caption{Steering one feature's attribution. Every figure in a row comes from the same run: invariance penalty $\lambda=20$, three seeds, evaluated on the held-out split. $p$ is a paired bootstrap against the $\lambda=0$ agent on the same episodes.}
 \label{tab:steer}
 \begin{tabular}{lrrr}
 \toprule
 Corpus & Attribution & Return & $p$ \\
 \midrule
-market          & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.66}$ \\
-planted signal  & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+7.92}$ & $<$0.001 \\
+market          & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.38}$ \\
+planted signal  & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+8.66}$ & $<$0.001 \\
 \bottomrule
 \end{tabular}
 \end{table}

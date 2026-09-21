@@ -102,11 +102,34 @@ st = load("steering.json")
 print("\ntable 4: steering")
 if st:
     rm, sy = st["real_market"], st["learnable_synthetic"]
-    check("market baseline attribution", 0.399, rm[0]["target_share_mean"], 0.05)
-    check("market steered attribution", 0.032, min(x["target_share_mean"] for x in rm[1:]), 0.20)
-    check("synthetic baseline attribution", 0.465, sy[0]["target_share_mean"], 0.05)
-    check("synthetic baseline return", 45.04, sy[0]["return_mean"], 0.02)
-    check("synthetic steered return", 7.92, min(x["return_mean"] for x in sy[1:]), 0.20)
+    # every table-4 figure must come from ONE run. the previous version took
+    # min() across penalties, so it confirmed that *some* row had 3.2% and
+    # *some* row had the quoted return without ever checking they were the
+    # same row. they were not: the paper paired a lambda=20 attribution with a
+    # lambda=5 return, and quoted a market p-value that appears in no artifact.
+    LAMBDA = 20.0
+
+    def row(rows, coef):
+        hits = [r for r in rows if r["coef"] == coef]
+        if len(hits) != 1:
+            raise SystemExit(f"expected exactly one row at coef={coef}, got {len(hits)}")
+        return hits[0]
+
+    mb, me = row(rm, 0.0), row(rm, LAMBDA)
+    sb, se = row(sy, 0.0), row(sy, LAMBDA)
+
+    check("market baseline attribution", 0.399, mb["target_share_mean"], 0.05)
+    check("market steered attribution", 0.032, me["target_share_mean"], 0.20)
+    check("market baseline return", -3.49, mb["return_mean"], 0.05)
+    check("market steered return", -1.65, me["return_mean"], 0.05)
+    check("market steered p", 0.38, me["p_vs_baseline"], 0.10)
+    check("synthetic baseline attribution", 0.465, sb["target_share_mean"], 0.05)
+    check("synthetic steered attribution", 0.015, se["target_share_mean"], 0.20)
+    check("synthetic baseline return", 45.04, sb["return_mean"], 0.02)
+    check("synthetic steered return", 8.66, se["return_mean"], 0.05)
+    # the 81% figure must be derived from the same pair, not quoted loose
+    destroyed = 100 * (sb["return_mean"] - se["return_mean"]) / abs(sb["return_mean"])
+    check("synthetic return destroyed (%)", 81.0, destroyed, 0.03)
 
 # ------------------------------------------------------------ environments
 g = load("generalize_gym.json")
