@@ -138,25 +138,22 @@ choice that is usually left implicit.
 
 A common argument for interpretability is oversight: if we can see which inputs
 drive a policy, we can decide whether to trust it. That requires an attribution
-to mean something, and every attribution method returns an answer whether or not
-it does. Given any policy and any state, Shapley
-values~\citep{shapley1953value,lundberg2017unified}, local surrogate
+to mean something, and every method returns an answer whether or not it does.
+Shapley values~\citep{shapley1953value,lundberg2017unified}, local surrogate
 models~\citep{ribeiro2016lime}, integrated
-gradients~\citep{sundararajan2017axiomatic}, and permutation importance all
-produce a vector of numbers, ranked, signed, and plottable. Nothing in the
-output distinguishes an attribution reflecting structure the agent exploits from
-one reflecting nothing at all.
+gradients~\citep{sundararajan2017axiomatic} and permutation importance all
+produce a ranked, signed vector for any policy and state. Nothing in the output
+distinguishes an attribution reflecting structure the agent exploits from one
+reflecting nothing.
 
-Telling them apart requires a \emph{reference distribution}: what would this
-explanation have looked like if the agent had learned nothing? In supervised
-learning there are two standard answers, both from \citet{adebayo2018sanity}.
-Randomise the model's parameters, or train it on permuted labels; if the
-explanation does not change, it does not depend on what the model learned.
-Reinforcement learning has adopted the first and not the second.
+Telling them apart requires a \emph{reference distribution}: what the
+explanation would have looked like had the agent learned nothing. Supervised
+learning has two standard answers, both from \citet{adebayo2018sanity}:
+randomise the parameters, or train on permuted labels. Reinforcement learning
+has adopted the first and not the second.
 \citet{huber2022benchmarking} apply parameter randomisation to Atari saliency
-maps and observe that the data-randomisation test has no obvious RL analogue:
-there is no labelled dataset to permute, and it is unclear how a sequential
-decision maker should respond to artificially corrupted features.
+and observe that the data-randomisation test has no obvious RL analogue, since
+there is no labelled dataset to permute.
 
 We set out to supply that analogue. The result is mostly negative, and the
 negative result is the contribution. Parameter randomisation, repurposed to
@@ -182,53 +179,45 @@ clearing our empty explanation at $\rho=0.38$ on behaviour and $\rho=-0.02$ on
 outcomes; what it flags depends on the target
 (Section~\ref{sec:canonical}).
 
-\item \textbf{Three replacements, three distinct failures.} A signal-free
-corpus varies the corpus and widens the reference. Blinding the observation
-channel removes the agent's capacity to respond and collapses the reference to a
-point mass, producing a false positive on a corpus built to contain no signal.
-Permuting the outcomes leaves the price forecasting a label it no longer matches
-and hands the null agents an arbitrage worth \$49 an episode
-(Sections~\ref{sec:nullchoice}--\ref{sec:permuted}).
+\item \textbf{Three replacements, three distinct failures.} A signal-free corpus
+varies the corpus. Blinding the observation channel removes the agent's capacity
+to respond, collapsing the reference to a point mass that fires on a corpus
+built to contain no signal. Permuting the outcomes leaves the price forecasting
+a label it no longer matches and hands the null agents an arbitrage worth \$49
+an episode (Sections~\ref{sec:nullchoice}--\ref{sec:permuted}).
 
 \item \textbf{A worked case of an empty explanation.} On an efficient market an
 agent with no measurable edge produces attributions that are stable across
 seeds, separated beyond their own estimation error, and legible. Every check we
-knew to apply passes (Section~\ref{sec:empty}), and a positive control on the
-same real episodes shows the test separates tasks and not datasets, though
-under a reference we later reject (Section~\ref{sec:positive}).
-
-\item \textbf{Attribution is not identified by task performance.} An auxiliary training
-penalty drives a feature's attribution from $39.9\%$ to $3.2\%$ of total mass at
-no measurable cost in return, with no deception and no attack on the explainer.
-In our controls the performance cost of steering tracks whether the feature is
-load-bearing, so it is near zero where a guarantee would matter
-(Section~\ref{sec:steering}).
+knew to apply passes (Section~\ref{sec:empty}).
 
 \item \textbf{An audit of our own choices.} Our thesis implies that our own null
 must matter, so we checked, found it measuring spans on a different corpus from
 the observation, and report what that is worth. Seven predictions this project
-made were rejected on its own evidence and are collected here
-(Section~\ref{sec:rejected}).
+made were rejected on its own evidence
+(Appendix~\ref{app:rejected}). Separately, an auxiliary penalty drives a
+feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no measurable
+cost in return, so attribution is not identified by task performance
+(Appendix~\ref{app:survives}).
 \end{enumerate}
 
 \paragraph{What we do not claim.}
 The argument that RL attribution should target outcomes rather than policy
 outputs is due to \citet{beechey2023sverl}, whose SVERL framework unifies
-behaviour, outcomes and prediction, and whose FastSVERL~\citep{beechey2025fastsverl}
-addresses the scalability, off-policy and temporal problems we only name. Our
-tests adapt \citet{adebayo2018sanity}. Deletion-based fidelity evaluation is
-established practice in XRL~\citep{cheng2025survey,milani2024xrl}. We do not
-offer a null construction that works; we offer an account of why the obvious
-ones do not, and evidence that the choice changes conclusions.
+behaviour, outcomes and prediction, and whose
+FastSVERL~\citep{beechey2025fastsverl} addresses the scalability, off-policy and
+temporal problems we only name. Our tests adapt \citet{adebayo2018sanity}.
+Deletion-based fidelity is established practice in
+XRL~\citep{cheng2025survey,milani2024xrl}. We do not offer a null construction
+that works; we offer an account of why the obvious ones do not.
 
 \section{Related work}
 
 \paragraph{Shapley values in RL.}
-\citet{beechey2023sverl} give a theoretical account of Shapley-value explanation
-for RL, showing that earlier applications explained the wrong object and
-proposing characteristic functions built on agent performance. Their framework
-identifies three explanatory targets: behaviour, outcomes, and prediction.
-FastSVERL~\citep{beechey2025fastsverl} makes the approach tractable and addresses
+\citet{beechey2023sverl} show that earlier applications explained the wrong
+object and propose characteristic functions built on agent performance,
+identifying three explanatory targets: behaviour, outcomes and prediction.
+FastSVERL~\citep{beechey2025fastsverl} makes the approach tractable and handles
 temporal dependence and off-policy data. We adopt the outcomes framing and
 implement it independently; we do not extend the theory.
 
@@ -242,42 +231,37 @@ transformations~\citep{kindermans2019unreliability}, small
 perturbations~\citep{ghorbani2019fragile}, and the detection of spurious
 correlations~\citep{adebayo2022spurious}. \citet{huber2022benchmarking} apply the
 parameter test to perturbation-based saliency for Atari agents and note the data
-test lacks an RL analogue. We supply a candidate, report that it fails, and in Section~\ref{sec:canonical} run the
-canonical parameter test alongside it to show the two answer different
-questions and that the canonical one's own answer depends on which explanation
-is degraded.
+test lacks an RL analogue. We supply a candidate, report that it fails, and run the canonical parameter
+test alongside it (Appendix~\ref{app:canonical}).
 
 \paragraph{Manipulating explanations.}
-\citet{slack2020fooling} construct adversarial classifiers that detect the
-off-manifold points LIME and SHAP query and behave differently on them, yielding
-innocuous explanations for biased models. That is an attack on the explainer's
-sampling. Our steering result differs in kind: we train a normal agent with an
-invariance penalty, the resulting explanation is \emph{correct} about the
-resulting model, and the point is that behaviour does not pin the explanation
-down. It is a non-identifiability result, not an attack.
-
-\paragraph{Uncertainty in Shapley estimation.}
-\citet{goldwasser2024significance} certify top-$k$ Shapley rankings against Monte
-Carlo error. These guarantees concern the estimator. Section~\ref{sec:certified}
-shows they are orthogonal to whether the explained model learned anything.
+\citet{slack2020fooling} build adversarial classifiers that detect the
+off-manifold points LIME and SHAP query and behave differently on them. That is
+an attack on the explainer's sampling. Our steering result differs in kind: we
+train a normal agent with an invariance penalty and the resulting explanation is
+\emph{correct} about the resulting model. It is a non-identifiability result,
+not an attack. Separately, \citet{goldwasser2024significance} certify top-$k$
+rankings against Monte Carlo error; those guarantees concern the estimator and
+are orthogonal to whether the model learned anything
+(Appendix~\ref{app:certified}).
 
 \paragraph{Saliency for RL agents.}
 \citet{greydanus2018visualizing} popularised perturbation saliency for Atari
-policies. \citet{atrey2020exploratory} then showed that such maps support
-plausible but unfalsified hypotheses about what an agent attends to, and argued
-they are exploratory rather than explanatory. Our result is adjacent and
-distinct: their concern is that a map invites unverified claims about a
-competent agent, ours is that the same machinery produces a stable, legible map
-for an agent with no measurable edge.
+policies. \citet{atrey2020exploratory} then showed such maps support plausible
+but unfalsified hypotheses about what an agent attends to, and argued they are
+exploratory rather than explanatory. Our concern is adjacent and distinct:
+theirs is that a map invites unverified claims about a competent agent, ours is
+that the same machinery produces a stable, legible map for an agent with no
+measurable edge.
 
 \paragraph{Removal-based attribution and its reference distribution.}
 Masking a feature requires a distribution to replace it from, and the choice
-between the marginal and the conditional changes what the attribution
+between marginal and conditional changes what the attribution
 means~\citep{chen2020true,janzing2020causal}. \citet{frye2021manifold} sample on
-the data manifold to keep masked inputs plausible;
-\citet{covert2021removing} unify the removal-based family and make the reference
-choice explicit. Section~\ref{sec:manifold} inherits that debate: our span is
-invariant to the mode by construction, our ranking is not.
+the data manifold; \citet{covert2021removing} unify the removal-based family and
+make the reference choice explicit. We inherit that debate: our span is
+invariant to the mode by construction, our ranking is not
+(Appendix~\ref{app:survives}).
 
 \paragraph{Evaluation in XRL.}
 Surveys note that the absence of ground-truth explanations is a central obstacle,
@@ -661,6 +645,7 @@ Deletion curves agree: removing features in the order each ranking considers
 important, the outcome ranking degrades return faster (AUC $-187.8$ against
 $-165.3$; a random ranking gives $+366.6$).
 
+%%% MOVE-FIGURE
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_decoy.png}
@@ -805,30 +790,26 @@ while the environment null reaches $z=+117.6$. The two disagree on five of the
 sixteen. The choice of null is not a detail; it decides the verdict, and the
 construction already available is substantially the weaker of the two.
 
-Two environments qualify the claim rather than extend it. MountainCar is
-degenerate under \emph{both} constructions, at $0.00 \pm 0.00$: within our step
-budget no policy ever reaches the goal, every episode returns $-200$, and there
-is genuinely nothing to explain. The test declines, correctly, and contributes
-no evidence either way. Pendulum narrows the gap to $3\times$ because its
-environment null is itself wide ($37.79$): a blind agent on a dense-reward
-continuous task still varies in return. The $42\times$ figure is the extreme
-case, not the typical one.
-
-Acrobot additionally shows the test tracking \emph{whether there is anything to
-explain} rather than agent quality. Its agent fails completely until it learns
-($-500$ at $10\%$, $25\%$, $50\%$ of training), the span is exactly $0.00$ there,
-and the test correctly declines. CartPole behaves differently because its
-observations matter at every skill level. We do not claim undertrained agents
-generally produce empty explanations; they do not.
+Two environments qualify the claim. MountainCar is degenerate under \emph{both}
+constructions at $0.00 \pm 0.00$, because within our step budget no policy
+reaches the goal and there is genuinely nothing to explain; the test declines,
+correctly, and contributes no evidence. Pendulum narrows the gap to $3\times$
+because its environment null is itself wide ($37.79$), a blind agent on a
+dense-reward continuous task still varying in return. The $42\times$ figure is
+the extreme case, not the typical one. Acrobot shows the test tracking
+\emph{whether there is anything to explain} rather than agent quality: its agent
+scores $-500$ until it learns, the span is exactly $0.00$ there, and the test
+declines. We do not claim undertrained agents generally produce empty
+explanations; they do not.
 
 \paragraph{Why the parameter null is wide.}
 \label{par:why}
-The gap has a mechanism, and it is not about explanations at all. Recording each
-random network's \emph{unmasked} return alongside its span
+The gap has a mechanism, and it is not about explanations. Recording each random
+network's \emph{unmasked} return alongside its span
 (Figure~\ref{fig:conjecture}) shows the parameter null's width is, to three
-significant figures, the spread of random-initialisation return: $138.38$ against
-$138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot, $135.49$ against
-$131.42$ on Pendulum, and $0.00$ against $0.00$ on MountainCar.
+significant figures, the spread of random-initialisation return: $138.38$
+against $138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot, $135.49$
+against $131.42$ on Pendulum.
 
 The reason is visible in the decomposition $\Delta = \vfn(N) - \vfn(\emptyset)$.
 Taking the variance over random initialisations,
@@ -859,6 +840,7 @@ trained to convergence and land near a common blind-optimal return; that makes
 it the better of the two references, and Section~\ref{sec:nullchoice} onward
 shows it is still not one we would defend.
 
+%%% MOVE-FIGURE
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_conjecture.png}
@@ -998,6 +980,7 @@ are trained \emph{and} attributed on synthetic signal-free corpora, so their
 spans are measured on synthetic episodes while the observed span is measured on
 real ones. The two quantities being compared are not measured on the same thing.
 
+%%% MOVE-FIGURE
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_nullchoice.png}
@@ -1117,6 +1100,7 @@ span has not moved at all. A reference distribution that tightens with its own
 training budget cannot be read as a property of the agent under test, and a test
 whose verdict is set by that budget is measuring the budget.
 
+%%% MOVE-FIGURE
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_budget.png}
@@ -1130,19 +1114,15 @@ own training budget cannot be read as a property of the agent under test.}
 \label{sec:permuted}
 
 Section~\ref{sec:matched} leaves an obvious gap: hold the corpus fixed
-\emph{and} keep the null agents sighted. There is a natural way to do it, and it
-is the construction this paper claimed to be supplying all along. Permute the
-outcomes across episodes and leave everything else alone. The observation stream
-is untouched, because the feature block is a function of the quote and spot
-arrays and never reads the settlement, so no observation moves by a single bit.
-The marginal outcome rate is preserved exactly, since a relabelling is not a
-resample. This is the direct analogue of the label-permutation test of
-\citet{adebayo2018sanity}.
+\emph{and} keep the null agents sighted. Permuting the outcomes across episodes
+does both, and is the direct analogue of the label-permutation test of
+\citet{adebayo2018sanity}. No observation moves by a single bit, because the
+feature block reads the quote and spot arrays and never the settlement, and a
+relabelling preserves the marginal outcome rate exactly.
 
-It has power and specificity (Figure~\ref{fig:constructions}): on the planted
-signal it fires at $z=+10.48$, and
-on the signal-free corpus it declines at $z=+1.75$. No null collapses. It is
-nonetheless unusable, and the way it fails is the most instructive of the three.
+It has power and specificity, and no null collapses
+(Figure~\ref{fig:constructions}). It is nonetheless unusable, and the way it
+fails is the most instructive of the three.
 
 \begin{center}\footnotesize
 \begin{tabular}{lrrrl}
@@ -1163,23 +1143,19 @@ episode where the observed agent earns $-1.13$. They are not agents with nothing
 to learn; they are agents with a great deal to learn.
 
 \paragraph{Permuting a label that the observations forecast.}
-The price is a forecast of the outcome. Permuting the outcome leaves the
-forecast in place and attaches it to a different contract, so the market becomes
-grossly mispriced: a contract whose price has moved to $0.99$ now settles at
-$0.49$. Fading the terminal price, a rule needing nothing but the quote, earns
-$-0.005$ per contract in the real corpus and $+0.486$ in the permuted one, which
-at the position cap is roughly \$49 an episode. Calibration error rises from
-$0.007$ to $0.456$.\footnote{Terminal mid on the training split in eight
-quantile bins, which is not the estimator behind the figure in
-Section~\ref{sec:market}; only the contrast is meant to be read.} The null
-agents learn that arbitrage, it requires seeing the price, and their spans
-inflate accordingly.
-
-This is not a quirk of prediction markets. \emph{Wherever an observation is a
-forecast of the label, permuting the label makes that forecast exploitably
-wrong}, and the null agents are handed a task easier than the real one rather
-than harder. Supervised learning does not have this problem because the model
-does not act on its input and cannot trade against it.
+The price forecasts the outcome, so permuting the outcome leaves the forecast
+attached to a different contract and the market becomes grossly mispriced.
+Fading the terminal price, a rule needing nothing but the quote, earns $-0.005$
+per contract in the real corpus and $+0.486$ in the permuted one, roughly \$49
+an episode at the position cap; calibration error rises from $0.007$ to
+$0.456$.\footnote{Terminal mid on the training split in eight quantile bins,
+which is not the estimator behind the figure in Section~\ref{sec:market}; only
+the contrast is meant to be read.} The null agents learn that arbitrage, it
+requires seeing the price, and their spans inflate accordingly. \emph{Wherever
+an observation forecasts the label, permuting the label makes that forecast
+exploitably wrong}, and the null agents are handed an easier task than the real
+one. Supervised learning escapes this because the model does not act on its
+input.
 
 \begin{figure*}[t]
 \centering
@@ -1194,14 +1170,13 @@ null.}
 \label{fig:constructions}
 \end{figure*}
 
+%%% MOVE-BLOCK: The stratified permutation
 \paragraph{The obvious repair, and why it is vacuous here.}
-The permutation fails because it destroys calibration. The obvious fix is to
-stratify: shuffle outcomes only among contracts the market priced alike, so each
-price bucket keeps its own base rate and the arbitrage never appears. This is
-sound, and it asks a sharper question than the plain permutation, namely whether
-the agent knows anything \emph{the price does not}. It also costs nothing to
-test, since measuring how much a relabelling removes and how much it distorts
-requires no training at all.
+The fix is to stratify: shuffle outcomes only among contracts the market priced
+alike, so each price bucket keeps its base rate and the arbitrage never appears.
+This asks a sharper question than the plain permutation, whether the agent knows
+anything \emph{the price does not}, and costs nothing to test, since measuring
+what a relabelling removes and distorts requires no training.
 
 \begin{center}\footnotesize
 \begin{tabular}{rrrrr}
@@ -1217,27 +1192,22 @@ Buckets & Labels moved & Label corr. & Calib. err. & Fade edge \\
 \end{tabular}
 \end{center}
 
-Stratifying does exactly what it was meant to: from eight buckets on, the
-calibration error returns to the real corpus's $0.007$ and the fade edge to
-zero. The arbitrage is gone. But the relabelling now moves only $5$--$6\%$ of
-outcomes, and the permuted labels stay correlated at $0.88$--$0.90$ with the
-true ones, at \emph{every} resolution including the coarsest. A world that is
+It does what it was meant to: from eight buckets on, calibration returns to the
+real corpus's $0.007$ and the fade edge to zero. But the relabelling then moves
+only $5$--$6\%$ of outcomes, and the permuted labels stay correlated at
+$0.88$--$0.90$ with the true ones at \emph{every} resolution. A world that is
 ninety percent the real world is not a null.
 
-The reason is a property of the domain rather than of the construction. The
-terminal price correlates $0.950$ with the outcome; $88.7\%$ of episodes end
-within $0.1$ of a bound, and there the price is right $99.4\%$ of the time. So
-``information beyond the price'' lives in a small minority of episodes, and a
-relabelling that removes only that cannot differ much from the real data no
-matter how the buckets are drawn. The construction removes the right thing.
-There is almost none of it here to remove.
+That is a property of the domain, not the construction. The terminal price
+correlates $0.950$ with the outcome; $88.7\%$ of episodes end within $0.1$ of a
+bound, where the price is right $99.4\%$ of the time. Information beyond the
+price therefore lives in a small minority of episodes, and a relabelling that
+removes only that cannot differ much from the real data however the buckets are
+drawn. The construction removes the right thing; there is almost none of it here
+to remove. Unlike the other three this failure is contingent, and we say so
+instead of generalising from one market.
 
-We report this as a fourth failure with a fourth mechanism, and note that unlike
-the other three it is contingent: in a domain where observations carry
-substantial information beyond the single best predictor, stratified permutation
-may well work. We have no evidence either way, and say so instead of
-generalising from one market.
-
+%%% MOVE-END
 \paragraph{The pattern.}
 Four constructions and four failures. The first three share a shape: removing
 the information also perturbs something else, and the perturbation decides the
@@ -1263,27 +1233,24 @@ so faithfully that it removes almost no information \\
 \end{tabular}
 \end{center}
 
-A null for reinforcement learning has to remove the information while leaving
-the observation stream, the agent's responsiveness, and the task's difficulty
-intact. The first three constructions each sacrifice exactly one of those. The
-fourth sacrifices none and removes nothing, which suggests the requirements are
-closer to being in tension than to being jointly satisfiable, at least where one
-observation nearly determines the outcome. \citet{huber2022benchmarking} observed that the
-data-randomisation test has no obvious RL analogue. We set out to supply one and
-instead have an account of why it is hard.
+A null has to remove the information while leaving the observation stream, the
+agent's responsiveness, and the task's difficulty intact. The first three
+constructions each sacrifice exactly one. The fourth sacrifices none and removes
+nothing, which suggests the requirements are closer to being in tension than
+jointly satisfiable, at least where one observation nearly determines the
+outcome. \citet{huber2022benchmarking} observed that the data-randomisation test
+has no obvious RL analogue. We set out to supply one and instead have an account
+of why it is hard.
 
 \paragraph{What we keep.}
-The results in this paper use the signal-free-corpus null. In the cases
-measured here its additional corpus variation broadens the reference and
-produces the most conservative of the candidate verdicts we evaluated, which is
-the direction that favours declining. We do not claim this holds in general:
-varying the corpus moves the reference's centre as well as its spread, and a
-shift in the centre can offset a wider spread, as the outcome-permutation null
-demonstrates by moving the mean far enough to put the observed span fifteen
-standard deviations below it. What we can say is which way the bias ran in these
-cases, and we could not have said even that without building the other two.
-The stratified permutation we suggested as the obvious repair is tested above
-and is vacuous in this market, though for a reason that may not hold elsewhere.
+The results in this paper use the signal-free-corpus null. In the cases measured
+its corpus variation broadens the reference and gives the most conservative of
+the candidate verdicts, the direction that favours declining. We do not claim
+this holds generally: varying the corpus moves the reference's centre as well as
+its spread, and a shift in centre can offset a wider spread, as the permutation
+null shows by moving the mean far enough to put the observed span fifteen
+standard deviations below it. What we can say is which way the bias ran here,
+and we could not have said even that without building the other three.
 
 \section{What survives the choice of null}
 
@@ -1648,60 +1615,44 @@ hold is easily mistaken for one that might not have.
 
 \section{Limitations}
 
-\textbf{The construction is adapted.} The test is the data-randomisation test
-of \citet{adebayo2018sanity} with an RL-appropriate null; the outcomes framing is
+\textbf{The construction is adapted.} The test is the data-randomisation test of
+\citet{adebayo2018sanity} with an RL-appropriate null; the outcomes framing is
 \citet{beechey2023sverl}'s; deletion-based fidelity is standard.
 
 \textbf{The span measures information in aggregate.} An explanation could clear
-the test and still misattribute among features. Section~\ref{sec:robust} shows
-the ranking is scheme-dependent even when the verdict is not, and
-Section~\ref{sec:manifold} shows it is masking-dependent too, to the point of
-disagreeing on the most important feature. Only the verdict survives both.
+the test and still misattribute among features. The ranking is
+scheme-dependent and masking-dependent, to the point of disagreeing on the most
+important feature (Appendix~\ref{app:survives}). Only the verdict survives both.
 
-\textbf{Our conditional masker is an approximation.} Our conditional
-masker is $k$-nearest-neighbour in the kept features, which is a practical
-proxy for $p(x_{\bar S} \mid x_S)$ and inherits the usual difficulties in high
-dimension. It is adequate to show the two modes differ; it is not a claim to
-have sampled the true conditional. Neither mode fixes the deeper issue that
+\textbf{Masking is approximated, and temporal credit assignment is out of
+scope.} Our conditional masker is $k$-nearest-neighbour in the kept features, a
+practical proxy for $p(x_{\bar S} \mid x_S)$ that inherits the usual
+difficulties in high dimension. Neither mode fixes the deeper issue that
 replacements are redrawn each timestep, so masked \emph{states} are plausible
-while masked \emph{trajectories} are not.
+while masked \emph{trajectories} are not. Masking a feature for a whole episode
+measures whether it mattered, not when, which is
+FastSVERL's~\citep{beechey2025fastsverl} territory. Masked coalitions also induce
+a different state distribution, so estimates are on-policy for the masked policy
+and not counterfactuals about the unmasked one.
 
-\textbf{Temporal credit assignment is out of scope.} Masking a feature for a
-whole episode measures whether it mattered, not when. This is
-FastSVERL's~\citep{beechey2025fastsverl} territory.
-
-\textbf{Off-policy attribution is not handled.} Masked coalitions induce a
-different policy and therefore a different state distribution; estimates are
-on-policy for the masked policy, not counterfactuals about the unmasked one.
-
-\textbf{The width correspondence is measured on four environments.} The correspondence
-between the parameter null's width and initialisation-return variance is close
-to exact on each task we ran, and it has a mechanism, but four points cannot
+\textbf{The width correspondence is measured on four environments.} It is close
+to exact on each task we ran and it has a mechanism, but four points cannot
 establish a law. We report the correspondence, not a fitted relationship.
 
 \textbf{The null construction is chosen, not derived.} We keep the
-signal-free-corpus null because the corpus-matched alternative fails
+signal-free-corpus null because the alternatives fail
 (Section~\ref{sec:matched}), not because we can show it is optimal. Its known
-fault is that it varies the corpus as well as the information, which widens the
-reference and biases toward declining. A construction that holds the corpus
-fixed \emph{and} keeps the null agents sighted would dominate both, and we do
-not have one.
-
-\textbf{The outcome-level canonical check is run at a reduced budget.}
-Section~\ref{sec:canonical} repeats the check on the outcome target at 64
-coalitions, 150 episodes and 3 seeds, because each coalition costs a batch
-replay. The per-stage standard deviations are correspondingly large (up to
-$0.30$), so we read only the fully randomised endpoints and the ordering, not
-the intermediate rows.
+fault is that it varies the corpus as well as the information. A construction
+that holds the corpus fixed \emph{and} keeps the null agents sighted would
+dominate, and we do not have one.
 
 \textbf{Scope.} One real domain and four classic-control tasks; one attribution
 family for the outcome-level tests. All four control tasks have small
 observation spaces, so nothing here speaks to pixel-based or high-dimensional
-agents, where the reference distribution is itself the hard problem. Box2D
-environments were deliberately excluded: they require a system-level build
-dependency, which would trade the one-command reproduction for one more
-observation dimension. Corpus membership is not reproducible across time, though
-content is.
+agents, where the reference distribution is itself the hard problem. The
+outcome-level canonical check runs at a reduced budget
+(Appendix~\ref{app:canonical}), so we read only its endpoints. Corpus membership
+is not reproducible across time, though content is.
 
 \section{Conclusion}
 

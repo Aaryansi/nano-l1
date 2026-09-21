@@ -93,3 +93,15 @@ docs/paper/tmlr/references.bib
 # submission artifacts, regenerable
 docs/paper/tmlr/supplementary.zip
 docs/paper/tmlr/abstract.txt
+
+# generated build targets
+docs/paper/core/main.tex
+docs/paper/core/figures/
+docs/paper/core/references.bib
+docs/paper/core/*.sty
+docs/paper/core/*.bst
+
+# unzipped supplementary staging area, rebuilt when submitting
+docs/paper/tmlr/code/
+# renamed copies prepared for upload
+docs/paper/Singh_*.pdf
