@@ -407,18 +407,32 @@ test.
 
 \paragraph{What a verdict does and does not establish.}
 \label{par:scope}
-The test is about the observation channel in aggregate, not about any one
-feature. A rejection says the agent's attribution span is distinguishable from
-the spans of agents trained where the observation channel carries no
-exploitable structure, which is evidence that there is something outcome-relevant
-to explain. It is not evidence that the per-feature decomposition is correct,
-and Sections~\ref{sec:robust} and~\ref{sec:manifold} show the ranking moving
-under choices that leave the verdict alone. Four claims are worth keeping
-separate, because the argument slides between them if they are not: that the
-observations carry information, that the agent learned it, that the observations
-affect behaviour, and that they contribute to return. This test speaks to the
-last of those, and Section~\ref{sec:targets} shows the first three can disagree
-with it on the same agent.
+$\Delta$ is an aggregate difference in expected return under an intervention on
+the observation channel. That is all it is, and three things follow that are
+easy to elide.
+
+\emph{It is not a measure of attribution fidelity.} $\Delta$ is the total the
+per-feature values sum to, so an attribution vector that is wrong about every
+feature has the same $\Delta$ as one that is right about all of them, provided
+the totals agree. A rejection therefore says something about the observation
+channel and nothing about whether the decomposition across features is correct.
+This is a limit of the statistic, not of the estimator, and no increase in
+sample size addresses it.
+
+\emph{Contributions can cancel.} Features that help and features that hurt
+offset inside the sum, so a $\Delta$ near the null is consistent with an agent
+that uses its observations heavily in offsetting directions. We report the
+aggregate because efficiency makes it cheap and method-independent, and that
+cheapness is bought with exactly this blind spot.
+
+\emph{Four claims are distinct and the argument slides between them if they are
+not kept apart}: that the observations carry information, that the agent learned
+it, that the observations affect its behaviour, and that they contribute to its
+return. This test speaks only to the last. An agent can condition on its
+observations in a well-formed way and still earn nothing, which is not the same
+as an empty explanation, and Section~\ref{sec:targets} shows the first three
+disagreeing with the fourth on the same agent. Where this paper says an
+explanation is ``empty'' it means the fourth claim and no other.
 
 \section{Experimental setup}
 
@@ -1346,10 +1360,20 @@ the feature is load-bearing does suppressing it cost return (right).}
 
 The attribution is equally suppressible in both cases ($92\%$ and $97\%$). What
 differs is the price: where the feature is the planted signal, suppressing it
-destroys $81\%$ of return; on the market it costs nothing measurable.
-Explanations are steerable at no cost exactly where they are not tracking
-anything, corroborating Section~\ref{sec:empty} by a route sharing no machinery
-with the null test. The control matters: had steering succeeded on both corpora,
+destroys $81\%$ of return, while on the market no return difference is detected
+($p=0.38$).
+
+\paragraph{Not detected is not preserved.} A non-significant paired bootstrap
+does not establish that performance is unchanged; it establishes that this
+experiment, at three seeds and this episode count, did not detect a change. We
+have not run an equivalence or non-inferiority test, and the claim we make is
+the weaker one: a feature's attribution can be suppressed almost entirely
+without a detectable cost in return. The penalty reported here
+($\lambda=20$) is fixed in advance rather than selected as the strongest
+suppression, and the $p$-value pools every matched episode across seeds rather
+than averaging per-seed $p$-values, neither of which the first version of this
+experiment did. The contrast with the planted signal is what carries the
+argument, and that contrast is large: $81\%$ of return against none detected. The control matters: had steering succeeded on both corpora,
 the penalty would merely be defeating the attribution method.
 
 \paragraph{Equal return is not equal behaviour.} An earlier version of this

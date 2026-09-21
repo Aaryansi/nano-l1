@@ -86,13 +86,32 @@ class BlindObservation(gym.ObservationWrapper):
     than of information, which would be a different experiment.
     """
 
-    def __init__(self, env: gym.Env, mean: np.ndarray, std: np.ndarray, seed: int = 0):
+    def __init__(self, env: gym.Env, mean: np.ndarray, std: np.ndarray,
+                 seed: int = 0, pool: np.ndarray | None = None):
+        """`pool`, when given, is a buffer of real observations to resample.
+
+        drawing each coordinate from an independent gaussian destroys any
+        constraint the observation space imposes between coordinates. on
+        Pendulum the observation is (cos theta, sin theta, thetadot), so
+        cos^2 + sin^2 must equal one; under independent draws matched only on
+        per-coordinate moments, 3.5% of blinded observations satisfy that.
+        those agents are not seeing uninformative pendulum states, they are
+        seeing states no pendulum can occupy, which confounds removing
+        information with leaving the observation manifold.
+
+        resampling whole observation vectors from a buffer of real ones removes
+        the information (any draw is independent of the current state) while
+        keeping every within-observation constraint exactly satisfied.
+        """
         super().__init__(env)
         self._mean = np.asarray(mean, dtype=np.float32)
         self._std = np.asarray(std, dtype=np.float32)
+        self._pool = None if pool is None else np.asarray(pool, dtype=np.float32)
         self._rng = np.random.default_rng(seed)
 
     def observation(self, observation):  # noqa: D102
+        if self._pool is not None:
+            return self._pool[self._rng.integers(0, len(self._pool))]
         return self._rng.normal(self._mean, self._std).astype(np.float32)
 
 
@@ -110,6 +129,26 @@ def observation_moments(env_id: str, n_steps: int = 4000, seed: int = 0):
     env.close()
     arr = np.asarray(rows, dtype=np.float64)
     return arr.mean(axis=0), arr.std(axis=0) + 1e-8
+
+
+def observation_pool(env_id: str, n_steps: int = 4000, seed: int = 0) -> np.ndarray:
+    """a buffer of real observations, for manifold-preserving blinding.
+
+    same rollout as observation_moments, but keeping the observations rather
+    than reducing them to per-coordinate moments. resampling from this removes
+    the information without leaving the observation manifold.
+    """
+    env = make_env(env_id)
+    rng = np.random.default_rng(seed)
+    obs, _ = env.reset(seed=seed)
+    rows = []
+    for _ in range(n_steps):
+        rows.append(np.asarray(obs, dtype=np.float32))
+        obs, _, term, trunc, _ = env.step(int(rng.integers(0, env.action_space.n)))
+        if term or trunc:
+            obs, _ = env.reset()
+    env.close()
+    return np.asarray(rows, dtype=np.float32)
 
 
 @dataclass

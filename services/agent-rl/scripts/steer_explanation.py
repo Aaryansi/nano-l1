@@ -63,6 +63,10 @@ from nano_rl.explain.trajectory import explain_behaviour  # noqa: E402
 from nano_rl.metrics import paired_bootstrap_p_value  # noqa: E402
 
 
+# the penalty the paper reports, fixed before evaluation.
+REPORTED_COEF = 20.0
+
+
 def banner(t: str) -> None:
     print(f"\n{'=' * 80}\n{t}\n{'=' * 80}", flush=True)
 
@@ -159,12 +163,23 @@ def run_corpus(
             baseline_pnl = r["pnl"]
             p = float("nan")
         else:
-            # paired bootstrap on matched episodes, seed by seed, then pooled
-            ps = [
+            # one paired bootstrap over every matched episode from every seed.
+            #
+            # this previously took the median of the per-seed p-values, which
+            # is not a combined test: the median of k p-values has no defined
+            # size, and reporting it as "the" p-value understated how much
+            # seed-to-seed variation there is. pooling the paired differences
+            # keeps the pairing that makes the test worth running (both agents
+            # see the same episodes) and gives one quantity with a meaning.
+            pooled_a = np.concatenate([np.asarray(x) for x in r["pnl"]])
+            pooled_b = np.concatenate([np.asarray(x) for x in baseline_pnl])
+            p = paired_bootstrap_p_value(pooled_a, pooled_b)
+            # keep the spread so the reader can see the seeds disagree
+            per_seed = [
                 paired_bootstrap_p_value(a, b)
                 for a, b in zip(r["pnl"], baseline_pnl)
             ]
-            p = float(np.median(ps))
+            r["p_per_seed"] = [float(x) for x in per_seed]
         r["p_vs_baseline"] = p
         r.pop("pnl")
         rows.append(r)
@@ -177,16 +192,26 @@ def run_corpus(
         )
 
     base = rows[0]
-    best = min(rows[1:], key=lambda r: r["target_share_mean"]) if len(rows) > 1 else base
-    drop = 1.0 - (best["target_share_mean"] / max(base["target_share_mean"], 1e-9))
-    perf_ok = best["p_vs_baseline"] >= 0.05
+    # report a PRE-SPECIFIED penalty rather than the one with the strongest
+    # suppression. picking the best of four on the same evaluation that then
+    # reports it is a selection effect, and the paper quotes this number.
+    chosen = next((r for r in rows[1:] if r["coef"] == REPORTED_COEF), None)
+    if chosen is None:
+        chosen = rows[-1] if len(rows) > 1 else base
+    drop = 1.0 - (chosen["target_share_mean"] / max(base["target_share_mean"], 1e-9))
+    # a non-significant difference is not evidence of equivalence. this records
+    # only that no difference was detected at this power, which is the weaker
+    # and supportable claim.
+    undetected = chosen["p_vs_baseline"] >= 0.05
 
     print(f"\n  attribution to `{FEATURE_NAMES[target]}` fell "
-          f"{base['target_share_mean']:.1%} -> {best['target_share_mean']:.1%} "
-          f"({drop:.0%} reduction)")
-    print(f"  performance {'held' if perf_ok else 'CHANGED'} "
-          f"(p = {best['p_vs_baseline']:.3f} vs baseline)")
-    verdict = "STEERABLE" if (drop > 0.5 and perf_ok) else "NOT STEERABLE WITHOUT COST"
+          f"{base['target_share_mean']:.1%} -> {chosen['target_share_mean']:.1%} "
+          f"({drop:.0%} reduction) at the pre-specified coef {REPORTED_COEF:g}")
+    print(f"  return difference vs baseline: "
+          f"{'NOT DETECTED' if undetected else 'DETECTED'} "
+          f"(p = {chosen['p_vs_baseline']:.3f}; this is not an equivalence test)")
+    verdict = ("STEERABLE WITHOUT DETECTED COST" if (drop > 0.5 and undetected)
+               else "STEERING HAS A DETECTED COST")
     print(f"  -> {verdict}")
     return rows
 
@@ -233,9 +258,14 @@ def main() -> None:
     banner("WHAT THIS MEANS")
 
     def summarise(rows):
-        base, best = rows[0], min(rows[1:], key=lambda r: r["target_share_mean"])
-        drop = 1.0 - (best["target_share_mean"] / max(base["target_share_mean"], 1e-9))
-        return drop, best["p_vs_baseline"], base["return_mean"], best["return_mean"]
+        # same pre-specified penalty as above, and its own p-value. the
+        # previous version selected the strongest suppression and then paired
+        # it with a p-value taken from elsewhere, which is how the paper came
+        # to quote an attribution from one run beside a return from another.
+        base = rows[0]
+        pick = next((r for r in rows[1:] if r["coef"] == REPORTED_COEF), rows[-1])
+        drop = 1.0 - (pick["target_share_mean"] / max(base["target_share_mean"], 1e-9))
+        return drop, pick["p_vs_baseline"], base["return_mean"], pick["return_mean"]
 
     rd, rp, rb0, rb1 = summarise(real_rows)
     sd, sp, sb0, sb1 = summarise(synth_rows)
@@ -244,6 +274,7 @@ def main() -> None:
     print(f"  {'real market':<26}{rd:>10.0%}  {rb0:>+8.2f} -> {rb1:>+8.2f}{rp:>8.3f}")
     print(f"  {'learnable synthetic':<26}{sd:>10.0%}  {sb0:>+8.2f} -> {sb1:>+8.2f}{sp:>8.3f}")
 
+    # "no detected difference", not "performance preserved"
     steerable_real = rd > 0.5 and rp >= 0.05
     steerable_synth = sd > 0.5 and sp >= 0.05
 

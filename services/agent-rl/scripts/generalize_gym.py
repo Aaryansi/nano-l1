@@ -103,9 +103,17 @@ def run_env(env_id: str, args) -> dict:
 
     # ---- null 2: uninformative observation channel (this work)
     mean, std = observation_moments(env_id, seed=args.seed)
+    # blinding must remove the information without leaving the observation
+    # manifold. independent per-coordinate gaussians do leave it: on Pendulum
+    # the observation is (cos, sin, thetadot) and cos^2+sin^2 is identically
+    # one, which moment-matched draws satisfy for well under 1% of samples.
+    # resampling whole observations keeps every within-observation constraint
+    # exact while still carrying no information about the current state.
+    pool = observation_pool(env_id, seed=args.seed) if args.blind == "resample" else None
     env_spans = []
     for k in range(args.n_null):
-        blind = BlindObservation(make_env(env_id), mean, std, seed=2000 + k)
+        blind = BlindObservation(make_env(env_id), mean, std, seed=2000 + k,
+                                 pool=pool)
         net, _ = train_gym_ppo(
             blind, GymPPOConfig(seed=2000 + k), total_steps=args.null_steps
         )
@@ -195,6 +203,10 @@ def main() -> None:
     ap.add_argument("--n-null", type=int, default=12)
     ap.add_argument("--attr-episodes", type=int, default=20)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--blind", choices=("resample", "gaussian"), default="resample",
+                    help="how blinded observations are drawn; resample keeps "
+                         "the observation manifold, gaussian is the original "
+                         "moment-matched draw and is kept for comparison")
     args = ap.parse_args()
 
     out = Path(args.out)

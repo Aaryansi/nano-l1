@@ -153,3 +153,63 @@ class TestRandomize:
             net.policy_head.bias.fill_(5.0)
         randomize(net, ["policy_head"], seed=1)
         assert torch.allclose(net.policy_head.bias, torch.zeros_like(net.policy_head.bias))
+
+
+class TestBlindingPreservesTheObservationManifold:
+    """blinding must remove information without leaving the state space.
+
+    the first implementation drew each coordinate from an independent gaussian
+    matched to that coordinate's mean and variance. that destroys any
+    constraint the observation space imposes between coordinates. Pendulum's
+    observation is (cos theta, sin theta, thetadot), so cos^2 + sin^2 is
+    identically one; under independent draws it holds for well under 1% of
+    observations. the null agents were then not seeing uninformative pendulum
+    states but impossible ones, which confounds removing information with
+    leaving the manifold.
+    """
+
+    def _pool(self):
+        from nano_rl.envs.gym_null import observation_pool
+        return observation_pool("Pendulum-v1", n_steps=600, seed=0)
+
+    def test_real_observations_satisfy_the_constraint(self):
+        p = self._pool()
+        norm = p[:, 0] ** 2 + p[:, 1] ** 2
+        assert np.allclose(norm, 1.0, atol=1e-4)
+
+    def test_resampling_preserves_it_exactly(self):
+        from nano_rl.envs.gym_null import BlindObservation, make_env
+        p = self._pool()
+        env = BlindObservation(make_env("Pendulum-v1"), p.mean(0), p.std(0),
+                               seed=0, pool=p)
+        obs = np.stack([env.observation(None) for _ in range(300)])
+        norm = obs[:, 0] ** 2 + obs[:, 1] ** 2
+        assert np.allclose(norm, 1.0, atol=1e-4), "resampling must stay on the manifold"
+
+    def test_independent_gaussians_do_not(self):
+        # the regression this guards: if someone reverts to moment-matched
+        # gaussian draws, this fails and says why.
+        from nano_rl.envs.gym_null import BlindObservation, make_env
+        p = self._pool()
+        env = BlindObservation(make_env("Pendulum-v1"), p.mean(0), p.std(0), seed=0)
+        obs = np.stack([env.observation(None) for _ in range(300)])
+        norm = obs[:, 0] ** 2 + obs[:, 1] ** 2
+        on_manifold = np.mean(np.abs(norm - 1.0) < 0.01)
+        assert on_manifold < 0.1, (
+            "independent gaussian blinding leaves the manifold; this test "
+            "documents that, it is not an endorsement"
+        )
+
+    def test_resampled_draws_are_independent_of_the_true_state(self):
+        # the point of blinding: the draw must carry no information about now.
+        from nano_rl.envs.gym_null import BlindObservation, make_env
+        p = self._pool()
+        env = BlindObservation(make_env("Pendulum-v1"), p.mean(0), p.std(0),
+                               seed=1, pool=p)
+        true = p[10]
+        draws = np.stack([env.observation(true) for _ in range(200)])
+        # a blinded draw should be no closer to the true state than a random
+        # element of the pool is
+        d_draw = np.linalg.norm(draws - true, axis=1).mean()
+        d_pool = np.linalg.norm(p - true, axis=1).mean()
+        assert abs(d_draw - d_pool) < 0.25 * d_pool
