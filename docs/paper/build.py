@@ -42,6 +42,23 @@ RELOCATE = [
     "What did not survive",
 ]
 
+# how the relocated material is grouped in the appendix. a flat dump in source
+# order put "Reproducibility" under a heading called "Secondary analyses",
+# which is not what it is. subsections listed here are promoted under the
+# named parent; sections keep their own heading and appear in order after.
+APPENDIX_GROUPS = [
+    ("Experimental detail", [
+        "Reproducibility",
+        "Reproduction from scratch",
+    ]),
+    ("Additional results", [
+        "A positive control, under the blinded reference",
+        "How much edge is required",
+        "Estimation guarantees do not substitute",
+        "The canonical check, and what it answers instead",
+    ]),
+]
+
 # what the body says in place of each relocated section. these are claims, not
 # signposts: a reader who never opens the appendix should still learn the
 # result. keyed by the section title above.
@@ -54,7 +71,7 @@ tests cover the environment and the attribution implementations, and every
 numerical claim in this paper is asserted against its source artifact by a
 script that runs as the pipeline's final stage. Budgets, hardware, the exact
 commands, and a from-scratch rebuild on a different sample of the moving
-market window are in Appendix~\ref{app:repro}.
+market window are in \\elsewhere{sec:repro}.
 """,
     "A positive control, under the blinded reference": r"""
 A positive control on the same real episodes, holding corpus, features,
@@ -63,18 +80,18 @@ separates tasks and not datasets: an agent scored for \emph{calling} the
 settlement fires at $z=+3.39$ where the trading agent does not. It uses the
 blinded reference that Section~\ref{sec:matched} goes on to reject, so we
 report it as a controlled comparison and not as evidence the reference is
-sound (Appendix~\ref{app:positive}).
+sound (\\elsewhere{sec:positive}).
 """,
     "How much edge is required": r"""
 Sweeping planted signal strength puts the detection threshold near $+3.45$ per
 episode of measured edge, an order of magnitude above anything the market agent
-achieves (Appendix~\ref{app:edge}).
+achieves (\\elsewhere{sec:edge}).
 """,
     "Estimation guarantees do not substitute": r"""
 Monte Carlo certification of a top-$k$ ranking~\citep{goldwasser2024significance}
 is orthogonal to this: the market agent's top-5 ranking is fully certified and
 its span is still indistinguishable from an explanation of nothing
-(Appendix~\ref{app:certified}).
+(\\elsewhere{sec:certified}).
 """,
     "The canonical check, and what it answers instead": r"""
 Parameter randomisation is also used a second way, as
@@ -83,7 +100,7 @@ it moves. We ran that too. It clears the empty explanation on both explanatory
 targets we tried ($\rho=0.38$ on behaviour, $\rho=-0.02$ on outcomes), so
 passing it is not evidence that there is anything to explain. What it flags
 depends on the target, which is a second instance of this paper's thesis
-(Appendix~\ref{app:canonical}).
+(\\elsewhere{sec:canonical}).
 """,
     "What survives the choice of null": r"""
 \paragraph{What survives, and what does not.}
@@ -98,14 +115,14 @@ feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no measurable
 cost in return, so attribution is not identified by task performance.
 Bootstrapping the reference leaves every verdict unchanged in $100\%$ of
 replicates except the two blinded-real comparisons, at $64\%$ and $65\%$
-(Appendix~\ref{app:survives}).
+(\\elsewhere{sec:survives}).
 """,
     "What did not survive": r"""
 Seven predictions this project made were rejected on its own evidence,
 including our own expectation that instability would be the tell for an empty
 explanation and that the canonical check would agree with the null test. None
 of the surviving results depends on any of them
-(Appendix~\ref{app:rejected}).
+(\\elsewhere{sec:rejected}).
 """,
 }
 
@@ -123,7 +140,7 @@ a bound, so information beyond the price lives in a small minority of episodes
 and a relabelling that removes only that cannot differ much from the real data.
 The construction removes the right thing; there is almost none of it here to
 remove. Unlike the other three this failure is contingent on the domain
-(Appendix~\ref{app:secondary}).
+(\\elsewhere{sec:permuted}).
 """,
 }
 
@@ -170,26 +187,18 @@ def split_body(blocks: list[Block]) -> tuple[list[Block], list[Block]]:
     return body, appendix
 
 
-LABELS = {
-    "Reproducibility": "app:repro",
-    "A positive control, under the blinded reference": "app:positive",
-    "How much edge is required": "app:edge",
-    "Estimation guarantees do not substitute": "app:certified",
-    "The canonical check, and what it answers instead": "app:canonical",
-    "What survives the choice of null": "app:survives",
-    "What did not survive": "app:rejected",
-}
-
-
 def emit(blocks: list[Block]) -> tuple[str, str]:
     """render body and appendix, inserting each stub where its section was.
 
-    a stub is attached to the last body block written before the relocation,
-    so the reader meets the claim at the point in the argument where it was
-    originally made rather than discovering a gap.
+    a stub is attached where the relocation happened, so the reader meets the
+    claim at the point in the argument where it was originally made rather than
+    discovering a gap. the appendix is grouped by APPENDIX_GROUPS rather than
+    emitted in source order, so related material sits together under a heading
+    that describes it.
     """
     body: list[str] = []
-    appendix: list[str] = ["\n\\appendix\n"]
+    held: dict[str, str] = {}
+    loose: list[Block] = []
     active: int | None = None
 
     for b in blocks:
@@ -206,13 +215,24 @@ def emit(blocks: list[Block]) -> tuple[str, str]:
         if relocate and b.title in STUBS:
             body.append(STUBS[b.title].strip() + "\n")
 
-        t = b.text()
-        if b.title in LABELS:
-            head = f"\\{'sub' if b.level == 2 else ''}section{{{b.title}}}"
-            t = t.replace(head, head + f"\n\\label{{{LABELS[b.title]}}}", 1)
-        appendix.append(t)
+        grouped = any(b.title in titles for _, titles in APPENDIX_GROUPS)
+        if grouped:
+            held[b.title] = b.text()
+        else:
+            loose.append(b)
 
-    return "\n".join(body), "\n".join(appendix)
+    app: list[str] = ["\n\\appendix\n"]
+    for heading, titles in APPENDIX_GROUPS:
+        present = [t for t in titles if t in held]
+        if not present:
+            continue
+        app.append(f"\\section{{{heading}}}\n")
+        for t in present:
+            app.append(held[t])
+    for b in loose:
+        app.append(b.text())
+
+    return "\n".join(body), "\n".join(app)
 
 
 def main() -> None:
@@ -267,10 +287,10 @@ def main() -> None:
     doc = doc.replace("\\bibliographystyle{plainnat}\n\\bibliography{references}", "")
     doc = doc.replace("\\end{document}", "")
     if moved_blocks:
-        parts = [f"\\subsection{{{t}}}\n{c}" for t, c in moved_blocks]
-        doc = doc.replace("\n\\appendix\n",
-                          "\n\\appendix\n\n\\section{Secondary analyses}\n"
-                          "\\label{app:secondary}\n\n" + "\n\n".join(parts) + "\n", 1)
+        parts = "\n\n".join(f"\\subsection{{{t}}}\n{c}" for t, c in moved_blocks)
+        doc = doc.replace("\\section{Additional results}\n",
+                          "\\section{Additional results}\n" + parts + "\n", 1)
+
     if moved_figs:
         figs = "\n\n".join(moved_figs)
         doc = doc.replace("\n\\appendix\n",
@@ -284,6 +304,7 @@ def main() -> None:
     if not m:
         raise SystemExit("could not find the abstract in main.tex")
     abstract = m.group(1).strip()
+    doc = re.sub(r"\n{3,}", "\n\n", doc)
     (out / "main.tex").write_text(
         tmlr_preamble().replace("ABSTRACT_PLACEHOLDER", abstract) + doc)
 
@@ -315,8 +336,17 @@ def tmlr_preamble() -> str:
 \usepackage{enumitem}
 \usepackage{url}
 \captionsetup{font=small,labelfont=bf,skip=4pt}
+% at the default topfraction of 0.7 a page carrying a figure and a table cannot
+% also carry enough text, which is what leaves visible gaps mid-document.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{5}
 \setlength{\tabcolsep}{4pt}
 \newcommand{\vfn}{v}
+\newcommand{\elsewhere}[1]{Appendix~\ref{#1}}
 \title{No Free Null: Reference Distributions for Explaining\\
 Reinforcement Learning Agents}
 \author{\name Aaryan Singh \email singha9@rose-hulman.edu \\

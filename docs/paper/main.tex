@@ -75,6 +75,11 @@
 
 \newcommand{\vfn}{v}
 
+% Cross-references to material that is inline in this build and relocated to an
+% appendix in the short build. build.py redefines this; the label is the same
+% either way, so a reference cannot break by being moved.
+\newcommand{\elsewhere}[1]{Section~\ref{#1}}
+
 \title{\vspace{-1.5em}\bfseries No Free Null: Reference Distributions for Explaining\\Reinforcement Learning Agents}
 
 % TMLR is double-blind and requires anonymised submissions. Uncomment the
@@ -100,35 +105,37 @@
   \begin{quote}
   \small
   \textbf{Abstract.}
-Deciding whether an explanation of a reinforcement learning agent means
-anything requires a reference distribution: what the explanation would have
-looked like had the agent learned nothing. Reinforcement learning has no agreed
-way to build one, and we show the problem is harder than it appears. The
-construction available off the shelf, randomising network parameters to generate
-reference draws, has almost no power: across sixteen checkpoints on four control
-tasks it never exceeds $z=2.45$, and its width matches the standard deviation of
-random-initialisation return to three significant figures, so it measures the
-variance of initialisation rather than anything about the explanation. Run
-instead in its canonical form, as a similarity check on a single explanation, it
-answers a different question and clears the empty explanation on both
-explanatory targets we tried, so passing it is not evidence that there is
-anything to explain. We then
-build the three natural replacements and each fails differently. Training on a
+An attribution of a reinforcement learning agent cannot be interpreted without a
+reference distribution: what the explanation would have looked like had the
+agent learned nothing. We show that reinforcement learning does not have one it
+can rely on, and that the choice of construction decides the verdict.
+
+The motivating case is an agent on an efficient prediction market with no
+measurable edge. Its attributions are stable across seeds, separated beyond
+their own estimation error, and semantically legible. Every check we knew to
+apply passes, and the explanation is empty. We then build four reference
+distributions against which to test it, and each fails in its own way.
+Randomising network parameters to generate reference draws has almost no power:
+across sixteen checkpoints on four control tasks it never exceeds $z=2.45$, and
+a variance decomposition shows why, its width matching the standard deviation of
+random-initialisation return to three significant figures. Training on a
 signal-free corpus varies the corpus as well as the information. Blinding the
 observation channel removes the agent's capacity to respond, collapsing the
-reference onto a point mass and firing on a corpus constructed to contain no
-signal. Permuting the outcomes, the direct analogue of the supervised
-label-permutation test, leaves the market price forecasting a label it no longer
-matches and hands the null agents an arbitrage worth \$49 an episode, so the
-agent under test lands fifteen standard deviations \emph{below} its own null.
+reference onto a point mass that fires on a corpus built to contain no signal.
+Permuting the outcomes, the direct analogue of the supervised label-permutation
+test, leaves the market price forecasting a label it no longer matches and hands
+the null agents an arbitrage worth \$49 an episode, so the agent under test
+lands fifteen standard deviations \emph{below} its own null.
+
 In each construction we built, removing the information also perturbed something
-else, and the perturbation decided the verdict. We motivate this with a worked case in
-which an agent with no measurable edge produces an explanation that is stable
-across seeds, separated beyond its own estimation error, and semantically
-legible, and with a demonstration that such an explanation can be driven from
-$39.9\%$ to $3.2\%$ of attribution mass at no measurable cost in return. The
-choice of reference distribution is the substance of the problem, and it is a
-choice that is usually left implicit.
+else, and the perturbation decided the verdict. A usable null has to remove the
+information while leaving the observation stream, the agent's responsiveness and
+the task's difficulty intact; each of ours sacrifices exactly one. We also show
+that an attribution can be driven from $39.9\%$ to $3.2\%$ of total mass at no
+measurable cost in return, so it is not identified by task performance. We do
+not supply a construction that works. We supply an account of why the obvious
+ones do not, and evidence that a choice usually left implicit is the one that
+decides what an explanation is taken to mean.
   \end{quote}
   \vspace{1.2em}
   \end{@twocolumnfalse}
@@ -195,10 +202,10 @@ knew to apply passes (Section~\ref{sec:empty}).
 must matter, so we checked, found it measuring spans on a different corpus from
 the observation, and report what that is worth. Seven predictions this project
 made were rejected on its own evidence
-(Appendix~\ref{app:rejected}). Separately, an auxiliary penalty drives a
+(\elsewhere{sec:rejected}). Separately, an auxiliary penalty drives a
 feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no measurable
 cost in return, so attribution is not identified by task performance
-(Appendix~\ref{app:survives}).
+(\elsewhere{sec:survives}).
 \end{enumerate}
 
 \paragraph{What we do not claim.}
@@ -232,7 +239,7 @@ perturbations~\citep{ghorbani2019fragile}, and the detection of spurious
 correlations~\citep{adebayo2022spurious}. \citet{huber2022benchmarking} apply the
 parameter test to perturbation-based saliency for Atari agents and note the data
 test lacks an RL analogue. We supply a candidate, report that it fails, and run the canonical parameter
-test alongside it (Appendix~\ref{app:canonical}).
+test alongside it (\elsewhere{sec:canonical}).
 
 \paragraph{Manipulating explanations.}
 \citet{slack2020fooling} build adversarial classifiers that detect the
@@ -243,7 +250,7 @@ train a normal agent with an invariance penalty and the resulting explanation is
 not an attack. Separately, \citet{goldwasser2024significance} certify top-$k$
 rankings against Monte Carlo error; those guarantees concern the estimator and
 are orthogonal to whether the model learned anything
-(Appendix~\ref{app:certified}).
+(\elsewhere{sec:certified}).
 
 \paragraph{Saliency for RL agents.}
 \citet{greydanus2018visualizing} popularised perturbation saliency for Atari
@@ -261,7 +268,7 @@ means~\citep{chen2020true,janzing2020causal}. \citet{frye2021manifold} sample on
 the data manifold; \citet{covert2021removing} unify the removal-based family and
 make the reference choice explicit. We inherit that debate: our span is
 invariant to the mode by construction, our ranking is not
-(Appendix~\ref{app:survives}).
+(\elsewhere{sec:survives}).
 
 \paragraph{Evaluation in XRL.}
 Surveys note that the absence of ground-truth explanations is a central obstacle,
@@ -702,6 +709,7 @@ calibrated price is very informative. It is that the information is not
 attribution of the trading agent cannot tell those two situations apart.
 
 \subsection{How much edge is required}
+\label{sec:edge}
 
 Sweeping planted-signal strength calibrates the test (Figure~\ref{fig:power}).
 Detection begins near $+3.45$ per episode of \emph{measured} edge. The market
@@ -1253,6 +1261,7 @@ standard deviations below it. What we can say is which way the bias ran here,
 and we could not have said even that without building the other three.
 
 \section{What survives the choice of null}
+\label{sec:survives}
 
 \subsection{The explanatory target decides it too}
 \label{sec:targets}
@@ -1622,7 +1631,7 @@ hold is easily mistaken for one that might not have.
 \textbf{The span measures information in aggregate.} An explanation could clear
 the test and still misattribute among features. The ranking is
 scheme-dependent and masking-dependent, to the point of disagreeing on the most
-important feature (Appendix~\ref{app:survives}). Only the verdict survives both.
+important feature (\elsewhere{sec:survives}). Only the verdict survives both.
 
 \textbf{Masking is approximated, and temporal credit assignment is out of
 scope.} Our conditional masker is $k$-nearest-neighbour in the kept features, a
@@ -1651,7 +1660,7 @@ family for the outcome-level tests. All four control tasks have small
 observation spaces, so nothing here speaks to pixel-based or high-dimensional
 agents, where the reference distribution is itself the hard problem. The
 outcome-level canonical check runs at a reduced budget
-(Appendix~\ref{app:canonical}), so we read only its endpoints. Corpus membership
+(\elsewhere{sec:canonical}), so we read only its endpoints. Corpus membership
 is not reproducible across time, though content is.
 
 \section{Conclusion}
