@@ -40,10 +40,11 @@
         "p_normal": 0.0,
         "min_achievable_p_rank": 0.04,
         "z_score": Infinity,
-        "passes": true,
+        "passes": false,
+        "verdict": "UNRESOLVED (reference cannot decide at this alpha)",
         "n_null_samples": 24
       },
-      "fires": true
+      "fires": false
     },
     {
       "case": "null corpus",
@@ -85,10 +86,11 @@
         "p_normal": 0.0,
         "min_achievable_p_rank": 0.04,
         "z_score": Infinity,
-        "passes": true,
+        "passes": false,
+        "verdict": "UNRESOLVED (reference cannot decide at this alpha)",
         "n_null_samples": 24
       },
-      "fires": true
+      "fires": false
     },
     {
       "case": "real market",
@@ -131,11 +133,12 @@
         "min_achievable_p_rank": 0.04,
         "z_score": 1.932351032858232,
         "passes": false,
+        "verdict": "NOT DISTINGUISHABLE FROM NULL",
         "n_null_samples": 24
       },
       "fires": false
     }
   ],
-  "has_power": true,
-  "has_specificity": false
+  "has_power": false,
+  "has_specificity": true
 }

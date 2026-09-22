@@ -46,6 +46,7 @@
       "min_achievable_p_rank": 0.030303030303030304,
       "z_score": -0.33819373303385325,
       "passes": false,
+      "verdict": "NOT DISTINGUISHABLE FROM NULL",
       "n_null_samples": 32
     }
   },
@@ -93,6 +94,7 @@
       "min_achievable_p_rank": 0.030303030303030304,
       "z_score": 2.327845067372307,
       "passes": false,
+      "verdict": "NOT DISTINGUISHABLE FROM NULL",
       "n_null_samples": 32
     }
   },

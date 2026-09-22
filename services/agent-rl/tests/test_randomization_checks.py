@@ -213,3 +213,39 @@ class TestBlindingPreservesTheObservationManifold:
         d_draw = np.linalg.norm(draws - true, axis=1).mean()
         d_pool = np.linalg.norm(p - true, axis=1).mean()
         assert abs(d_draw - d_pool) < 0.25 * d_pool
+
+
+class TestRaggedTrainingLogs:
+    """the figure must not take down the pipeline.
+
+    a reduced-budget pass retrains only some seeds and leaves the rest at the
+    previous budget, so the per-seed logs differ in length. np.array() raises
+    on that. the pipeline died on this after the evaluation it depended on had
+    already succeeded, which is the worst place to fail: the expensive work was
+    done and thrown away.
+    """
+
+    def _logs(self, lengths):
+        return [
+            {"mean_return": [1.0] * n, "entropy": [0.5] * n,
+             "explained_var": [0.1] * n}
+            for n in lengths
+        ]
+
+    def test_equal_length_logs_plot(self, tmp_path):
+        from nano_rl import plots
+        out = tmp_path / "a.png"
+        plots.learning_curves(self._logs([40, 40, 40]), out)
+        assert out.exists()
+
+    def test_ragged_logs_plot_instead_of_raising(self, tmp_path):
+        from nano_rl import plots
+        out = tmp_path / "b.png"
+        plots.learning_curves(self._logs([30, 100, 100]), out)
+        assert out.exists()
+
+    def test_a_single_log_plots(self, tmp_path):
+        from nano_rl import plots
+        out = tmp_path / "c.png"
+        plots.learning_curves(self._logs([12]), out)
+        assert out.exists()

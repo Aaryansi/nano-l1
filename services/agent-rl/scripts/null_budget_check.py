@@ -104,7 +104,7 @@ def main() -> None:
                 BinaryMarketEnv(split.train, normalizer=norm, max_position=100.0),
                 mean_o, sd_o, seed=5000 + k)
             a = train_on(blind, updates, args.seed + k)
-            spans.append(span(a, roll, bg, args.seed + k))
+            spans.append(masked_span(a, roll, bg, args.seed + k))
             rets.append(float(roll.run(greedy_policy(a))["returns"].mean()))
         arr = np.array(spans)
         r = test_span_against_null(observed, spans)
@@ -115,7 +115,7 @@ def main() -> None:
                      "result": r.as_dict(), "fires": bool(r.passes)})
         print(f"  {updates:>9}{arr.mean():>+12.3f}{arr.std(ddof=1):>10.3f}"
               f"{r.z_score:>+9.2f}{np.mean(rets):>+14.3f}"
-              f"{('informative' if r.passes else 'not distinguishable'):>22}",
+              f"{r.verdict.split(' (')[0].lower():>22}",
               flush=True)
 
     banner("VERDICT")

@@ -121,7 +121,8 @@ a variance decomposition shows why, its width matching the standard deviation of
 random-initialisation return to three significant figures. Training on a
 signal-free corpus varies the corpus as well as the information. Blinding the
 observation channel removes the agent's capacity to respond, collapsing the
-reference onto a point mass that fires on a corpus built to contain no signal.
+reference onto a point mass, so that on two of our three cases it cannot
+decide at all.
 Permuting the outcomes, the direct analogue of the supervised label-permutation
 test, leaves the market price forecasting a label it no longer matches and hands
 the null agents an arbitrage worth \$49 an episode, so the agent under test
@@ -188,8 +189,8 @@ outcomes; what it flags depends on the target
 
 \item \textbf{Three replacements, three distinct failures.} A signal-free corpus
 varies the corpus. Blinding the observation channel removes the agent's capacity
-to respond, collapsing the reference to a point mass that fires on a corpus
-built to contain no signal. Permuting the outcomes leaves the price forecasting
+to respond, collapsing the reference to a point mass that decides nothing on
+two of our three cases. Permuting the outcomes leaves the price forecasting
 a label it no longer matches and hands the null agents an arbitrage worth \$49
 an episode (Sections~\ref{sec:nullchoice}--\ref{sec:permuted}).
 
@@ -415,8 +416,9 @@ overwhelming evidence.
 It is tempting to read a degenerate null as maximally informative, since any
 deviation from a point mass is infinitely surprising. An earlier version of this
 paper said exactly that, and Section~\ref{sec:matched} shows it is wrong: a
-point-mass null has no specificity, and we produce a false positive with one on
-a corpus that provably contains no signal. Degeneracy is a defect of the
+point-mass reference cannot be consulted at all, and
+Section~\ref{sec:matched} produces one on two of three cases including a corpus
+that provably contains no signal. Degeneracy is a defect of the
 construction and a reason to distrust the reference, not a strong result. It
 occurs whenever a task lets the null agents converge on a single behaviour,
 which is a property of the null construction rather than of the agent under
@@ -530,7 +532,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 318 tests cover the environment, the attribution implementations, and
+command; 321 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -1075,17 +1077,28 @@ observation. We built it and ran all three cases. It cannot be used.
 \toprule
 Case & Span & Null & $z$ & Verdict \\
 \midrule
-planted signal & $+74.69$ & $0.00 \pm 0.00$ & undef. & fires \\
-\textbf{null corpus} & $\mathbf{+13.90}$ & $0.00 \pm 0.00$ & undef. &
-\textbf{fires} \\
+planted signal & $+74.69$ & $0.00 \pm 0.00$ & undef. & unresolved \\
+\textbf{null corpus} & $\mathbf{+13.90}$ & $\mathbf{0.00 \pm 0.00}$ & undef. &
+\textbf{unresolved} \\
 real market & $+7.40$ & $2.97 \pm 2.29$ & $+1.93$ & declines \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The middle row is a corpus constructed to contain no informative feature. The
-test fires on it. The construction has power and no specificity, and a test with
-no specificity is not a test.
+On both synthetic corpora the reference collapses to a point mass, so there is
+no scale against which to measure the observation and the comparison decides
+nothing. That includes the middle row, a corpus constructed to contain no
+informative feature, where a working reference should have declined and
+this one cannot even be consulted.
+
+An earlier version of this paper read those rows as rejections and called them
+a false positive, because the decision rule then in use compared the rank score
+against $\max(\alpha, 1/(n+1))$ and a point-mass reference puts the observation
+at the floor by construction. That was the wrong reading of the right
+observation. The defect is not that the construction fires on a corpus with no
+signal; it is that the construction produces a reference that cannot be used at
+all, on two of the three cases we tried. A test that returns no verdict on
+two thirds of its inputs is not a test.
 
 \paragraph{The two nulls are not the same null.}
 The mechanism explains the original design better than the original design
@@ -1125,19 +1138,19 @@ approaches abstention, and the verdict on the real market changing with it:
 \toprule
 Updates & Null mean $\pm$ sd & $z$ & Blind return & Verdict \\
 \midrule
-20 & $+5.60 \pm 3.27$ & $+0.55$ & $-8.74$ & declines \\
-40 & $+3.55 \pm 2.25$ & $+1.71$ & $-4.13$ & declines \\
-80 & $+0.55 \pm 1.62$ & $\mathbf{+4.23}$ & $-0.18$ & \textbf{fires} \\
-160 & $-0.02 \pm 0.04$ & $\mathbf{+203.6}$ & $-0.05$ & \textbf{fires} \\
+20 & $+4.88 \pm 3.18$ & $+0.80$ & $-9.55$ & declines \\
+40 & $+2.97 \pm 2.29$ & $+1.93$ & $-4.86$ & declines \\
+80 & $+0.28 \pm 1.16$ & $\mathbf{+6.16}$ & $-0.10$ & \textbf{fires} \\
+160 & $-0.01 \pm 0.04$ & $\mathbf{+204.8}$ & $-0.03$ & \textbf{fires} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 So the construction does not merely fail on synthetic corpora. Trained to
 convergence it reports the market agent's explanation as informative at
-$z=+203.6$, which is the opposite of what every other measurement in this paper
+$z=+204.8$, which is the opposite of what every other measurement in this paper
 says, and it does so for a reason that has nothing to do with the agent: the
-null's standard deviation has fallen from $3.27$ to $0.04$ while the observed
+null's standard deviation has fallen from $3.18$ to $0.04$ while the observed
 span has not moved at all. A reference distribution that tightens with its own
 training budget cannot be read as a property of the agent under test, and a test
 whose verdict is set by that budget is measuring the budget.
@@ -1205,7 +1218,7 @@ input.
 \caption{Two null constructions on the same three cases. The vertical line is
 the observed span and does not move; only the reference does. Blinding the
 observation channel yields a point mass on both synthetic corpora, which is why
-it fires on the one built to contain no signal. Permuting the outcomes yields a
+it cannot decide on either, including the one built to contain no signal. Permuting the outcomes yields a
 usable reference everywhere, and on the real market places it so far above the
 observed span that the agent lands fifteen standard deviations below its own
 null.}
@@ -1632,7 +1645,8 @@ tendency was replaced by a decomposition with a stated antecedent. \\
 A null that holds the corpus fixed, by blinding the observation channel, is more
 principled and should replace the shared signal-free-corpus null. &
 The same verdicts against a tighter reference, and more power. &
-\textbf{Rejected.} It fires on a corpus built to contain no signal, and its
+\textbf{Rejected.} Its reference collapses to a point mass on two of three
+cases, including a corpus built to contain no signal, so it decides nothing there; and its
 verdict on the real market flips with the null agents' training budget
 (Section~\ref{sec:matched}). Blinding removes the capacity to respond to
 observational structure, not only the information. \\
@@ -1715,8 +1729,8 @@ not have one it can rely on. Repurposing parameter randomisation to supply
 reference draws measures the variance of initialisation; run as its authors
 intended it stays sound, but it answers a different question and clears the
 explanation we show to be empty. Of the three natural replacements, one varies the
-corpus, one removes the agent's capacity to respond and fires on a corpus built
-to contain no signal, and one hands the null agents an arbitrage. In each case
+corpus, one removes the agent's capacity to respond and collapses to a
+reference that cannot decide, and one hands the null agents an arbitrage. In each case
 removing the information perturbed something else, and the perturbation decided
 the verdict.
 

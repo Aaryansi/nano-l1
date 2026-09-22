@@ -30,7 +30,9 @@ ROOT="$(pwd)"
 PIPELINE_START=$(date +%s)
 RL="$ROOT/services/agent-rl"
 PY="$RL/.venv/bin/python"
-REPORTS="$ROOT/reports"
+# overridable so a smoke run can be pointed at a scratch directory instead of
+# overwriting the artifacts every number in the paper is checked against.
+REPORTS="${REPORTS:-$ROOT/reports}"
 
 SEEDS=5
 UPDATES=100

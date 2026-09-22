@@ -102,7 +102,7 @@ def main():
         ag = train(BinaryMarketEnv(nb, normalizer=nn, max_position=100.0),
                    args.updates, args.seed + k)
         r = VectorizedRollout(nb, normalizer=nn, max_position=100.0)
-        a_spans.append(span(ag, r, build_background(r, 192, args.seed + k),
+        a_spans.append(masked_span(ag, r, build_background(r, 192, args.seed + k),
                             args.seed + k))
         print(f"  {k + 1}/{args.n_null}: {a_spans[-1]:>+8.3f}", flush=True)
 

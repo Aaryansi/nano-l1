@@ -358,10 +358,15 @@ if mn:
               f"{'yes' if degenerate else 'NO':>21}")
         if not degenerate:
             failures.append(f"{case}: paper says the null is a point mass")
-    # the whole point of the section: it loses specificity
+    # the whole point of the section: on the synthetic corpora the reference
+    # collapses to a point mass and the comparison decides nothing. an earlier
+    # version asserted that it "fires" there, which was an artefact of the old
+    # decision rule putting a point-mass observation at the rank floor.
     checks += 1
-    lost = by["null corpus"]["fires"] and not mn["has_specificity"]
-    print(f"  [{'x' if lost else ' '}] {'matched construction fires on a signal-free corpus':<52} "
+    lost = (by["null corpus"]["null_std"] < 1e-9
+            and by["planted signal"]["null_std"] < 1e-9
+            and not by["null corpus"]["result"]["passes"])
+    print(f"  [{'x' if lost else ' '}] {'matched construction cannot decide on either synthetic corpus':<52} "
           f"{'yes' if lost else 'NO':>21}")
     if not lost:
         failures.append("matched null: paper says it produces a false positive")
@@ -371,8 +376,8 @@ nb = load("null_budget_check.json")
 print("\nsection 6.4: the blinded null collapses with budget")
 if nb:
     rows = {r["updates"]: r for r in nb["rows"]}
-    for u, sd, z in ((20, 3.268, 0.55), (40, 2.247, 1.71),
-                     (80, 1.623, 4.23), (160, 0.036, 203.62)):
+    for u, sd, z in ((20, 3.180, 0.80), (40, 2.294, 1.93),
+                     (80, 1.156, 6.16), (160, 0.036, 204.81)):
         if u in rows:
             check(f"null sd at {u} updates", sd, rows[u]["null_std"], 0.05)
             check(f"z at {u} updates", z, rows[u]["result"]["z_score"], 0.08)

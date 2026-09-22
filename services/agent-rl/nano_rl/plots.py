@@ -197,8 +197,19 @@ def learning_curves(logs: list[dict], path: Path) -> None:
         ("explained_var", "critic explained variance", "fraction", C3),
     ]
 
+    # logs can be ragged when a run is interrupted, or when a reduced-budget
+    # pass retrains only some of the seeds and leaves the rest at the previous
+    # budget. np.array() raises on that, which took down the whole pipeline
+    # after the evaluation had already succeeded. truncate to the shortest run
+    # and say so rather than crashing on a figure.
+    lengths = {len(lg[panels[0][0]]) for lg in logs}
+    n = min(lengths)
+    if len(lengths) > 1:
+        print(f"  note: training logs are ragged ({sorted(lengths)} updates); "
+              f"plotting the first {n} of each", flush=True)
+
     for ax, (key, title, ylabel, color) in zip(axes, panels):
-        stacked = np.array([lg[key] for lg in logs], dtype=float)
+        stacked = np.array([lg[key][:n] for lg in logs], dtype=float)
         x = np.arange(stacked.shape[1])
         # individual seeds, recessive; the mean carries the message
         for row in stacked:
