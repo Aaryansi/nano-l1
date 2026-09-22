@@ -42,6 +42,7 @@ from nano_rl.envs.gym_null import (  # noqa: E402
     exact_shapley_span,
     make_env,
     observation_moments,
+    observation_pool,
     train_gym_ppo,
 )
 from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
