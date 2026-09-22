@@ -204,10 +204,14 @@ def main() -> None:
     ap.add_argument("--n-null", type=int, default=12)
     ap.add_argument("--attr-episodes", type=int, default=20)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--blind", choices=("resample", "gaussian"), default="resample",
-                    help="how blinded observations are drawn; resample keeps "
-                         "the observation manifold, gaussian is the original "
-                         "moment-matched draw and is kept for comparison")
+    ap.add_argument("--blind", choices=("gaussian", "resample"), default="gaussian",
+                    help="how blinded observations are drawn. gaussian is the "
+                         "moment-matched per-coordinate draw the reported "
+                         "numbers use; resample draws whole observations and "
+                         "so stays on the observation manifold. the default is "
+                         "gaussian because changing it silently would make the "
+                         "pipeline stop reproducing the paper's table; the "
+                         "resample comparison is reported separately")
     args = ap.parse_args()
 
     out = Path(args.out)
