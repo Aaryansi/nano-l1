@@ -133,7 +133,7 @@ else, and the perturbation decided the verdict. A usable null has to remove the
 information while leaving the observation stream, the agent's responsiveness and
 the task's difficulty intact; each of ours sacrifices exactly one. We also show
 that an attribution can be driven from $39.9\%$ to $3.2\%$ of total mass at no
-measurable cost in return, so it is not identified by task performance. We do
+detected cost in return, so it is not identified by task performance. We do
 not supply a construction that works. We supply an account of why the obvious
 ones do not, and evidence that a choice usually left implicit is the one that
 decides what an explanation is taken to mean.
@@ -204,7 +204,7 @@ must matter, so we checked, found it measuring spans on a different corpus from
 the observation, and report what that is worth. Seven predictions this project
 made were rejected on its own evidence
 (\elsewhere{sec:rejected}). Separately, an auxiliary penalty drives a
-feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no measurable
+feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no detected
 cost in return, so attribution is not identified by task performance
 (\elsewhere{sec:survives}).
 \end{enumerate}
@@ -327,7 +327,7 @@ leaving a network that was never trained. Construction (b) leaves the policy and
 its training untouched and corrupts the environment's observation channel, so
 the agent optimises a real reward with nothing to condition on. Only (b) yields
 a normally trained policy, the failure mode that occurs in deployment, and
-Section~\ref{sec:nulls} shows the difference is worth $42\times$ in the width of
+Section~\ref{sec:nulls} shows the difference is worth $56\times$ in the width of
 the reference distribution. Section~\ref{sec:nullhard} then shows that (b) is a
 family, not a single construction, and that its members disagree.}
 \label{fig:method}
@@ -532,7 +532,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 358 tests cover the environment, the attribution implementations, and
+command; 391 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -808,10 +808,10 @@ the span across draws; the sd is what sets the test's power.}
 \toprule
 Environment & Parameter & Environment & Ratio \\
 \midrule
-CartPole    & $+55.34 \pm \mathbf{138.92}$ & $-1.35 \pm \mathbf{3.29}$ & $42\times$ \\
-Acrobot     & $+64.03 \pm \mathbf{124.94}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
+CartPole    & $+60.00 \pm \mathbf{140.86}$ & $-0.81 \pm \mathbf{2.52}$ & $56\times$ \\
+Acrobot     & $+46.13 \pm \mathbf{109.32}$ & $+0.00 \pm \mathbf{0.00}$ & degenerate \\
 MountainCar & $+0.00 \pm \mathbf{0.00}$ & $+0.00 \pm \mathbf{0.00}$ & $0\times$ \\
-Pendulum    & $-152.16 \pm \mathbf{131.42}$ & $+11.12 \pm \mathbf{37.79}$ & $3\times$ \\
+Pendulum    & $-220.20 \pm \mathbf{138.88}$ & $+8.02 \pm \mathbf{27.50}$ & $5\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -829,31 +829,41 @@ budget ever reaches the goal.}
 A randomly initialised policy behaves arbitrarily, so masking its inputs moves
 return unpredictably and the reference distribution is very wide. The resulting
 test has almost no power. Across sixteen checkpoints the parameter null never
-exceeds $z=2.45$, including on a converged CartPole policy scoring 404 of 500,
-while the environment null reaches $z=+117.6$. The two disagree on five of the
-sixteen. The choice of null is not a detail; it decides the verdict, and the
-construction already available is substantially the weaker of the two.
+exceeds $z=2.96$, including on a converged CartPole policy scoring 404 of 500,
+while the environment null reaches $z=+153.3$. The two constructions return the
+same verdict on only half the checkpoints, and the split falls one environment
+to each pattern. On CartPole they are in direct opposition: the environment null
+calls all four checkpoints informative where the parameter null declines. On
+Acrobot the environment null is a point mass and cannot decide, while the
+parameter null declines. On MountainCar neither can decide. Only on Pendulum do
+they agree, and what they agree on is that there is nothing to detect. The
+choice of null is not a detail; it decides the verdict, and the construction
+already available is substantially the weaker of the two.
 
 Two environments qualify the claim. MountainCar is degenerate under \emph{both}
 constructions at $0.00 \pm 0.00$, because within our step budget no policy
-reaches the goal and there is genuinely nothing to explain; the test declines,
-correctly, and contributes no evidence. Pendulum narrows the gap to $3\times$
-because its environment null is itself wide ($37.79$), a blind agent on a
-dense-reward continuous task still varying in return. The $42\times$ figure is
+reaches the goal and there is genuinely nothing to explain; both comparisons are
+unresolved and contribute no evidence. Pendulum narrows the gap to $5\times$
+because its environment null is itself wide ($27.50$), a blind agent on a
+dense-reward continuous task still varying in return. The $56\times$ figure is
 the extreme case, not the typical one. Acrobot shows the test tracking
 \emph{whether there is anything to explain} rather than agent quality: its agent
-scores $-500$ until it learns, the span is exactly $0.00$ there, and the test
-declines. We do not claim undertrained agents generally produce empty
+scores $-500$ until it learns and the span is exactly $0.00$ there. Its
+environment reference is a point mass throughout, so the comparison is
+unresolved rather than negative, which is the same failure the matched
+construction shows on our synthetic corpora. We do not claim undertrained agents generally produce empty
 explanations; they do not.
 
 \paragraph{Why the parameter null is wide.}
 \label{par:why}
 The gap has a mechanism, and it is not about explanations. Recording each random
 network's \emph{unmasked} return alongside its span
-(Figure~\ref{fig:conjecture}) shows the parameter null's width is, to three
-significant figures, the spread of random-initialisation return: $138.38$
-against $138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot, $135.49$
-against $131.42$ on Pendulum.
+(Figure~\ref{fig:conjecture}) shows the parameter null's width closely tracks
+the spread of random-initialisation return: $140.43$ against $140.86$ on
+CartPole and $110.59$ against $109.32$ on Acrobot, both inside two percent, and
+$127.40$ against $138.88$ on Pendulum, inside nine. The correspondence is close
+enough to identify the mechanism and not exact, so we state it as the dominant
+term rather than an identity.
 
 The reason is visible in the decomposition $\Delta = \vfn(N) - \vfn(\emptyset)$.
 Taking the variance over random initialisations,
@@ -869,12 +879,12 @@ $\operatorname{Var}[\Delta] \approx \operatorname{Var}[\vfn(N)]$: the width of
 the parameter null is the width of random-initialisation return. The antecedent
 holds here because a policy that was not using its observations loses almost
 nothing when they are removed, so the masked term is nearly constant across
-draws. Its standard deviation is $1.8\%$ of the unmasked term's on CartPole and $5.4\%$
+draws. Its standard deviation is $1.8\%$ of the unmasked term's on CartPole and $8.1\%$
 on Acrobot. Writing $r$ for that ratio, the second term is $r^2$ of
 $\operatorname{Var}[\vfn(N)]$ and Cauchy-Schwarz bounds the third by $2r$, so the
-two together are at most $3.6\%$ on CartPole and $11.1\%$ on Acrobot. That bound
-is loose, and the realised discrepancy is smaller still: the two standard
-deviations differ by $0.4\%$ on CartPole and $1.5\%$ on Acrobot. The span
+two together are at most $3.7\%$ on CartPole and $16.9\%$ on Acrobot. That bound
+is loose, and the realised discrepancy is much smaller: the two standard
+deviations differ by $0.3\%$ on CartPole and $1.1\%$ on Acrobot. The span
 therefore inherits the variance of the unmasked term almost entire.
 \emph{Parameter randomisation measures the variance of initialisation, not
 anything about the explanation being tested}, which is why its reference
@@ -1371,13 +1381,13 @@ measures (Table~\ref{tab:steer}, Figure~\ref{fig:steer}).
 
 \begin{table}[t]
 \centering\small
-\caption{Steering one feature's attribution. Every figure in a row comes from the same run: invariance penalty $\lambda=20$, three seeds, evaluated on the held-out split. $p$ is a paired bootstrap against the $\lambda=0$ agent on the same episodes.}
+\caption{Steering one feature's attribution. Every figure in a row comes from the same run: invariance penalty $\lambda=20$, three seeds, evaluated on the held-out split. $p$ is a cluster bootstrap against the $\lambda=0$ agent on the same episodes, resampling seeds and then episodes within seeds.}
 \label{tab:steer}
 \begin{tabular}{lrrr}
 \toprule
 Corpus & Attribution & Return & $p$ \\
 \midrule
-market          & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.38}$ \\
+market          & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.32}$ \\
 planted signal  & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+8.66}$ & $<$0.001 \\
 \bottomrule
 \end{tabular}
@@ -1394,7 +1404,7 @@ the feature is load-bearing does suppressing it cost return (right).}
 The attribution is equally suppressible in both cases ($92\%$ and $97\%$). What
 differs is the price: where the feature is the planted signal, suppressing it
 destroys $81\%$ of return, while on the market no return difference is detected
-($p=0.38$).
+($p=0.32$).
 
 \paragraph{Not detected is not preserved.} A non-significant paired bootstrap
 does not establish that performance is unchanged; it establishes that this
@@ -1403,10 +1413,20 @@ have not run an equivalence or non-inferiority test, and the claim we make is
 the weaker one: a feature's attribution can be suppressed almost entirely
 without a detectable cost in return. The penalty reported here
 ($\lambda=20$) is fixed in advance rather than selected as the strongest
-suppression, and the $p$-value pools every matched episode across seeds rather
-than averaging per-seed $p$-values, neither of which the first version of this
-experiment did. The contrast with the planted signal is what carries the
-argument, and that contrast is large: $81\%$ of return against none detected. The control matters: had steering succeeded on both corpora,
+suppression. The $p$-value resamples \emph{seeds}, and then episodes within
+seeds, because the unit of independent replication in a multi-seed RL
+experiment is the training run and not the
+episode~\citep{agarwal2021precipice}. That choice decides this number. The
+per-seed $p$-values are $0.40$, $0.38$ and $0.001$, so pooling every matched
+episode into one paired bootstrap returns $p=0.023$ on the strength of one seed
+in three, while resampling seeds returns $p=0.32$; the first version of this
+experiment reported the median of the per-seed values, which is not a combined
+test and has no defined size. We report the seed-level figure because it answers
+whether a fourth training run would show the same thing, which is the question
+the claim needs. The contrast with the planted signal is what carries the
+argument, and that contrast is large: $81\%$ of return destroyed at $p<0.001$ on
+both the pooled and the seed-level test, against nothing detected on the market
+by either. The control matters: had steering succeeded on both corpora,
 the penalty would merely be defeating the attribution method.
 
 \paragraph{Equal return is not equal behaviour.} An earlier version of this
@@ -1418,7 +1438,7 @@ $\mathrm{KL} = 0.073$ nats and Jensen-Shannon $0.019$ between their action
 distributions. The distributions are close because a policy with no edge sits
 near uniform, which also makes its argmax easy to flip. They are not the same
 policy, and the claim is therefore about task performance: a feature's
-attribution can be suppressed almost entirely at no measurable cost in return.
+attribution can be suppressed almost entirely at no detected cost in return.
 That is the claim the oversight argument in Section~\ref{sec:oversight} needs,
 and it is the one the evidence supports.
 
@@ -1510,16 +1530,24 @@ carry the masking mode as well.
 \label{sec:intervals}
 
 Every $z$ in the paper's main tables divides by a standard deviation estimated
-from 12 to 32 null agents. Reporting it to two decimals hides that. We resample the null
+from 24 to 32 null agents. Reporting it to two decimals hides that. We resample the null
 draws with replacement and re-apply the full two-part decision rule to each
 replicate, which gives a percentile interval for $z$ and, more usefully, the
 fraction of replicates in which the verdict is unchanged.
 
-Every verdict in the paper is stable in $100\%$ of replicates except the two
-blinded-real market comparisons, at $64\%$ and $65\%$.
-The planted signal's interval is $[+10.3, +16.9]$ and the market's, under the
-null used in Section~\ref{sec:empty}, is $[-0.16, +0.73]$: nowhere near the
-threshold in either direction. This bootstraps the null only. Uncertainty in the
+Of the seventeen comparisons, twelve are stable in $100\%$ of replicates and
+one in $99.9\%$. The remaining five are worth naming, because they are all the
+same kind of case: the blinded-real market comparison at $64\%$ ($z=+2.33$), the
+trading arm of the positive control at $66\%$ ($z=+2.16$), the matched null's
+real market at $70\%$ ($z=+1.93$), that same comparison at the 40-update budget
+at $70\%$, and the outcome permutation's null corpus at $74\%$ ($z=+1.75$).
+Every one lies between $z=+1.75$ and $z=+2.33$, just below the threshold, and
+every one is a decline rather than a detection. No \emph{informative} verdict in
+the paper falls below $100\%$. A near-threshold decline should therefore be read
+as provisional, which the headline declines are not: they sit at $z=+0.23$ and
+$z=-0.14$. The planted signal's interval is $[+10.3, +17.0]$ and the market's,
+under the null used in Section~\ref{sec:empty}, is $[-0.16, +0.75]$: nowhere
+near the threshold in either direction. This bootstraps the null only. Uncertainty in the
 observed statistic, a mean over held-out episodes, is not included, so these
 intervals are optimistic in a way we would rather state than hide.
 
@@ -1553,18 +1581,18 @@ and were wrong. Emptiness and instability are unrelated.
 
 \paragraph{Attributions can be steered, without deception.}
 Section~\ref{sec:steering} drives a feature's attribution from $39.9\%$ to
-$3.2\%$ of total mass at no measurable cost in return. This needs no deceptive
+$3.2\%$ of total mass at no detected cost in return. This needs no deceptive
 policy, no attack on the explainer, and no knowledge of who will audit the
 model: an auxiliary training term is enough. We avoid calling this forgery,
 because the resulting explanation is \emph{correct} about the resulting agent;
 what has been changed is the agent, not the account of it. In our two controls
 the performance cost of steering tracks whether the targeted feature is
 load-bearing: suppressing the planted signal destroys $81\%$ of return, while
-suppressing the market agent's dominant feature costs nothing measurable. Two
+suppressing the market agent's dominant feature costs nothing detectable. Two
 cases are not a law, and we do not claim the cost equals the feature's
 importance in general. They are enough to show that an oversight regime reading
 attributions as evidence of what a model relies on is reading a quantity the
-developer can influence at little measurable cost precisely where the feature
+developer can influence at little detected cost precisely where the feature
 does not matter, which is where a guarantee would be worth having.
 
 \paragraph{The verdict depends on a choice that is rarely reported.}

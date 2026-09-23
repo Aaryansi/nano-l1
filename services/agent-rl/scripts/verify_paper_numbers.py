@@ -122,7 +122,13 @@ if st:
     check("market steered attribution", 0.032, me["target_share_mean"], 0.20)
     check("market baseline return", -3.49, mb["return_mean"], 0.05)
     check("market steered return", -1.65, me["return_mean"], 0.05)
-    check("market steered p", 0.38, me["p_vs_baseline"], 0.10)
+    # the paper quotes the SEED-level p, because the replicate is the training
+    # run. both are checked so the two cannot drift apart again: the table used
+    # to carry 0.38, which was the median of the per-seed values and is not a
+    # combined test.
+    check("market steered p, cluster", 0.32, me["p_cluster"], 0.15)
+    check("market steered p, pooled", 0.023, me["p_vs_baseline"], 0.30)
+    check("market per-seed p spread", 0.001, min(me["p_per_seed"]), 0.60)
     check("synthetic baseline attribution", 0.465, sb["target_share_mean"], 0.05)
     check("synthetic steered attribution", 0.015, se["target_share_mean"], 0.20)
     check("synthetic baseline return", 45.04, sb["return_mean"], 0.02)
@@ -130,16 +136,25 @@ if st:
     # the 81% figure must be derived from the same pair, not quoted loose
     destroyed = 100 * (sb["return_mean"] - se["return_mean"]) / abs(sb["return_mean"])
     check("synthetic return destroyed (%)", 81.0, destroyed, 0.03)
+    # the planted signal's cost must survive the conservative test too, else
+    # the contrast the argument rests on is an artefact of pooling
+    check("synthetic steered p, cluster", 0.0, se["p_cluster"], 0.0)
+    checks += 1
+    decided = st.get("decided_on") == "p_cluster"
+    print(f"  [{'x' if decided else ' '}] {'steering verdict decided on the seed-level test':<52} "
+          f"{'yes' if decided else 'NO':>21}")
+    if not decided:
+        failures.append("steering: paper quotes the cluster bootstrap")
 
 # ------------------------------------------------------------ environments
 g = load("generalize_gym.json")
 print("\ntable 3: null construction across environments")
 if g:
     # paper table 3, one row per environment
-    WEIGHT_SD = {"cartpole": 138.92, "acrobot": 124.94,
-                 "mountaincar": 0.0, "pendulum": 131.42}
-    ENV_SD = {"cartpole": 3.29, "acrobot": 0.0,
-              "mountaincar": 0.0, "pendulum": 37.79}
+    WEIGHT_SD = {"cartpole": 140.86, "acrobot": 109.32,
+                 "mountaincar": 0.0, "pendulum": 138.88}
+    ENV_SD = {"cartpole": 2.52, "acrobot": 0.0,
+              "mountaincar": 0.0, "pendulum": 27.50}
     for row in g:
         e = row["env_id"].split("-")[0].lower()
         # a degenerate null is exactly zero, so a relative tolerance cannot
@@ -150,12 +165,35 @@ if g:
               0.02 if ENV_SD[e] else 1.0)
     agree = sum(r["nulls_agree"] for r in g)
     total = sum(r["n_checkpoints"] for r in g)
-    check("checkpoints where nulls agree", 11, agree, 0.001)
+    # the paper reports the breakdown rather than this count, because an
+    # agreement between two references that both cannot decide (MountainCar) is
+    # not the same fact as an agreement that there is nothing to detect
+    # (Pendulum). the count is still pinned so the breakdown cannot drift.
+    check("checkpoints where nulls agree", 8, agree, 0.001)
+    patterns = {}
+    for r in g:
+        for c in r["checkpoints"]:
+            k = (c["verdict_env"], c["verdict_weight"])
+            patterns[k] = patterns.get(k, 0) + 1
+    checks += 1
+    one_each = sorted(patterns.values()) == [4, 4, 4, 4]
+    print(f"  [{'x' if one_each else ' '}] {'four verdict patterns, one environment each':<52} "
+          f"{'yes' if one_each else 'NO':>21}")
+    if not one_each:
+        failures.append(f"gym: paper reports one environment per pattern, got {patterns}")
+    checks += 1
+    opposed = patterns.get(("informative", "not distinguishable from null"), 0)
+    print(f"  [{'x' if opposed == 4 else ' '}] {'cartpole: env informative where weight declines':<52} "
+          f"{opposed if opposed else 'NO':>21}")
+    if opposed != 4:
+        failures.append("gym: paper says the two nulls are in direct opposition on CartPole")
     check("total checkpoints", 16, total, 0.001)
 
     import numpy as np
     zw = [c["z_weight"] for r in g for c in r["checkpoints"]]
-    check("max |z| under the weight null", 2.45, max(map(abs, zw)), 0.02)
+    check("max |z| under the weight null", 2.96, max(map(abs, zw)), 0.02)
+    ze = [c["z_env"] for r in g for c in r["checkpoints"] if abs(c["z_env"]) != float("inf")]
+    check("max z under the environment null", 153.3, max(ze), 0.02)
 
 # ------------------------------------------------- initialisation variance
 nw = load("null_width_conjecture.json")
@@ -163,8 +201,8 @@ print("\nsection 6.1: why the parameter null is wide")
 if nw and g:
     byenv = dict(zip([e.split("-")[0].lower() for e in nw["env_ids"]],
                      nw["random_return_sd"]))
-    for e, v in (("cartpole", 138.38), ("acrobot", 123.04),
-                 ("pendulum", 135.49), ("mountaincar", 0.0)):
+    for e, v in (("cartpole", 140.43), ("acrobot", 110.59),
+                 ("pendulum", 127.40), ("mountaincar", 0.0)):
         check(f"{e} random-init return sd", v, byenv[e], 0.02 if v else 1.0)
     # the mechanism: the masked term is near-constant, so the span inherits
     # the unmasked term's variance
@@ -177,7 +215,7 @@ if nw and g:
         ma = un - np.array(row["weight_null"]["spans"])
         frac = float(ma.std(ddof=1) / un.std(ddof=1))
         check(f"{e} masked/unmasked sd ratio",
-              0.018 if e == "cartpole" else 0.054, frac, 0.10)
+              0.018 if e == "cartpole" else 0.081, frac, 0.10)
 
 # the variance-decomposition bound quoted in 6.1. asserted because it was
 # wrong in a draft: the covariance term is bounded by 2r, not by r^2, and the
@@ -335,10 +373,35 @@ if zi:
           zi["real prediction"]["verdict_stability"], 0.01)
     check("real trading verdict stability", 0.64,
           zi["real trading"]["verdict_stability"], 0.08)
-    check("planted signal interval, low", 10.32, zi["shared-null: planted signal"]["z_lo"], 0.05)
-    check("planted signal interval, high", 16.87, zi["shared-null: planted signal"]["z_hi"], 0.05)
+    check("planted signal interval, low", 10.29, zi["shared-null: planted signal"]["z_lo"], 0.05)
+    check("planted signal interval, high", 17.03, zi["shared-null: planted signal"]["z_hi"], 0.05)
     check("real market interval, low", -0.16, zi["shared-null: real market"]["z_lo"], 0.30)
-    check("real market interval, high", 0.73, zi["shared-null: real market"]["z_hi"], 0.15)
+    check("real market interval, high", 0.75, zi["shared-null: real market"]["z_hi"], 0.15)
+    # the paper used to claim only two verdicts fell short of 100% stability.
+    # five do. all five are near-threshold declines, and the paper now names
+    # them, so the count and the pattern are both asserted here.
+    unstable = {k: v["verdict_stability"] for k, v in zi.items()
+                if isinstance(v, dict) and v.get("verdict_stability", 1.0) < 0.99}
+    check("verdicts below 99% stability", 5, len(unstable), 0.001)
+    checks += 1
+    all_declines = all(
+        zi[k]["verdict"] != "informative" and 1.5 < zi[k]["z"] < 2.5
+        for k in unstable
+    )
+    print(f"  [{'x' if all_declines else ' '}] {'every unstable verdict is a near-threshold decline':<52} "
+          f"{'yes' if all_declines else 'NO':>21}")
+    if not all_declines:
+        failures.append("z_intervals: paper says all unstable verdicts are marginal declines")
+    checks += 1
+    informative_stable = all(
+        v["verdict_stability"] >= 0.9999
+        for v in zi.values()
+        if isinstance(v, dict) and v.get("verdict") == "informative"
+    )
+    print(f"  [{'x' if informative_stable else ' '}] {'no informative verdict falls below 100%':<52} "
+          f"{'yes' if informative_stable else 'NO':>21}")
+    if not informative_stable:
+        failures.append("z_intervals: paper says every informative verdict is fully stable")
 
 # ------------------------------------------------- the matched construction
 mn = load("matched_null_test.json")
