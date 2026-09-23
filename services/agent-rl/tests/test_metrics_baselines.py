@@ -20,6 +20,7 @@ from nano_rl.baselines import (
 from nano_rl.env.features import N_FEATURES, feature_index
 from nano_rl.metrics import (
     EPISODES_PER_YEAR,
+    cluster_bootstrap_p_value,
     compute_metrics,
     hit_rate,
     max_drawdown,
@@ -198,3 +199,61 @@ class TestBaselines:
         for p in default_baselines():
             for _ in range(10):
                 assert p.act(obs, rng) in (0, 1, 2)
+
+
+class TestClusterBootstrap:
+    """the seed is the unit of replication, not the episode.
+
+    the steering experiment pools ~1,300 episodes from each of three seeds. a
+    pooled paired bootstrap over all of them answers "how precisely do we know
+    these three agents' mean difference", which is not the question the paper
+    asks. the question is whether a fourth training run would show the same
+    thing, and only seed-level resampling can speak to that.
+    """
+
+    @staticmethod
+    def _one_odd_seed(rng):
+        base = [rng.normal(0, 50, 1200) for _ in range(3)]
+        eff = [
+            base[0] + rng.normal(0.2, 50, 1200),
+            base[1] + rng.normal(0.2, 50, 1200),
+            base[2] + rng.normal(8.0, 50, 1200),
+        ]
+        return eff, base
+
+    def test_pooling_is_anticonservative_when_seeds_disagree(self):
+        rng = np.random.default_rng(0)
+        eff, base = self._one_odd_seed(rng)
+        pooled = paired_bootstrap_p_value(np.concatenate(eff), np.concatenate(base))
+        cluster = cluster_bootstrap_p_value(eff, base)
+        assert pooled < 0.01, "fixture should look significant when pooled"
+        assert cluster > pooled * 10, (
+            f"cluster p {cluster} should be far larger than pooled {pooled} "
+            "when a single seed carries the effect"
+        )
+
+    def test_an_effect_present_in_every_seed_survives_clustering(self):
+        rng = np.random.default_rng(1)
+        base = [rng.normal(0, 50, 1200) for _ in range(5)]
+        eff = [b + rng.normal(20.0, 50, 1200) for b in base]
+        assert cluster_bootstrap_p_value(eff, base) < 0.05
+
+    def test_no_difference_at_all_is_p_one(self):
+        base = [np.arange(50, dtype=float) for _ in range(3)]
+        assert cluster_bootstrap_p_value(base, list(base)) == 1.0
+
+    def test_fewer_than_two_seeds_is_undefined(self):
+        a = [np.arange(10, dtype=float)]
+        assert np.isnan(cluster_bootstrap_p_value(a, [np.ones(10)]))
+
+    def test_it_is_deterministic_given_a_seed(self):
+        rng = np.random.default_rng(2)
+        eff, base = self._one_odd_seed(rng)
+        assert cluster_bootstrap_p_value(eff, base, seed=7) == \
+               cluster_bootstrap_p_value(eff, base, seed=7)
+
+    def test_it_is_a_probability(self):
+        rng = np.random.default_rng(3)
+        eff, base = self._one_odd_seed(rng)
+        p = cluster_bootstrap_p_value(eff, base)
+        assert 0.0 <= p <= 1.0

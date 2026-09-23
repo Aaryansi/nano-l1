@@ -172,3 +172,55 @@ def paired_bootstrap_p_value(
     idx = rng.integers(0, len(diff), size=(n_boot, len(diff)))
     boot_means = centred[idx].mean(axis=1)
     return float((np.abs(boot_means) >= abs(observed)).mean())
+
+
+def cluster_bootstrap_p_value(
+    groups_a: list, groups_b: list, n_boot: int = 10_000, seed: int = 0
+) -> float:
+    """two-sided p-value for a paired difference when the replicate is the SEED.
+
+    pooling every episode from every seed into one paired bootstrap treats
+    episodes drawn from the same agent as independent replicates. they are not.
+    one trained policy generates all of them, so the pooled test measures how
+    precisely we know that agent's mean, not whether the effect reproduces
+    across training runs. when the seeds disagree the two answers come apart:
+    the steering experiment has per-seed p-values of 0.40, 0.38 and 0.001, so
+    one seed of three carries a pooled result that reads as significant.
+
+    this resamples seeds with replacement and then episodes within each drawn
+    seed, so seed-to-seed variance enters the interval. the estimand is the
+    mean of the per-seed mean differences, which weights seeds equally rather
+    than by episode count. with a handful of seeds it has very little power.
+    that is the honest situation for a three-seed design rather than a defect
+    of the estimator, and it is the reason the claim this supports is stated as
+    a contrast in magnitude rather than as a detection.
+    """
+    diffs = [
+        np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+        for a, b in zip(groups_a, groups_b)
+    ]
+    diffs = [d for d in diffs if len(d) > 0]
+    k = len(diffs)
+    if k < 2:
+        return float("nan")
+
+    observed = float(np.mean([d.mean() for d in diffs]))
+    if all(np.allclose(d, 0.0) for d in diffs):
+        return 1.0
+
+    rng = np.random.default_rng(seed)
+    centred = [d - observed for d in diffs]
+
+    # within-seed bootstrap means, one independent draw per (iteration, slot),
+    # so a seed drawn twice in one iteration contributes two different draws
+    # rather than the same number counted twice.
+    within = np.empty((k, n_boot, k), dtype=float)
+    for j, d in enumerate(centred):
+        idx = rng.integers(0, len(d), size=(n_boot, k, len(d)))
+        within[j] = d[idx].mean(axis=2)
+
+    picks = rng.integers(0, k, size=(n_boot, k))
+    rows = np.arange(n_boot)[:, None]
+    slots = np.arange(k)[None, :]
+    boot = within[picks, rows, slots].mean(axis=1)
+    return float((np.abs(boot) >= abs(observed)).mean())

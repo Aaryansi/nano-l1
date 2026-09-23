@@ -60,7 +60,10 @@ from nano_rl.env.features import (  # noqa: E402
 from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import explain_behaviour  # noqa: E402
-from nano_rl.metrics import paired_bootstrap_p_value  # noqa: E402
+from nano_rl.metrics import (  # noqa: E402
+    cluster_bootstrap_p_value,
+    paired_bootstrap_p_value,
+)
 
 
 # the penalty the paper reports, fixed before evaluation.
@@ -150,7 +153,7 @@ def run_corpus(
     banner(f"{name}   target feature: `{FEATURE_NAMES[target]}`")
     print(f"  prediction: {prediction}\n")
     print(f"  {'penalty':>9} {'return':>18} {'attribution share':>20} "
-          f"{'p vs baseline':>14}")
+          f"{'p pooled':>10}{'p cluster':>11}")
 
     rows = []
     baseline_pnl = None
@@ -180,6 +183,16 @@ def run_corpus(
                 for a, b in zip(r["pnl"], baseline_pnl)
             ]
             r["p_per_seed"] = [float(x) for x in per_seed]
+            # the seed, not the episode, is the unit of independent
+            # replication: one trained policy generates every episode in a
+            # seed. the pooled test above answers how precisely we know these
+            # three agents' mean, the cluster test answers whether the effect
+            # would reappear in a fourth training run. where the seeds
+            # disagree the two come apart, and the paper quotes the
+            # conservative one.
+            r["p_cluster"] = float(
+                cluster_bootstrap_p_value(r["pnl"], baseline_pnl)
+            )
         r["p_vs_baseline"] = p
         r.pop("pnl")
         rows.append(r)
@@ -187,7 +200,7 @@ def run_corpus(
         print(
             f"  {c:>9.1f} {r['return_mean']:>+10.2f} +/-{r['return_std']:<5.2f} "
             f"{r['target_share_mean']:>14.1%} +/-{r['target_share_std']:<4.1%} "
-            f"{p:>14.3f}",
+            f"{p:>10.3f}{r.get('p_cluster', float('nan')):>11.3f}",
             flush=True,
         )
 
@@ -202,14 +215,23 @@ def run_corpus(
     # a non-significant difference is not evidence of equivalence. this records
     # only that no difference was detected at this power, which is the weaker
     # and supportable claim.
-    undetected = chosen["p_vs_baseline"] >= 0.05
+    # the conservative test governs. a pooled p-value that treats episodes
+    # from one agent as independent replicates can read as significant on the
+    # strength of a single seed, which is what happens here.
+    p_pooled = chosen["p_vs_baseline"]
+    p_cluster = chosen.get("p_cluster", float("nan"))
+    undetected = (p_cluster >= 0.05) if p_cluster == p_cluster else (p_pooled >= 0.05)
 
     print(f"\n  attribution to `{FEATURE_NAMES[target]}` fell "
           f"{base['target_share_mean']:.1%} -> {chosen['target_share_mean']:.1%} "
           f"({drop:.0%} reduction) at the pre-specified coef {REPORTED_COEF:g}")
     print(f"  return difference vs baseline: "
           f"{'NOT DETECTED' if undetected else 'DETECTED'} "
-          f"(p = {chosen['p_vs_baseline']:.3f}; this is not an equivalence test)")
+          f"(cluster p = {p_cluster:.3f}, pooled p = {p_pooled:.3f}; "
+          f"this is not an equivalence test)")
+    print(f"  per-seed p: {[round(x, 4) for x in chosen.get('p_per_seed', [])]}")
+    print(f"  return {base['return_mean']:+.3f} -> {chosen['return_mean']:+.3f} "
+          f"(change {chosen['return_mean'] - base['return_mean']:+.3f})")
     verdict = ("STEERABLE WITHOUT DETECTED COST" if (drop > 0.5 and undetected)
                else "STEERING HAS A DETECTED COST")
     print(f"  -> {verdict}")
@@ -265,14 +287,26 @@ def main() -> None:
         base = rows[0]
         pick = next((r for r in rows[1:] if r["coef"] == REPORTED_COEF), rows[-1])
         drop = 1.0 - (pick["target_share_mean"] / max(base["target_share_mean"], 1e-9))
-        return drop, pick["p_vs_baseline"], base["return_mean"], pick["return_mean"]
+        # the CLUSTER p governs here, the same quantity the per-corpus block
+        # above decides on. an earlier version returned the pooled p while the
+        # block above used the cluster p, so the two halves of this script drew
+        # opposite conclusions from one run: the market was reported
+        # "steerable without detected cost" and then, four lines later,
+        # "steering did not succeed even on the real market".
+        p_c = pick.get("p_cluster", float("nan"))
+        p_used = p_c if p_c == p_c else pick["p_vs_baseline"]
+        return (drop, p_used, pick["p_vs_baseline"],
+                base["return_mean"], pick["return_mean"])
 
-    rd, rp, rb0, rb1 = summarise(real_rows)
-    sd, sp, sb0, sb1 = summarise(synth_rows)
+    rd, rp, rp_pool, rb0, rb1 = summarise(real_rows)
+    sd, sp, sp_pool, sb0, sb1 = summarise(synth_rows)
 
-    print(f"  {'corpus':<26}{'attr drop':>11}{'return':>22}{'p':>8}")
-    print(f"  {'real market':<26}{rd:>10.0%}  {rb0:>+8.2f} -> {rb1:>+8.2f}{rp:>8.3f}")
-    print(f"  {'learnable synthetic':<26}{sd:>10.0%}  {sb0:>+8.2f} -> {sb1:>+8.2f}{sp:>8.3f}")
+    print(f"  {'corpus':<26}{'attr drop':>11}{'return':>22}"
+          f"{'p cluster':>11}{'p pooled':>10}")
+    print(f"  {'real market':<26}{rd:>10.0%}  {rb0:>+8.2f} -> {rb1:>+8.2f}"
+          f"{rp:>11.3f}{rp_pool:>10.3f}")
+    print(f"  {'learnable synthetic':<26}{sd:>10.0%}  {sb0:>+8.2f} -> {sb1:>+8.2f}"
+          f"{sp:>11.3f}{sp_pool:>10.3f}")
 
     # "no detected difference", not "performance preserved"
     steerable_real = rd > 0.5 and rp >= 0.05
@@ -306,7 +340,10 @@ def main() -> None:
     (out / "steering.json").write_text(json.dumps(
         {"real_market": real_rows, "learnable_synthetic": synth_rows,
          "steerable_real": bool(steerable_real),
-         "steerable_synthetic": bool(steerable_synth)},
+         "steerable_synthetic": bool(steerable_synth),
+         "decided_on": "p_cluster",
+         "p_cluster_real": float(rp), "p_pooled_real": float(rp_pool),
+         "p_cluster_synthetic": float(sp), "p_pooled_synthetic": float(sp_pool)},
         indent=2,
     ))
     print(f"\nwrote {out}/steering.json")

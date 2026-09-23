@@ -14,7 +14,13 @@
       "return_std": 1.0284229484531386,
       "target_share_mean": 0.09716437963239799,
       "target_share_std": 0.0473825896564635,
-      "p_vs_baseline": 0.1828
+      "p_per_seed": [
+        0.5026,
+        0.1828,
+        0.0001
+      ],
+      "p_cluster": 0.5814,
+      "p_vs_baseline": 0.1179
     },
     {
       "coef": 5.0,
@@ -22,7 +28,13 @@
       "return_std": 1.0557828966217615,
       "target_share_mean": 0.06686494840612271,
       "target_share_std": 0.009077676440186366,
-      "p_vs_baseline": 0.2054
+      "p_per_seed": [
+        0.5694,
+        0.2054,
+        0.0003
+      ],
+      "p_cluster": 0.4533,
+      "p_vs_baseline": 0.0578
     },
     {
       "coef": 20.0,
@@ -30,7 +42,13 @@
       "return_std": 0.9272778301830049,
       "target_share_mean": 0.03152194750249748,
       "target_share_std": 0.007624915346606989,
-      "p_vs_baseline": 0.3799
+      "p_per_seed": [
+        0.4024,
+        0.3799,
+        0.0011
+      ],
+      "p_cluster": 0.3197,
+      "p_vs_baseline": 0.0232
     }
   ],
   "learnable_synthetic": [
@@ -48,7 +66,13 @@
       "return_std": 9.432453520089402,
       "target_share_mean": 0.10444071422049801,
       "target_share_std": 0.0218580237830157,
-      "p_vs_baseline": 0.0817
+      "p_per_seed": [
+        0.1523,
+        0.0817,
+        0.0
+      ],
+      "p_cluster": 0.2545,
+      "p_vs_baseline": 0.0
     },
     {
       "coef": 5.0,
@@ -56,6 +80,12 @@
       "return_std": 11.206228534387703,
       "target_share_mean": 0.028311623912724276,
       "target_share_std": 0.011215291971679356,
+      "p_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "p_cluster": 0.0,
       "p_vs_baseline": 0.0
     },
     {
@@ -64,9 +94,20 @@
       "return_std": 12.25062523131845,
       "target_share_mean": 0.015447395931049072,
       "target_share_std": 0.010002671774499435,
+      "p_per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "p_cluster": 0.0,
       "p_vs_baseline": 0.0
     }
   ],
   "steerable_real": true,
-  "steerable_synthetic": false
+  "steerable_synthetic": false,
+  "decided_on": "p_cluster",
+  "p_cluster_real": 0.3197,
+  "p_pooled_real": 0.0232,
+  "p_cluster_synthetic": 0.0,
+  "p_pooled_synthetic": 0.0
 }
