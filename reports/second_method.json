@@ -34,6 +34,7 @@
     "min_achievable_p_rank": 0.04,
     "z_score": 22.685015351178382,
     "passes": true,
+    "verdict": "INFORMATIVE",
     "n_null_samples": 24
   },
   "ig_real_market": {
@@ -45,6 +46,7 @@
     "min_achievable_p_rank": 0.04,
     "z_score": 4.583056082584623,
     "passes": true,
+    "verdict": "INFORMATIVE",
     "n_null_samples": 24
   },
   "families_agree": false,

@@ -48,7 +48,10 @@ from nano_rl.explain.rollout import (  # noqa: E402
     greedy_policy,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    test_span_against_null,
+)
 
 
 def banner(t: str) -> None:
@@ -131,6 +134,7 @@ def main() -> None:
     ap.add_argument("--episodes", type=int, default=1200)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the permuted null test null")
 
     banner("OUTCOME-PERMUTATION NULL")
     print("  observations, dynamics and frictions are untouched. only the")

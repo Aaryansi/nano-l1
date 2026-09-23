@@ -52,7 +52,11 @@ from nano_rl.explain.rollout import (  # noqa: E402
     greedy_policy,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 FULL = np.ones(N_FEATURES, dtype=bool)
 EMPTY = np.zeros(N_FEATURES, dtype=bool)
@@ -107,7 +111,7 @@ def run_case(name: str, train_batch, eval_batch, norm, agent, args) -> dict:
     r = test_span_against_null(observed, nulls)
     print(f"\n  null {a.mean():+.3f} +/- {a.std(ddof=1):.3f}   "
           f"observed {observed:+.3f}   z {r.z_score:+.2f}   "
-          f"{'INFORMATIVE' if r.passes else 'not distinguishable'}")
+          f"{short_verdict(r)}")
 
     return {"case": name, "return": ret, "span": observed,
             "null_spans": list(map(float, nulls)),
@@ -125,6 +129,7 @@ def main() -> None:
     ap.add_argument("--episodes", type=int, default=1200)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the matched null test null")
 
     banner("EVERY NULL MATCHED TO ITS OWN CORPUS")
     print("  each case's reference distribution is built by blinding the same")
@@ -163,7 +168,7 @@ def main() -> None:
     for c in cases:
         print(f"  {c['case']:<18}{c['span']:>+10.2f}{c['null_mean']:>+12.2f}"
               f"{c['null_std']:>10.2f}{c['result']['z_score']:>+9.2f}"
-              f"{('informative' if c['fires'] else 'not distinguishable'):>22}")
+              f"{short_verdict(c['result']):>22}")
 
     by = {c["case"]: c for c in cases}
     power = by["planted signal"]["fires"]

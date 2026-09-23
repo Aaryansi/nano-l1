@@ -49,7 +49,11 @@ from nano_rl.explain.rollout import (  # noqa: E402
     greedy_policy,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 FULL = np.ones(N_FEATURES, dtype=bool)
 EMPTY = np.zeros(N_FEATURES, dtype=bool)
@@ -75,6 +79,7 @@ def main():
     ap.add_argument("--updates", type=int, default=40)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the null corpus check null")
 
     batch = EpisodeBatch.load(args.corpus)
     split = walk_forward_split(batch)
@@ -134,7 +139,7 @@ def main():
         arr = np.array(sp)
         print(f"  {nm:<26}{arr.mean():>+10.3f}{arr.std(ddof=1):>10.3f}"
               f"{r.z_score:>+9.2f}"
-              f"{('informative' if r.passes else 'not distinguishable'):>24}")
+              f"{short_verdict(r):>24}")
 
     agree = ra.passes == rb.passes
     print()

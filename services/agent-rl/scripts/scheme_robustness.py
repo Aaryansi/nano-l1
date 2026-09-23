@@ -44,7 +44,10 @@ from nano_rl.explain.outcome_schemes import (  # noqa: E402
     span_only,
 )
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    test_span_against_null,
+)
 
 
 def banner(t: str) -> None:
@@ -78,6 +81,7 @@ def main() -> None:
     ap.add_argument("--episodes", type=int, default=200)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the scheme robustness null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

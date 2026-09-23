@@ -41,9 +41,11 @@
         "min_achievable_p_rank": 0.04,
         "z_score": 3.3962180623329354,
         "passes": true,
+        "verdict": "INFORMATIVE",
         "n_null_samples": 24
       },
-      "fires": true
+      "fires": true,
+      "verdict": "informative"
     },
     {
       "task": "trading",
@@ -86,12 +88,15 @@
         "min_achievable_p_rank": 0.04,
         "z_score": 2.159688491966732,
         "passes": false,
+        "verdict": "NOT DISTINGUISHABLE FROM NULL",
         "n_null_samples": 24
       },
-      "fires": false
+      "fires": false,
+      "verdict": "not distinguishable from null"
     }
   ],
   "separated": true,
+  "undecided_tasks": [],
   "n_train": 3854,
   "n_test": 1284
 }

@@ -38,6 +38,7 @@ from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noq
 from nano_rl.explain.gradients import ig_attribution_profile, ig_span  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
     consistency_across_runs,
     test_span_against_null,
 )
@@ -107,6 +108,7 @@ def main() -> None:
     ap.add_argument("--n-states", type=int, default=60)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the second method null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

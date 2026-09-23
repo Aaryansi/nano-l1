@@ -131,6 +131,7 @@
     "min_achievable_p_rank": 0.04,
     "z_score": 0.17291212487075472,
     "passes": false,
+    "verdict": "NOT DISTINGUISHABLE FROM NULL",
     "n_null_samples": 24
   }
 }

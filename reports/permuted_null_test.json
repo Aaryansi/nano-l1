@@ -42,6 +42,7 @@
         "min_achievable_p_rank": 0.04,
         "z_score": 10.477577583022576,
         "passes": true,
+        "verdict": "INFORMATIVE",
         "n_null_samples": 24
       },
       "verdict": "informative",
@@ -89,6 +90,7 @@
         "min_achievable_p_rank": 0.04,
         "z_score": 1.751743474699246,
         "passes": false,
+        "verdict": "NOT DISTINGUISHABLE FROM NULL",
         "n_null_samples": 24
       },
       "verdict": "not distinguishable",
@@ -136,6 +138,7 @@
         "min_achievable_p_rank": 0.04,
         "z_score": -15.52461852725054,
         "passes": true,
+        "verdict": "INFORMATIVE",
         "n_null_samples": 24
       },
       "verdict": "below null",

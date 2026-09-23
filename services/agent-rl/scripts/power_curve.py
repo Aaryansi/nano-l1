@@ -44,6 +44,8 @@ from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa:
 from nano_rl.explain.sanity import (  # noqa: E402
     attribution_span,
     certified_top_k,
+    check_resolving_power,
+    short_verdict,
     test_span_against_null,
 )
 from nano_rl.explain.trajectory import (  # noqa: E402
@@ -90,6 +92,10 @@ def main() -> None:
     null_spans = np.array(json.loads(sj.read_text())["null_spans"], dtype=float)
     print(f"null distribution: {len(null_spans)} samples, "
           f"{null_spans.mean():+.3f} +/- {null_spans.std(ddof=1):.3f}")
+    # this budget is inherited from whatever wrote sanity_test.json rather than
+    # chosen here, so it is checked rather than assumed: a sweep whose every
+    # point is unresolved would still plot a smooth curve.
+    check_resolving_power(len(null_spans), what="the power-curve null")
 
     # ------------------------------------------------------------- part A
     banner("A. POWER CURVE: at what edge does the test start detecting?")
@@ -130,7 +136,7 @@ def main() -> None:
         )
         print(
             f"  strength {st:>4.2f}  edge {edge:>+8.2f}/ep  span {res.statistic:>+8.2f}  "
-            f"z {res.z_score:>+7.2f}  {'DETECTED' if res.passes else 'not detected'}",
+            f"z {res.z_score:>+7.2f}  {short_verdict(res)}",
             flush=True,
         )
 

@@ -56,7 +56,10 @@ from nano_rl.explain.rollout import (  # noqa: E402
     build_background,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    test_span_against_null,
+)
 
 TARGETS = ("behaviour", "prediction", "outcomes")
 
@@ -145,6 +148,7 @@ def main() -> None:
     ap.add_argument("--states", type=int, default=512)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the sverl targets null")
 
     batch = EpisodeBatch.load(args.corpus)
     split = walk_forward_split(batch)

@@ -105,3 +105,6 @@ docs/paper/core/*.bst
 docs/paper/tmlr/code/
 # renamed copies prepared for upload
 docs/paper/Singh_*.pdf
+
+# working notes, not part of the paper or the pipeline
+docs/EXPLAINER.md

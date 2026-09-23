@@ -3,8 +3,8 @@
     "env_id": "CartPole-v1",
     "n_features": 4,
     "weight_null": {
-      "mean": 55.3375,
-      "std": 138.9182626337582,
+      "mean": 60.0,
+      "std": 140.8640510192903,
       "spans": [
         -8.049999999999999,
         -15.7,
@@ -17,12 +17,24 @@
         -14.15,
         18.150000000000002,
         20.35,
-        -10.200000000000001
+        -10.200000000000001,
+        430.45,
+        -11.500000000000002,
+        53.25,
+        -18.9,
+        -9.999999999999998,
+        15.2,
+        -11.950000000000001,
+        26.999999999999996,
+        1.3500000000000014,
+        -10.3,
+        -10.7,
+        322.05
       ]
     },
     "random_init_return": {
-      "mean": 76.5125,
-      "std": 138.37727599343629,
+      "mean": 81.01666666666667,
+      "std": 140.42562991217767,
       "returns": [
         9.6,
         9.05,
@@ -35,12 +47,24 @@
         9.6,
         37.35,
         45.75,
-        9.6
+        9.6,
+        453.15,
+        9.35,
+        76.2,
+        9.05,
+        9.4,
+        35.75,
+        8.65,
+        46.55,
+        21.05,
+        9.45,
+        9.05,
+        338.6
       ]
     },
     "env_null": {
-      "mean": -1.3541666666666663,
-      "std": 3.2868510996872295,
+      "mean": -0.8145833333333332,
+      "std": 2.517136017755905,
       "spans": [
         -1.5500000000000007,
         -0.15000000000000036,
@@ -53,46 +77,66 @@
         0.0,
         1.9499999999999993,
         -1.3999999999999986,
+        0.0,
+        0.0,
+        1.200000000000001,
+        0.0,
+        -4.4,
+        0.0,
+        0.0,
+        -0.09999999999999964,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.0
       ]
     },
-    "width_ratio": 42.2648481542037,
+    "width_ratio": 55.96203384546315,
     "checkpoints": [
       {
         "fraction": 0.1,
         "return": 291.32,
         "span": 292.35,
-        "z_env": 89.35730818308595,
-        "z_weight": 1.7061291690989244,
+        "z_env": 116.467517553818,
+        "z_weight": 1.6494627147147813,
         "detected_env": true,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.25,
         "return": 296.68,
         "span": 276.8,
-        "z_env": 84.62633634153227,
-        "z_weight": 1.5941928426204126,
+        "z_env": 110.28986172182873,
+        "z_weight": 1.5390725911347733,
         "detected_env": true,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.5,
         "return": 140.8,
         "span": 124.29999999999998,
-        "z_env": 38.229345612468926,
-        "z_weight": 0.49642501059642224,
+        "z_env": 49.70513410907225,
+        "z_weight": 0.45646848528582057,
         "detected_env": true,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 1.0,
         "return": 404.32,
         "span": 385.05,
-        "z_env": 117.56059369511328,
-        "z_weight": 2.3734280414177698,
+        "z_env": 153.29508640432633,
+        "z_weight": 2.3075440302046037,
         "detected_env": true,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
       }
     ],
     "exact_shapley_final": [
@@ -108,8 +152,8 @@
     "env_id": "Acrobot-v1",
     "n_features": 6,
     "weight_null": {
-      "mean": 64.02916666666665,
-      "std": 124.94166722248161,
+      "mean": 46.13125,
+      "std": 109.31763433513566,
       "spans": [
         405.05,
         0.0,
@@ -122,12 +166,24 @@
         -4.300000000000011,
         0.0,
         -8.850000000000023,
-        176.35000000000002
+        176.35000000000002,
+        0.0,
+        -15.100000000000023,
+        -1.0500000000000114,
+        -23.44999999999999,
+        316.2,
+        0.0,
+        0.0,
+        0.0,
+        -9.149999999999977,
+        57.55000000000001,
+        -12.699999999999989,
+        26.5
       ]
     },
     "random_init_return": {
-      "mean": -433.03749999999997,
-      "std": 123.03757763936852,
+      "mean": -448.47499999999997,
+      "std": 110.58540964379958,
       "returns": [
         -94.95,
         -500.0,
@@ -140,7 +196,19 @@
         -500.0,
         -500.0,
         -500.0,
-        -323.65
+        -323.65,
+        -500.0,
+        -500.0,
+        -500.0,
+        -500.0,
+        -153.0,
+        -500.0,
+        -500.0,
+        -500.0,
+        -500.0,
+        -440.45,
+        -500.0,
+        -473.5
       ]
     },
     "env_null": {
@@ -158,46 +226,66 @@
         0.0,
         0.0,
         0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.0
       ]
     },
-    "width_ratio": 124941667222.4816,
+    "width_ratio": 109317634335.13565,
     "checkpoints": [
       {
         "fraction": 0.1,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
-        "z_weight": -0.512472484880892,
+        "z_weight": -0.4219927578982836,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.25,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
-        "z_weight": -0.512472484880892,
+        "z_weight": -0.4219927578982836,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.5,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
-        "z_weight": -0.512472484880892,
+        "z_weight": -0.4219927578982836,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 1.0,
         "return": -120.64,
         "span": 370.0,
         "z_env": Infinity,
-        "z_weight": 2.448909480201637,
-        "detected_env": true,
-        "detected_weight": false
+        "z_weight": 2.9626395775004952,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "not distinguishable from null"
       }
     ],
     "exact_shapley_final": [
@@ -208,7 +296,7 @@
       -18.114999999999995,
       368.0866666666667
     ],
-    "nulls_agree": 3,
+    "nulls_agree": 0,
     "n_checkpoints": 4
   },
   {
@@ -218,6 +306,18 @@
       "mean": 0.0,
       "std": 0.0,
       "spans": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.0,
         0.0,
         0.0,
@@ -247,6 +347,18 @@
         -200.0,
         -200.0,
         -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
+        -200.0,
         -200.0
       ]
     },
@@ -254,6 +366,18 @@
       "mean": 0.0,
       "std": 0.0,
       "spans": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.0,
         0.0,
         0.0,
@@ -277,7 +401,9 @@
         "z_env": 0.0,
         "z_weight": 0.0,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "unresolved"
       },
       {
         "fraction": 0.25,
@@ -286,7 +412,9 @@
         "z_env": 0.0,
         "z_weight": 0.0,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "unresolved"
       },
       {
         "fraction": 0.5,
@@ -295,7 +423,9 @@
         "z_env": 0.0,
         "z_weight": 0.0,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "unresolved"
       },
       {
         "fraction": 1.0,
@@ -304,7 +434,9 @@
         "z_env": 0.0,
         "z_weight": 0.0,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "unresolved"
       }
     ],
     "exact_shapley_final": [
@@ -318,8 +450,8 @@
     "env_id": "Pendulum-v1",
     "n_features": 3,
     "weight_null": {
-      "mean": -152.15934565897092,
-      "std": 131.4185808765863,
+      "mean": -220.19845853019876,
+      "std": 138.88296422685056,
       "spans": [
         -146.88300985121464,
         -298.6410388336335,
@@ -332,12 +464,24 @@
         -41.610456894346044,
         41.74302759315151,
         -306.3586031687096,
-        -371.97169119907267
+        -371.97169119907267,
+        -158.86992343675,
+        -137.36950938235464,
+        -176.13338348035927,
+        -370.18730824773615,
+        -366.7725223385012,
+        -291.34430194080574,
+        -471.78240397853097,
+        -409.83215996296985,
+        -352.6433602454508,
+        -318.27319231995307,
+        -133.97987167636688,
+        -271.66291980734127
       ]
     },
     "random_init_return": {
-      "mean": -1416.7231290291436,
-      "std": 135.4894982113035,
+      "mean": -1457.1247092274443,
+      "std": 127.397113083954,
       "returns": [
         -1385.5678952291662,
         -1580.3625788444456,
@@ -350,12 +494,24 @@
         -1388.1393414880304,
         -1213.5244429687511,
         -1607.8763711735123,
-        -1588.7590257876632
+        -1588.7590257876632,
+        -1397.9505051913081,
+        -1338.5277269305611,
+        -1367.6136664134954,
+        -1511.5369033492352,
+        -1588.8771331035898,
+        -1517.3287699825037,
+        -1682.126272610149,
+        -1636.6054841236814,
+        -1572.3040062097175,
+        -1499.1271101116981,
+        -1391.6422988892314,
+        -1466.6755961937697
       ]
     },
     "env_null": {
-      "mean": 11.124784444012752,
-      "std": 37.785628173960085,
+      "mean": 8.017656628086579,
+      "std": 27.501477479539034,
       "spans": [
         2.4072700700605765,
         0.0,
@@ -368,46 +524,66 @@
         0.0,
         0.0,
         0.0,
+        0.0,
+        31.895144199345623,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        27.03120154657927,
+        0.0,
+        0.0,
+        0.0,
         0.0
       ]
     },
-    "width_ratio": 3.47800439552182,
+    "width_ratio": 5.050018288296649,
     "checkpoints": [
       {
         "fraction": 0.1,
         "return": -1181.7204895064824,
         "span": 0.0,
-        "z_env": -0.2944184067232044,
-        "z_weight": 1.1578221636852253,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.25,
         "return": -1236.5029044958326,
         "span": 0.0,
-        "z_env": -0.2944184067232044,
-        "z_weight": 1.1578221636852253,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 0.5,
         "return": -1296.9857320606425,
         "span": 0.0,
-        "z_env": -0.2944184067232044,
-        "z_weight": 1.1578221636852253,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
       },
       {
         "fraction": 1.0,
         "return": -1453.632357736447,
         "span": 0.0,
-        "z_env": -0.2944184067232044,
-        "z_weight": 1.1578221636852253,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
         "detected_env": false,
-        "detected_weight": false
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
       }
     ],
     "exact_shapley_final": [

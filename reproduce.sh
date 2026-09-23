@@ -33,6 +33,14 @@ PY="$RL/.venv/bin/python"
 # overridable so a smoke run can be pointed at a scratch directory instead of
 # overwriting the artifacts every number in the paper is checked against.
 REPORTS="${REPORTS:-$ROOT/reports}"
+# figures follow the reports they are drawn from. the figures step used to write
+# to docs/paper/figures unconditionally, so a smoke run pointed at a scratch
+# REPORTS still overwrote the publication figures with reduced-budget ones.
+if [ "$REPORTS" = "$ROOT/reports" ]; then
+  FIGURES="${FIGURES:-$ROOT/docs/paper/figures}"
+else
+  FIGURES="${FIGURES:-$REPORTS/figures}"
+fi
 
 SEEDS=5
 UPDATES=100
@@ -72,6 +80,16 @@ echo "python: $("$PY" --version)"
 step "test suite"
 ( cd "$RL" && "$PY" -m pytest -q )
 [ "$TESTS_ONLY" = "1" ] && { echo "tests only, stopping"; exit 0; }
+
+# the smoke test checks that the code runs, not what the answer is. its null
+# budgets sit below the rank floor for alpha=0.05, so every verdict it prints is
+# UNRESOLVED and must not be read as a result. exported only AFTER the test
+# suite: the guard's own tests assert that a sub-floor budget is a hard error,
+# and an opt-out visible to pytest turns five of them into failures.
+if [ "$QUICK" = "1" ]; then
+  export ALLOW_UNRESOLVED_NULLS=1
+  echo "quick mode: null budgets are below the rank floor, verdicts are UNRESOLVED"
+fi
 
 CORPUS="$ROOT/data/corpus/corpus_candles_60s_spot.npz"
 
@@ -169,7 +187,7 @@ step "the outcome-permutation null: sighted agents, fixed corpus"
 step "is the matched null's width a property of the task or of the budget?"
 ( cd "$RL" && "$PY" scripts/null_budget_check.py --corpus "$CORPUS" \
     --runs runs/ppo --out "$REPORTS" \
-    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) \
+    --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) \
     --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "20 40 80 160") )
 
 # the headline null is 24 draws. rerun at 99 to show the verdicts do not move,
@@ -199,8 +217,16 @@ step "are the steered and unsteered agents the same policy?"
 # to generate reference draws. the two answer different questions and the
 # paper needs to have run the one it discusses.
 step "the canonical parameter-randomization sanity check"
+# this step trains its own planted-signal agent, and unlike the other explain
+# steps it wants that agent well converged: the canonical check asks whether a
+# TRAINED network's explanation differs from a random one, so an undertrained
+# subject weakens the test. 150 is the value the reported numbers come from. it
+# was previously left to the script's default, which meant the pipeline passed
+# 60 here and silently produced different planted-arm numbers from the ones the
+# paper quotes.
 ( cd "$RL" && "$PY" scripts/parameter_randomization.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" --updates "$EXPLAIN_UPDATES" \
+    --runs runs/ppo --out "$REPORTS" \
+    --updates $([ "$QUICK" = 1 ] && echo 20 || echo 150) \
     --seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) \
     --n-states $([ "$QUICK" = 1 ] && echo 8 || echo 25) \
     --outcome-seeds $([ "$QUICK" = 1 ] && echo 1 || echo 3) \
@@ -223,7 +249,7 @@ step "horizon scaling: why does the weight null fail?"
 
 step "positive control: does the test fire on a learnable REAL task?"
 ( cd "$RL" && "$PY" scripts/positive_control.py --corpus "$CORPUS" \
-    --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 12) )
+    --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 # the paper's headline verdict turned out to depend on this, so it is measured
 # rather than assumed. same agent, same measurement corpus, two null
@@ -244,16 +270,19 @@ step "is the span an artefact of off-manifold masking?"
 step "does it generalise? four control tasks"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
-    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 12) )
+    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 # -------------------------------------------------------------------- done
 step "confidence intervals on every reported z-score"
+# stated rather than left to the default: the committed intervals were once
+# built at 4000 resamples while the pipeline used 10000, so the numbers in the
+# paper could not be reproduced by running it.
 ( cd "$RL" && "$PY" scripts/bootstrap_z.py --reports "$REPORTS" \
-    --out "$REPORTS" )
+    --out "$REPORTS" --n-boot 10000 )
 
 step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
-    --out "$ROOT/docs/paper/figures" )
+    --out "$FIGURES" )
 
 step "verifying every number in docs/paper/main.tex against the artifacts"
 ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py )

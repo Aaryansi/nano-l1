@@ -110,6 +110,7 @@
       "min_achievable_p_rank": 0.01,
       "z_score": 12.353030960573992,
       "passes": true,
+      "verdict": "INFORMATIVE",
       "n_null_samples": 99
     },
     "held_out_null": {
@@ -121,6 +122,7 @@
       "min_achievable_p_rank": 0.01,
       "z_score": 0.7427751307426204,
       "passes": false,
+      "verdict": "NOT DISTINGUISHABLE FROM NULL",
       "n_null_samples": 99
     },
     "real_market": {
@@ -132,6 +134,7 @@
       "min_achievable_p_rank": 0.01,
       "z_score": 0.25224649066276944,
       "passes": false,
+      "verdict": "NOT DISTINGUISHABLE FROM NULL",
       "n_null_samples": 99
     }
   },

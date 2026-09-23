@@ -46,7 +46,11 @@ from nano_rl.explain.rollout import (  # noqa: E402
     greedy_policy,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 FULL = np.ones(N_FEATURES, dtype=bool)
 EMPTY = np.zeros(N_FEATURES, dtype=bool)
@@ -72,6 +76,7 @@ def main() -> None:
     ap.add_argument("--budgets", type=int, nargs="+", default=[20, 40, 80, 160])
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the null budget check null")
 
     batch = EpisodeBatch.load(args.corpus)
     split = walk_forward_split(batch)
@@ -112,7 +117,8 @@ def main() -> None:
                      "null_std": float(arr.std(ddof=1)),
                      "blind_return_mean": float(np.mean(rets)),
                      "spans": list(map(float, spans)),
-                     "result": r.as_dict(), "fires": bool(r.passes)})
+                     "result": r.as_dict(), "fires": bool(r.passes),
+                     "verdict": short_verdict(r)})
         print(f"  {updates:>9}{arr.mean():>+12.3f}{arr.std(ddof=1):>10.3f}"
               f"{r.z_score:>+9.2f}{np.mean(rets):>+14.3f}"
               f"{r.verdict.split(' (')[0].lower():>22}",
@@ -120,9 +126,18 @@ def main() -> None:
 
     banner("VERDICT")
     sds = [r["null_std"] for r in rows]
-    verdicts = {r["fires"] for r in rows}
+    # compare the three-valued verdict, not bool(passes). an UNRESOLVED
+    # reference and one that decided against are both passes=False, so the
+    # boolean version reported "the verdict is stable" across four budgets
+    # that had in fact decided nothing at all.
+    verdicts = {r["verdict"] for r in rows}
+    unresolved = [r["updates"] for r in rows if r["verdict"] == "unresolved"]
     shrinking = sds[-1] < 0.5 * sds[0]
     print(f"  null sd across budgets: {' -> '.join(f'{v:.2f}' for v in sds)}")
+    if unresolved:
+        print(f"\n  the reference could not decide at budgets {unresolved}, so")
+        print("  nothing below is a statement about the budget. re-run with")
+        print("  enough null draws to resolve alpha before reading a verdict.")
     if len(verdicts) > 1:
         print("\n  THE VERDICT CHANGES WITH THE BUDGET. the real-market result")
         print("  is a statement about how long the null agents trained, and the")
@@ -139,6 +154,7 @@ def main() -> None:
     (out / "null_budget_check.json").write_text(json.dumps({
         "observed_span": observed, "rows": rows,
         "verdict_stable": len(verdicts) == 1,
+        "unresolved_budgets": unresolved,
         "null_still_shrinking": bool(shrinking),
     }, indent=2))
     print(f"\nwrote {out}/null_budget_check.json")

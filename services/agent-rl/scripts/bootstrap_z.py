@@ -34,7 +34,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    short_verdict,
+    test_span_against_null,
+)
 
 
 def bootstrap(observed: float, nulls: list[float], n_boot: int, seed: int) -> dict:
@@ -74,11 +77,14 @@ def bootstrap(observed: float, nulls: list[float], n_boot: int, seed: int) -> di
         dtype=bool, count=int(ok.sum()),
     )
     agree = float(np.mean(passes == bool(point.passes)))
+    # the point verdict is three-valued. collapsing it to a two-way label here
+    # would print "not distinguishable" for a reference that could not decide,
+    # which is the distinction this table exists to make visible.
     return {
         "z": float(point.z_score),
         "z_lo": float(np.percentile(finite, 2.5)),
         "z_hi": float(np.percentile(finite, 97.5)),
-        "verdict": "informative" if point.passes else "not distinguishable",
+        "verdict": short_verdict(point),
         "verdict_stability": agree,
         "degenerate_fraction": float(1.0 - ok.mean()),
         "n_null": int(a.size),

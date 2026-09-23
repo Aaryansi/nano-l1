@@ -44,7 +44,8 @@
         "verdict": "NOT DISTINGUISHABLE FROM NULL",
         "n_null_samples": 24
       },
-      "fires": false
+      "fires": false,
+      "verdict": "not distinguishable from null"
     },
     {
       "updates": 40,
@@ -89,7 +90,8 @@
         "verdict": "NOT DISTINGUISHABLE FROM NULL",
         "n_null_samples": 24
       },
-      "fires": false
+      "fires": false,
+      "verdict": "not distinguishable from null"
     },
     {
       "updates": 80,
@@ -134,7 +136,8 @@
         "verdict": "INFORMATIVE",
         "n_null_samples": 24
       },
-      "fires": true
+      "fires": true,
+      "verdict": "informative"
     },
     {
       "updates": 160,
@@ -179,9 +182,11 @@
         "verdict": "INFORMATIVE",
         "n_null_samples": 24
       },
-      "fires": true
+      "fires": true,
+      "verdict": "informative"
     }
   ],
   "verdict_stable": false,
+  "unresolved_budgets": [],
   "null_still_shrinking": true
 }

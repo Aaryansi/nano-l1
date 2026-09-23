@@ -53,7 +53,11 @@ from nano_rl.explain.rollout import (  # noqa: E402
     greedy_policy,
     masked_span,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 FULL = np.ones(N_FEATURES, dtype=bool)
 EMPTY = np.zeros(N_FEATURES, dtype=bool)
@@ -108,13 +112,14 @@ def run_task(name: str, make_env, make_roll, split, args, agent=None) -> dict:
     a = np.array(nulls)
     print(f"\n  null      {a.mean():+.3f} +/- {a.std(ddof=1):.3f}")
     print(f"  observed  {observed:+.3f}   z {r.z_score:+.2f}   "
-          f"{'INFORMATIVE' if r.passes else 'not distinguishable'}")
+          f"{short_verdict(r)}")
 
     return {
         "task": name, "return": ret, "span": observed,
         "null_spans": list(map(float, nulls)),
         "null_mean": float(a.mean()), "null_std": float(a.std(ddof=1)),
         "result": r.as_dict(), "fires": bool(r.passes),
+        "verdict": short_verdict(r),
     }
 
 
@@ -127,6 +132,7 @@ def main() -> None:
     ap.add_argument("--updates", type=int, default=40)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the positive control null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -166,13 +172,21 @@ def main() -> None:
     for r in results:
         print(f"  {r['task']:<14}{r['return']:>+10.2f}{r['span']:>+10.2f}"
               f"{r['result']['z_score']:>+10.2f}"
-              f"{('informative' if r['fires'] else 'not distinguishable'):>24}")
+              f"{short_verdict(r['result']):>24}")
 
     pred = next(r for r in results if r["task"] == "prediction")
     trade = next(r for r in results if r["task"] == "trading")
     separated = pred["fires"] and not trade["fires"]
+    # a positive control that cannot decide has not passed and has not failed.
+    # saying so matters more here than anywhere else in the pipeline: this is
+    # the step whose whole job is to show the test can fire on real data.
+    undecided = [r["task"] for r in results if r["verdict"] == "unresolved"]
     print()
-    if separated:
+    if undecided:
+        print(f"  the reference could not decide on {', '.join(undecided)}.")
+        print("  the positive control neither passed nor failed, so it does")
+        print("  not license any claim about the test's power on real data.")
+    elif separated:
         print("  the test fires on the prediction task and declines on the")
         print("  trading task, on identical real episodes. it is separating")
         print("  tasks by whether observations carry usable information,")
@@ -189,6 +203,7 @@ def main() -> None:
     (out / "positive_control.json").write_text(json.dumps({
         "tasks": results,
         "separated": bool(separated),
+        "undecided_tasks": undecided,
         "n_train": len(split.train),
         "n_test": len(split.test),
     }, indent=2))

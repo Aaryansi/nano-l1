@@ -313,3 +313,67 @@ def consistency_across_runs(attributions: list[np.ndarray]) -> float:
         if ra.std() > 1e-12 and rb.std() > 1e-12:
             rhos.append(float(np.corrcoef(ra, rb)[0, 1]))
     return float(np.mean(rhos)) if rhos else float("nan")
+
+
+# ---------------------------------------------------------------- resolving power
+#
+# a rank test with n reference draws bottoms out at p = 1/(n+1). if that floor
+# sits above alpha, the comparison cannot return INFORMATIVE for any statistic
+# whatsoever, so every verdict it emits is UNRESOLVED by construction.
+#
+# this is not hypothetical. four pipeline steps ran at n=12 (floor 0.0769) and
+# n=16 (floor 0.0588) against alpha=0.05. a planted signal sitting 1160 sds
+# outside its reference still reported UNRESOLVED, and because the callers
+# stored the outcome as bool(passes), that was written to json and printed as
+# "not distinguishable from null", which is a claim about the world rather than
+# a statement about the budget.
+
+
+def min_nulls_for(alpha: float = 0.05) -> int:
+    """smallest reference size whose rank floor can resolve alpha."""
+    return int(np.ceil(1.0 / alpha)) - 1
+
+
+def check_resolving_power(
+    n_null: int,
+    alpha: float = 0.05,
+    *,
+    what: str = "this reference",
+) -> None:
+    """refuse a reference too small to decide at alpha.
+
+    raises SystemExit rather than warning, because the failure is silent
+    downstream: the run completes, writes plausible-looking artifacts, and the
+    verdicts are all UNRESOLVED for a reason that has nothing to do with the
+    data. set ALLOW_UNRESOLVED_NULLS=1 to downgrade this to a warning, which
+    is what the --quick smoke test does since it is checking that the code
+    runs rather than what the answer is.
+    """
+    import os
+    import sys
+
+    need = min_nulls_for(alpha)
+    if n_null >= need:
+        return
+    msg = (
+        f"{what} has {n_null} draws, so its rank floor is "
+        f"{1.0 / (n_null + 1):.4f}, above alpha={alpha}. no statistic can be "
+        f"called informative against it. use at least {need} draws."
+    )
+    if os.environ.get("ALLOW_UNRESOLVED_NULLS") == "1":
+        print(f"  warning: {msg}", file=sys.stderr)
+        return
+    raise SystemExit(f"resolving power: {msg}")
+
+
+def short_verdict(result) -> str:
+    """the verdict as a short lowercase label, keeping UNRESOLVED distinct.
+
+    accepts a SanityResult or the dict from as_dict(), because the scripts
+    print from both. the point is to stop `informative if passes else not
+    distinguishable` appearing anywhere: that spelling turns "the reference
+    could not decide" into "the reference decided against", which is a claim
+    about the agent rather than about the budget.
+    """
+    v = result["verdict"] if isinstance(result, dict) else result.verdict
+    return v.split(" (")[0].lower()

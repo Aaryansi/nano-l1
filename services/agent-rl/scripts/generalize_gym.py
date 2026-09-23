@@ -45,7 +45,11 @@ from nano_rl.envs.gym_null import (  # noqa: E402
     observation_pool,
     train_gym_ppo,
 )
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 
 def banner(t: str) -> None:
@@ -156,13 +160,19 @@ def run_env(env_id: str, args) -> dict:
         )
         r_env = test_span_against_null(span, env_spans)
         r_wt = test_span_against_null(span, weight_spans)
-        same = r_env.passes == r_wt.passes
+        # compare verdicts rather than bool(passes): a degenerate null
+        # (Acrobot's blind agents all score -500, so every span is exactly 0)
+        # is UNRESOLVED, and counting that as agreement with a null that
+        # genuinely declined overstates how often the two nulls agree.
+        same = short_verdict(r_env) == short_verdict(r_wt)
         rows.append(
             {
                 "fraction": frac, "return": ret, "span": span,
                 "z_env": r_env.z_score, "z_weight": r_wt.z_score,
                 "detected_env": bool(r_env.passes),
                 "detected_weight": bool(r_wt.passes),
+                "verdict_env": short_verdict(r_env),
+                "verdict_weight": short_verdict(r_wt),
             }
         )
         print(f"  {frac:>8.0%} {ret:>10.1f} {span:>10.2f} {r_env.z_score:>+10.2f} "
@@ -172,7 +182,7 @@ def run_env(env_id: str, args) -> dict:
     _, exact_vals = exact_shapley_span(
         final, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed
     )
-    agree = sum(1 for r in rows if r["detected_env"] == r["detected_weight"])
+    agree = sum(1 for r in rows if r["verdict_env"] == r["verdict_weight"])
     print(f"\n  the two nulls agree on {agree}/{len(rows)} checkpoints")
 
     return {
@@ -213,6 +223,7 @@ def main() -> None:
                          "pipeline stop reproducing the paper's table; the "
                          "resample comparison is reported separately")
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the generalize gym null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

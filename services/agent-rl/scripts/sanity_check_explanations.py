@@ -45,7 +45,9 @@ from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noq
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     attribution_span,
+    check_resolving_power,
     consistency_across_runs,
+    short_verdict,
     test_against_null,
 )
 from nano_rl.explain.trajectory import (  # noqa: E402
@@ -109,6 +111,7 @@ def main() -> None:
     ap.add_argument("--episodes", type=int, default=250)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the sanity check explanations null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -180,7 +183,7 @@ def main() -> None:
         ("real market", r_real),
     ):
         print(f"  {label:<22}{r.statistic:>+10.4f}{r.p_rank:>9.4f}  "
-              f"{'informative' if r.passes else 'not distinguishable from null'}")
+              f"{short_verdict(r)}")
 
     ok_power = r_signal.passes
     ok_spec = not r_null.passes

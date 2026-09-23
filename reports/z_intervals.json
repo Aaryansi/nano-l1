@@ -1,182 +1,182 @@
 {
   "permuted: planted signal": {
     "z": 10.477577583022576,
-    "z_lo": 7.584902346949557,
-    "z_hi": 18.58249479442641,
+    "z_lo": 7.51690427707591,
+    "z_hi": 18.65173371000665,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "permuted: null corpus": {
     "z": 1.751743474699246,
-    "z_lo": 1.19320579669644,
-    "z_hi": 2.92005259718339,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.741,
+    "z_lo": 1.187467410224536,
+    "z_hi": 2.888552951845914,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.7423,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "permuted: real market": {
     "z": -15.52461852725054,
-    "z_lo": -25.6679049133438,
-    "z_hi": -11.536059859509285,
+    "z_lo": -25.554391702318117,
+    "z_hi": -11.553620784228164,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "matched: planted signal": {
     "z": Infinity,
     "degenerate_fraction": 1.0,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "matched: null corpus": {
     "z": Infinity,
     "degenerate_fraction": 1.0,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "matched: real market": {
     "z": 1.932351032858232,
-    "z_lo": 1.415554565719524,
-    "z_hi": 2.827749834858112,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.7045,
+    "z_lo": 1.4196855951902319,
+    "z_hi": 2.8486460325971295,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.6967,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "shared-null: planted signal": {
     "z": 12.272937264340852,
-    "z_lo": 10.324026439768486,
-    "z_hi": 16.871459329876092,
+    "z_lo": 10.291642093995055,
+    "z_hi": 17.033257387994738,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "shared-null: null corpus": {
     "z": 0.7176806672462446,
-    "z_lo": 0.31592962247638856,
-    "z_hi": 1.3691593299631308,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.9995,
+    "z_lo": 0.3129918136583071,
+    "z_hi": 1.3806818458605117,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9989,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "shared-null: real market": {
     "z": 0.22947572263316204,
-    "z_lo": -0.1582696674909033,
-    "z_hi": 0.7323051220387672,
-    "verdict": "not distinguishable",
+    "z_lo": -0.15732746623714525,
+    "z_hi": 0.7469820963385536,
+    "verdict": "not distinguishable from null",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "planted, conditional masking": {
-    "z": 9.60550237282806,
-    "z_lo": 6.646149393604351,
-    "z_hi": 21.760363474689782,
+    "z": 11.288990909540559,
+    "z_lo": 7.959763732771936,
+    "z_hi": 20.54917752838215,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
+    "n_null": 24,
+    "n_boot": 10000
   },
   "real market, conditional masking": {
-    "z": -0.5509333385232573,
-    "z_lo": -1.125670123601578,
-    "z_hi": -0.08920822252294162,
-    "verdict": "not distinguishable",
+    "z": -0.13931797979754154,
+    "z_lo": -0.47814389235416394,
+    "z_hi": 0.3449186910595617,
+    "verdict": "not distinguishable from null",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
+    "n_null": 24,
+    "n_boot": 10000
   },
   "real prediction": {
     "z": 3.3962180623329354,
-    "z_lo": 2.5219120032998177,
-    "z_hi": 5.30328543524501,
+    "z_lo": 2.528775504594606,
+    "z_hi": 5.311826875791963,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "real trading": {
     "z": 2.159688491966732,
-    "z_lo": 1.4088125603076214,
-    "z_hi": 4.455495740293395,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.64375,
+    "z_lo": 1.4016272362967277,
+    "z_hi": 4.435359204193323,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.6551,
     "degenerate_fraction": 0.0,
     "n_null": 24,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "blinded-real, 20 updates": {
-    "z": 0.5514522559277802,
-    "z_lo": -0.029518876832314366,
-    "z_hi": 1.8357879306794531,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.9875,
+    "z": 0.7950797152261349,
+    "z_lo": 0.36600649833309773,
+    "z_hi": 1.5092438552290242,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9996,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
+    "n_null": 24,
+    "n_boot": 10000
   },
   "blinded-real, 40 updates": {
-    "z": 1.7147235025007759,
-    "z_lo": 1.096320782829437,
-    "z_hi": 3.109468045198106,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.673,
+    "z": 1.932351032858232,
+    "z_lo": 1.4196855951902319,
+    "z_hi": 2.8486460325971295,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.6967,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
+    "n_null": 24,
+    "n_boot": 10000
   },
   "blinded-real, 80 updates": {
-    "z": 4.225594946478574,
-    "z_lo": 2.3435741198797992,
-    "z_hi": 165.7551366613279,
-    "verdict": "informative",
-    "verdict_stability": 0.99775,
-    "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
-  },
-  "blinded-real, 160 updates": {
-    "z": 203.61925086884776,
-    "z_lo": 158.64881227703228,
-    "z_hi": 346.6405334353737,
+    "z": 6.162264304503081,
+    "z_lo": 3.5008578307585663,
+    "z_hi": 106.84015450982115,
     "verdict": "informative",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
-    "n_null": 12,
-    "n_boot": 4000
+    "n_null": 24,
+    "n_boot": 10000
+  },
+  "blinded-real, 160 updates": {
+    "z": 204.81147378953142,
+    "z_lo": 161.50842597140658,
+    "z_hi": 323.6077262362808,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000
   },
   "market vs synthetic-corpus null": {
     "z": -0.33819373303385325,
-    "z_lo": -0.6782677855763909,
-    "z_hi": -0.02912386169845938,
-    "verdict": "not distinguishable",
+    "z_lo": -0.6704611977241032,
+    "z_hi": -0.03209615629745007,
+    "verdict": "not distinguishable from null",
     "verdict_stability": 1.0,
     "degenerate_fraction": 0.0,
     "n_null": 32,
-    "n_boot": 4000
+    "n_boot": 10000
   },
   "market vs blinded-real null": {
     "z": 2.327845067372307,
-    "z_lo": 1.6131724067830806,
-    "z_hi": 3.9923088184277304,
-    "verdict": "not distinguishable",
-    "verdict_stability": 0.64675,
+    "z_lo": 1.6078960120391153,
+    "z_hi": 3.9925314693899385,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.639,
     "degenerate_fraction": 0.0,
     "n_null": 32,
-    "n_boot": 4000
+    "n_boot": 10000
   }
 }

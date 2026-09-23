@@ -54,7 +54,11 @@ from nano_rl.explain.manifold import (  # noqa: E402
     offmanifold_distance,
 )
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
-from nano_rl.explain.sanity import test_span_against_null  # noqa: E402
+from nano_rl.explain.sanity import (  # noqa: E402
+    check_resolving_power,
+    short_verdict,
+    test_span_against_null,
+)
 
 FULL = np.ones(N_FEATURES, dtype=bool)
 EMPTY = np.zeros(N_FEATURES, dtype=bool)
@@ -98,6 +102,7 @@ def main() -> None:
     ap.add_argument("--k", type=int, default=16)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    check_resolving_power(args.n_null, what="the manifold masking null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -198,7 +203,7 @@ def main() -> None:
     print(f"  {'case':<18}{'span':>10}{'z':>10}{'verdict':>26}")
     for name, r in (("planted signal", r_signal), ("real market", r_real)):
         print(f"  {name:<18}{r.statistic:>+10.2f}{r.z_score:>+10.2f}"
-              f"{('informative' if r.passes else 'not distinguishable'):>26}")
+              f"{short_verdict(r):>26}")
     res["conditional_null_spans"] = list(map(float, nulls))
     res["conditional_planted_signal"] = r_signal.as_dict()
     res["conditional_real_market"] = r_real.as_dict()

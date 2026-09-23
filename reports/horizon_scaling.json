@@ -215,5 +215,5 @@
   "r2_weight": 0.9971143973294171,
   "alpha_env": -1.0787220474379628,
   "r2_env": 0.25762749062675994,
-  "verdict": "confirmed"
+  "verdict": "confirmed on the non-collapsed range"
 }
