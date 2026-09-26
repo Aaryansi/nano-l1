@@ -26,6 +26,8 @@ environment, and it needs no access to the task's internals.
 
 from __future__ import annotations
 
+import copy
+
 import itertools
 from dataclasses import dataclass
 
@@ -298,9 +300,14 @@ def train_gym_ppo(
 
         frac = steps_done / total_steps
         while wanted and frac >= wanted[0]:
-            snap = ActorCritic(obs_dim, n_actions, cfg.hidden)
-            snap.load_state_dict(net.state_dict())
-            checkpoints.append((wanted.pop(0), snap))
+            # deepcopy, not a fresh ActorCritic. constructing one draws from the
+            # global torch rng to initialise weights that load_state_dict then
+            # immediately overwrites, and those draws shift the stream that
+            # net.act() samples actions from. the effect is that asking for
+            # snapshots changed the trajectory being snapshotted: at the same
+            # seed, a checkpointed run and an unsnapshotted one diverged after
+            # the first snapshot. measuring a run must not perturb it.
+            checkpoints.append((wanted.pop(0), copy.deepcopy(net)))
 
     return net, checkpoints
 

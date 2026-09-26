@@ -107,10 +107,10 @@
       },
       {
         "fraction": 0.25,
-        "return": 296.68,
-        "span": 276.8,
-        "z_env": 110.28986172182873,
-        "z_weight": 1.5390725911347733,
+        "return": 158.08,
+        "span": 140.75,
+        "z_env": 56.24033915320238,
+        "z_weight": 0.5732477478511667,
         "detected_env": true,
         "detected_weight": false,
         "verdict_env": "informative",
@@ -118,10 +118,10 @@
       },
       {
         "fraction": 0.5,
-        "return": 140.8,
-        "span": 124.29999999999998,
-        "z_env": 49.70513410907225,
-        "z_weight": 0.45646848528582057,
+        "return": 250.24,
+        "span": 221.5,
+        "z_env": 88.3204490202849,
+        "z_weight": 1.1464954957023334,
         "detected_env": true,
         "detected_weight": false,
         "verdict_env": "informative",
@@ -129,24 +129,27 @@
       },
       {
         "fraction": 1.0,
-        "return": 404.32,
-        "span": 385.05,
-        "z_env": 153.29508640432633,
-        "z_weight": 2.3075440302046037,
+        "return": 500.0,
+        "span": 482.25,
+        "z_env": 191.91040131553896,
+        "z_weight": 2.9975710406211165,
         "detected_env": true,
-        "detected_weight": false,
+        "detected_weight": true,
         "verdict_env": "informative",
-        "verdict_weight": "not distinguishable from null"
+        "verdict_weight": "informative"
       }
     ],
     "exact_shapley_final": [
-      73.07083333333334,
-      74.27916666666667,
-      116.41250000000001,
-      121.28750000000001
+      79.60000000000001,
+      84.83333333333334,
+      164.3,
+      153.51666666666665
     ],
-    "nulls_agree": 0,
-    "n_checkpoints": 4
+    "nulls_agree": 1,
+    "n_checkpoints": 4,
+    "unit": "checkpoint_of_one_run",
+    "agent_seeds": 1,
+    "steps_per_agent": 400000
   },
   {
     "env_id": "Acrobot-v1",
@@ -278,10 +281,10 @@
       },
       {
         "fraction": 1.0,
-        "return": -120.64,
-        "span": 370.0,
-        "z_env": Infinity,
-        "z_weight": 2.9626395775004952,
+        "return": -500.0,
+        "span": 0.0,
+        "z_env": 0.0,
+        "z_weight": -0.4219927578982836,
         "detected_env": false,
         "detected_weight": false,
         "verdict_env": "unresolved",
@@ -289,15 +292,18 @@
       }
     ],
     "exact_shapley_final": [
-      8.953333333333338,
-      5.531666666666666,
-      -5.656666666666667,
-      11.200000000000006,
-      -18.114999999999995,
-      368.0866666666667
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
     ],
     "nulls_agree": 0,
-    "n_checkpoints": 4
+    "n_checkpoints": 4,
+    "unit": "checkpoint_of_one_run",
+    "agent_seeds": 1,
+    "steps_per_agent": 400000
   },
   {
     "env_id": "MountainCar-v0",
@@ -444,7 +450,10 @@
       0.0
     ],
     "nulls_agree": 4,
-    "n_checkpoints": 4
+    "n_checkpoints": 4,
+    "unit": "checkpoint_of_one_run",
+    "agent_seeds": 1,
+    "steps_per_agent": 400000
   },
   {
     "env_id": "Pendulum-v1",
@@ -565,7 +574,7 @@
       },
       {
         "fraction": 0.5,
-        "return": -1296.9857320606425,
+        "return": -1453.632357736447,
         "span": 0.0,
         "z_env": -0.29153548692253634,
         "z_weight": 1.5854965348415806,
@@ -576,7 +585,7 @@
       },
       {
         "fraction": 1.0,
-        "return": -1453.632357736447,
+        "return": -1401.10135036265,
         "span": 0.0,
         "z_env": -0.29153548692253634,
         "z_weight": 1.5854965348415806,
@@ -592,6 +601,9 @@
       0.0
     ],
     "nulls_agree": 4,
-    "n_checkpoints": 4
+    "n_checkpoints": 4,
+    "unit": "checkpoint_of_one_run",
+    "agent_seeds": 1,
+    "steps_per_agent": 400000
   }
 ]

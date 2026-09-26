@@ -227,18 +227,27 @@ if g:
     # agreement between two references that both cannot decide (MountainCar) is
     # not the same fact as an agreement that there is nothing to detect
     # (Pendulum). the count is still pinned so the breakdown cannot drift.
-    check("checkpoints where nulls agree", 8, agree, 0.001)
+    check("checkpoints where nulls agree", 9, agree, 0.001)
     patterns = {}
     for r in g:
         for c in r["checkpoints"]:
             k = (c["verdict_env"], c["verdict_weight"])
             patterns[k] = patterns.get(k, 0) + 1
+    # the parameter null fires on exactly one checkpoint, the converged
+    # CartPole agent, and the paper's claim is that its power appears at
+    # convergence and nowhere below it.
     checks += 1
-    one_each = sorted(patterns.values()) == [4, 4, 4, 4]
-    print(f"  [{'x' if one_each else ' '}] {'four verdict patterns, one environment each':<52} "
-          f"{'yes' if one_each else 'NO':>21}")
-    if not one_each:
-        failures.append(f"gym: paper reports one environment per pattern, got {patterns}")
+    fires_wt = [c for r in g for c in r["checkpoints"]
+                if c["verdict_weight"] == "informative"]
+    only_converged = (len(fires_wt) == 1 and fires_wt[0]["return"] >= 499.0)
+    detail = (f"1/16 at return {fires_wt[0]['return']:.0f}" if only_converged
+              else f"{len(fires_wt)} fire")
+    print(f"  [{'x' if only_converged else ' '}] "
+          f"{'parameter null fires only on the converged agent':<52} "
+          f"{detail:>21}")
+    if not only_converged:
+        failures.append("gym: paper says the parameter null fires on exactly the "
+                        "one converged checkpoint")
 
     # the load-bearing claim: the two constructions agree only where the
     # observed span is identically zero, so no agreement is an agreement about
@@ -247,14 +256,18 @@ if g:
     # 0.00 at every checkpoint while its return degrades over training.
     nonzero = [c for r in g for c in r["checkpoints"] if abs(c["span"]) > 1e-9]
     zero = [c for r in g for c in r["checkpoints"] if abs(c["span"]) <= 1e-9]
+    # three of the four non-zero spans disagree; the fourth is the converged
+    # agent where both fire. an earlier revision claimed all of them disagreed,
+    # which was true of the perturbed run and is not true of this one.
     checks += 1
-    none_agree = all(c["verdict_env"] != c["verdict_weight"] for c in nonzero)
-    print(f"  [{'x' if none_agree else ' '}] {'the nulls never agree on a non-zero span':<52} "
-          f"{f'{len(nonzero)} checkpoints' if none_agree else 'NO':>21}")
-    if not none_agree:
-        failures.append("gym: paper says the two nulls disagree on every non-zero span")
-    check("checkpoints with a zero span", 11, len(zero), 0.001)
-    check("checkpoints with a non-zero span", 5, len(nonzero), 0.001)
+    dis = sum(1 for c in nonzero if c["verdict_env"] != c["verdict_weight"])
+    ok_dis = dis == 3 and len(nonzero) == 4
+    print(f"  [{'x' if ok_dis else ' '}] {'three of four non-zero spans disagree':<52} "
+          f"{f'{dis}/{len(nonzero)}' if ok_dis else 'NO':>21}")
+    if not ok_dis:
+        failures.append(f"gym: paper says 3 of 4 non-zero spans disagree, got {dis}")
+    check("checkpoints with a zero span", 12, len(zero), 0.001)
+    check("checkpoints with a non-zero span", 4, len(nonzero), 0.001)
     checks += 1
     pend = next(r for r in g if r["env_id"].startswith("Pendulum"))
     pend_zero = all(abs(c["span"]) <= 1e-9 for c in pend["checkpoints"])
@@ -264,17 +277,18 @@ if g:
         failures.append("gym: paper says pendulum contributes no detection evidence")
     checks += 1
     opposed = patterns.get(("informative", "not distinguishable from null"), 0)
-    print(f"  [{'x' if opposed == 4 else ' '}] {'cartpole: env informative where weight declines':<52} "
+    print(f"  [{'x' if opposed == 3 else ' '}] {'env informative where weight declines, 3 rows':<52} "
           f"{opposed if opposed else 'NO':>21}")
-    if opposed != 4:
-        failures.append("gym: paper says the two nulls are in direct opposition on CartPole")
+    if opposed != 3:
+        failures.append("gym: paper says the two nulls oppose on the three partly "
+                        "trained CartPole checkpoints")
     check("total checkpoints", 16, total, 0.001)
 
     import numpy as np
     zw = [c["z_weight"] for r in g for c in r["checkpoints"]]
-    check("max |z| under the weight null", 2.96, max(map(abs, zw)), 0.02)
+    check("max |z| under the weight null", 3.00, max(map(abs, zw)), 0.02)
     ze = [c["z_env"] for r in g for c in r["checkpoints"] if abs(c["z_env"]) != float("inf")]
-    check("max z under the environment null", 153.3, max(ze), 0.02)
+    check("max z under the environment null", 191.9, max(ze), 0.02)
 
 # ------------------------------------------------- initialisation variance
 nw = load("null_width_conjecture.json")
@@ -716,17 +730,27 @@ else:
         ("cartpole parameter-null sd", r"CartPole\s*&[^&]*?([\d]+\.[\d]+)\}\$"),
         ("steering market p", r"market\s*&[^&]*&[^&]*&\s*\$\\mathbf\{([\d.]+)\}\$"),
         ("steering planted return", r"planted signal\s*&[^&]*&[^&]*\\to \\mathbf\{\+([\d.]+)\}\$"),
-        ("max z under the parameter null", r"never exceeds?\s*\$z=([\d.]+)\$"),
-        ("max z under the environment null", r"environment null reaches \$z=\+([\d.]+)\$"),
+        ("max z under the parameter null", r"barely\n?\s*\(\$z=\+([\d.]+)\$\)"),
+        ("max z under the environment null", r"reaches\s*\$z=\+([\d.]+)\$"),
         ("cross-seed rank correlation", r"cross-seed rank correlation \$([\d.]+)\$"),
     ]
     for label, rx in SHARED:
         mw = re.search(rx, wt)
         mm = re.search(rx, mt)
         checks += 1
-        if not mw or not mm:
-            where = "workshop" if not mw else "main"
-            print(f"  [ ] {label + ' (not found in ' + where + ')':<52} {'SKIP':>21}")
+        if not mm:
+            # not found in main.tex means the regex has drifted, not that the
+            # paper omits the number. a comparison that silently stops matching
+            # is worse than no comparison, so this fails rather than skips.
+            failures.append(
+                f"{label}: the cross-document pattern no longer matches main.tex, "
+                f"so the two documents stopped being compared on it")
+            print(f"  [ ] {label + ' (pattern no longer matches main)':<52} "
+                  f"{'FAIL':>21}")
+            continue
+        if not mw:
+            print(f"  [-] {label + ' (workshop does not quote it)':<52} "
+                  f"{'n/a':>21}")
             continue
         a, b = float(mw.group(1)), float(mm.group(1))
         ok = abs(a - b) < 1e-9
@@ -803,6 +827,107 @@ elif g:
     if not spans_equal:
         failures.append("resample: blinding the null agents changed the observed span, "
                         "which would be a bug rather than a result")
+
+# --------------------------------------- independently trained replicates
+#
+# the reviewer objection this answers: four checkpoints from one run are
+# correlated observations of one trajectory, not four samples, so they cannot
+# support a claim about behaviour across agents. five independent agents per
+# task can.
+sd_path = REPORTS / "seeds" / "generalize_gym.json"
+print("\nsection 6.1: five independently trained agents per task")
+if not sd_path.exists():
+    checks += 1
+    failures.append("seeds/generalize_gym.json missing: the replication claim "
+                    "is unchecked")
+    print(f"  [ ] {'replicate sweep missing':<52} {'FAIL':>21}")
+else:
+    sd = json.loads(sd_path.read_text())
+    by = {r["env_id"].split("-")[0].lower(): r for r in sd}
+    checks += 1
+    # the rows must actually BE independent agents, not snapshots
+    right_unit = all(r["unit"] == "independent_agent" and r["agent_seeds"] == 5
+                     for r in sd)
+    print(f"  [{'x' if right_unit else ' '}] {'rows are independent agents, five per task':<52} "
+          f"{'yes' if right_unit else 'NO':>21}")
+    if not right_unit:
+        failures.append("seeds: these rows are not independently trained agents")
+
+    # the headline: the environment null's verdict does not vary by seed
+    checks += 1
+    stable = {
+        e: len({c["verdict_env"] for c in r["checkpoints"]}) == 1
+        for e, r in by.items()
+    }
+    all_stable = all(stable.values())
+    print(f"  [{'x' if all_stable else ' '}] "
+          f"{'environment-null verdict is the same on every seed':<52} "
+          f"{'4/4 tasks' if all_stable else str(stable):>21}")
+    if not all_stable:
+        failures.append("seeds: paper says the environment verdict is seed-stable")
+
+    check("cartpole return across seeds", 365.0,
+          sum(c["return"] for c in by["cartpole"]["checkpoints"]) / 5, 0.03)
+    check("cartpole span across seeds", 350.91,
+          sum(c["span"] for c in by["cartpole"]["checkpoints"]) / 5, 0.03)
+    check("pendulum return across seeds", -1339.8,
+          sum(c["return"] for c in by["pendulum"]["checkpoints"]) / 5, 0.03)
+
+    # the narrowing: the parameter null fires on exactly the converged agents
+    cp = by["cartpole"]["checkpoints"]
+    checks += 1
+    fires = [c for c in cp if c["verdict_weight"] == "informative"]
+    converged = [c for c in cp if c["return"] >= 499.0]
+    matches = (len(fires) == 3 and {c["seed"] for c in fires} ==
+               {c["seed"] for c in converged})
+    print(f"  [{'x' if matches else ' '}] "
+          f"{'parameter null fires on exactly the converged agents':<52} "
+          f"{f'{len(fires)}/5' if matches else 'NO':>21}")
+    if not matches:
+        failures.append("seeds: paper says the parameter null fires on the three "
+                        "converged CartPole agents and no others")
+
+    # acrobot does not learn in any independent run
+    checks += 1
+    ac = by["acrobot"]["checkpoints"]
+    never = all(c["return"] <= -499.0 and abs(c["span"]) < 1e-9 for c in ac)
+    print(f"  [{'x' if never else ' '}] {'acrobot never learns across five seeds':<52} "
+          f"{'yes' if never else 'NO':>21}")
+    if not never:
+        failures.append("seeds: paper says acrobot's single-run learning does not "
+                        "reproduce")
+
+    total_agree = sum(r["nulls_agree"] for r in sd)
+    check("agents where the two nulls agree", 13, total_agree, 0.001)
+
+    # the invariant that ties the two designs together. the checkpointed run at
+    # 100% and the independent run at the same seed train the same agent for the
+    # same number of steps, so they must produce the same agent. they did not
+    # until snapshotting stopped consuming rng: taking a snapshot shifted the
+    # stream that action sampling draws from, and on Acrobot that perturbation
+    # manufactured an agent reaching -121 where the unperturbed seed scores -500.
+    # asserting equality here is what would catch that class of bug returning.
+    if g:
+        checks += 1
+        mismatched = []
+        for a, b in zip(g, sd):
+            fin = next((c for c in a["checkpoints"] if c["fraction"] == 1.0), None)
+            s0 = next((c for c in b["checkpoints"] if c["seed"] == 0), None)
+            if fin is None or s0 is None:
+                mismatched.append(a["env_id"])
+                continue
+            if (abs(fin["return"] - s0["return"]) > 1e-9
+                    or abs(fin["span"] - s0["span"]) > 1e-9):
+                mismatched.append(a["env_id"])
+        ok = not mismatched
+        print(f"  [{'x' if ok else ' '}] "
+              f"{'final checkpoint equals the independent run at seed 0':<52} "
+              f"{'4/4 tasks' if ok else str(mismatched):>21}")
+        if not ok:
+            failures.append(
+                f"snapshotting perturbs training again: the checkpointed run at "
+                f"100% differs from an independent run at the same seed on "
+                f"{mismatched}")
 
 # ------------------------------------------------------------- power curve
 #

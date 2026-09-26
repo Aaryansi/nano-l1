@@ -116,9 +116,11 @@ their own estimation error, and semantically legible. Every check we knew to
 apply passes, and the explanation is empty. We then build four reference
 distributions against which to test it, and each fails in its own way.
 Randomising network parameters to generate reference draws has almost no power:
-across sixteen checkpoints on four control tasks it never exceeds $z=2.96$, and
-a variance decomposition shows why, its width closely tracking the standard
-deviation of random-initialisation return. Training on a
+across sixteen checkpoints on four control tasks it crosses the threshold once,
+barely, on the single fully converged agent, while an environment-level null
+calls that agent informative sixty times more strongly; a variance decomposition
+shows why, its width closely tracking the standard deviation of
+random-initialisation return. Training on a
 signal-free corpus varies the corpus as well as the information. Blinding the
 observation channel removes the agent's capacity to respond, collapsing the
 reference onto a point mass, so that on two of our three cases it cannot
@@ -176,9 +178,11 @@ left implicit.}
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
 \item \textbf{Parameter randomisation is underpowered as a reference, and we give
-the mechanism.} Used to generate reference draws it never exceeds $z=2.96$ across
-sixteen checkpoints on four control tasks, including on a converged CartPole
-policy scoring 404 of 500, where an environment-level null reaches $z=153$. A
+the mechanism.} Used to generate reference draws it fires on one of sixteen
+checkpoints across four control tasks, the converged CartPole policy scoring 500
+of 500, and barely ($z=+3.00$) where an environment-level null reaches
+$z=+191.9$. Its power appears at convergence and nowhere below it, which five
+independently trained agents per task confirm. A
 variance decomposition explains it: the masked term is near-constant across
 random initialisations, so the span inherits the spread of initialisation
 return, which it tracks to within two percent (Section~\ref{sec:nulls}).
@@ -532,7 +536,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 397 tests cover the environment, the attribution implementations, and
+command; 404 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -828,24 +832,32 @@ budget ever reaches the goal.}
 
 A randomly initialised policy behaves arbitrarily, so masking its inputs moves
 return unpredictably and the reference distribution is very wide. The resulting
-test has almost no power. Across sixteen checkpoints the parameter null never
-exceeds $z=2.96$, including on a converged CartPole policy scoring 404 of 500,
-while the environment null reaches $z=+153.3$. The two constructions return the
-same verdict on eight of the sixteen, and which eight is the whole point: the
-observed span is exactly zero at eleven of the sixteen checkpoints, and
-\emph{every one of the eight agreements is a checkpoint where the span is zero
-and there is nothing to detect}. On all five checkpoints with a non-zero span
-the two disagree, without exception. Four are CartPole, where the environment
-null calls every checkpoint informative and the parameter null declines. The
-fifth is Acrobot's converged agent, where the environment null has collapsed to
-a point mass and cannot decide while the parameter null declines. MountainCar
-never leaves $-200$ and Pendulum's span is zero at every checkpoint, so their
-agreement is agreement about a statistic that is identically zero. We therefore
-do not claim these four tasks show the two constructions agreeing anywhere
-informative. They agree only where the question is empty, and on the only
-environment that supplies a non-zero span at every checkpoint they are in direct
-opposition. The choice of null is not a detail; it decides the verdict, and the
-construction already available is substantially the weaker of the two.
+test has very little power, and where it has any is specific. Across sixteen
+checkpoints the parameter null crosses the threshold exactly once, on the
+converged CartPole agent scoring $500$ of $500$, and it crosses it barely
+($z=+3.00$). The environment null calls that same agent informative at
+$z=+191.91$. On the other fifteen checkpoints the parameter null declines or
+cannot decide.
+
+The observed span is exactly zero at twelve of the sixteen checkpoints, so most
+of this sweep is not a test of anything: only CartPole produces an agent whose
+observations demonstrably matter. The two constructions return the same verdict
+on nine of the sixteen, and the nine are of three kinds. Four are Pendulum, where
+both decline on a span of zero. Four are MountainCar, where neither can decide.
+One is the converged CartPole agent, where both fire. The seven disagreements are
+the three partly trained CartPole checkpoints, at returns $291$, $158$ and $250$,
+where the environment null fires between $z=+56$ and $z=+116$ and the parameter
+null does not, and the four Acrobot checkpoints, where the environment reference
+is a point mass and cannot decide while the parameter null declines.
+
+So the parameter null is not powerless, and we should not say it is. Its power
+appears at convergence and only there: it fires on the one agent in this sweep
+that solves its task and on none of the partly trained ones, while the
+environment null fires on all four CartPole checkpoints. That is a difference in
+sensitivity of roughly sixty-fold at the margin, not an absence of signal. The
+choice of null still decides the verdict on three of the four checkpoints where
+there is anything to decide, and the construction already available is
+substantially the weaker of the two.
 
 Two environments qualify the claim. MountainCar is degenerate under \emph{both}
 constructions at $0.00 \pm 0.00$, because within our step budget no policy
@@ -858,14 +870,24 @@ about detection, for a reason worth stating rather than leaving in the table:
 its agent's span is exactly $0.00$ at every checkpoint while its return falls
 from $-1182$ to $-1454$ over training. An agent whose measured observation
 dependence is identically zero and whose return degrades is not a case where a
-reference distribution is being tested. Of the four tasks, only CartPole
-supplies a non-zero span at every checkpoint, and Acrobot supplies one. Acrobot shows the test tracking
-\emph{whether there is anything to explain} rather than agent quality: its agent
-scores $-500$ until it learns and the span is exactly $0.00$ there. Its
-environment reference is a point mass throughout, so the comparison is
-unresolved rather than negative, which is the same failure the matched
-construction shows on our synthetic corpora. We do not claim undertrained agents generally produce empty
-explanations; they do not.
+reference distribution is being tested. Acrobot contributes no evidence either, and the reason is worth recording
+because an earlier version of this paper reported the opposite. Its agent never
+learns at this budget: every checkpoint scores exactly $-500$ with a span of
+exactly $0.00$, and its environment reference is a point mass throughout, so the
+comparison is unresolved rather than negative. That is the same failure the
+matched construction shows on our synthetic corpora. A previous run of this
+experiment showed Acrobot reaching $-121$ at its final snapshot, which we read as
+the test tracking an agent becoming competent. That run was an artefact: taking a
+snapshot constructed a network, which drew from the global random stream that
+action sampling then used, so the act of checkpointing perturbed the trajectory
+being checkpointed. With the snapshot made side-effect-free the same seed scores
+$-500$, and so do five independently trained agents (\elsewhere{par:seeds}).
+There was no learning to track.
+
+Of the four tasks, then, only CartPole supplies a non-zero span at all. The other
+three show the comparison declining or failing to resolve where there is nothing
+to find, which is the behaviour one wants but is not evidence that the
+construction generalises. We claim one task examined two ways, not four tasks.
 
 \paragraph{Is the environment null an off-manifold artefact?}
 Our blinded observations are drawn per coordinate from a moment-matched
@@ -887,6 +909,66 @@ off-manifold draws were adding variance to the reference, which makes the test
 bound on the gap between the two constructions, and the conclusion of this
 section does not depend on how the observation channel is blinded. We continue to
 report the Gaussian numbers throughout because they are the conservative ones.
+
+\paragraph{Four checkpoints from one run are not four samples.}
+\label{par:seeds}
+The sweep above snapshots a single training run at four fractions. Those four
+rows share an initialisation, a data order, and every gradient step up to the
+earliest snapshot, so they are correlated observations of one trajectory. They
+support a statement about how the verdict moves as \emph{that} agent learns, and
+not a statement about how the two constructions behave across agents. For the
+second the replicate has to be the training run, so we trained five independent
+agents per task to full length and tested each against the same references
+(Table~\ref{tab:seeds}).
+
+\begin{table}[t]
+\centering\small
+\caption{Five \emph{independently trained} agents per task, each to $400$k steps,
+tested against the same 24-draw references. The environment null returns the same
+verdict on every seed of every task. The parameter null does not: it fires on the
+three CartPole agents that converge and declines on the two that do not.}
+\label{tab:seeds}
+\begin{tabular}{lrrll}
+\toprule
+Task & Return & Span & Environment null & Parameter null \\
+\midrule
+CartPole    & $+365 \pm 185$ & $+351 \pm 184$ & informative $5/5$ & fires $3/5$ \\
+Acrobot     & $-500 \pm 0$ & $+0.00 \pm 0.00$ & unresolved $5/5$ & declines $5/5$ \\
+MountainCar & $-200 \pm 0$ & $+0.00 \pm 0.00$ & unresolved $5/5$ & unresolved $5/5$ \\
+Pendulum    & $-1340 \pm 84$ & $+0.00 \pm 0.00$ & declines $5/5$ & declines $5/5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two things follow, and the second narrows a claim we made above.
+
+The environment null's verdict is a property of the task and not of the run. It
+is identical on all five seeds in all four tasks, including on CartPole where
+return varies from $160$ to $500$ and the span from $146$ to $487$: every seed
+is called informative, at $z$ between $+58$ and $+194$. That is the robustness
+the checkpoint design could not establish, and it is the claim the
+cross-environment argument actually needs.
+
+The parameter null, however, is not uniformly powerless. It fires on each of the
+three CartPole agents that reach $500$ of $500$ ($z=+3.00$, $+3.03$, $+3.03$)
+and declines on the two that plateau near $160$ ($z=+0.61$, $+0.66$). So the
+honest statement is narrower than "almost no power": the parameter null has
+enough power to detect a \emph{fully converged} agent on the one task here where
+agents converge, and not enough to detect a partly trained one. It is still the
+weaker construction by a wide margin, since the environment null calls the same
+agents informative at sixty to two hundred standard deviations rather than
+three, but a reader should not take from us that it never fires. Across the
+twenty agents the two constructions agree on thirteen, a different pattern from
+the checkpoint sweep rather than a stronger version of it.
+
+The five independent runs also settle Acrobot. All of them score exactly $-500$
+with a span of exactly $0.00$, matching the single run once snapshotting was made
+side-effect-free. The $-121$ we previously reported at its final checkpoint came
+from the perturbed trajectory described above and does not exist. We therefore
+make no claim that the test tracked an agent becoming competent on Acrobot, and
+the one place this sweep bears on that question is CartPole, where it does: the
+environment null fires at every skill level from $158$ to $500$, and the
+parameter null only at $500$.
 
 \paragraph{Why the parameter null is wide.}
 \label{par:why}

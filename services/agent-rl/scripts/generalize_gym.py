@@ -140,20 +140,45 @@ def run_env(env_id: str, args) -> dict:
     ratio = weight_spans.std(ddof=1) / max(env_spans.std(ddof=1), 1e-9)
     print(f"  the weight null is {ratio:.0f}x wider\n")
 
-    # ---- the trained agent, checkpointed
-    fractions = (0.1, 0.25, 0.5, 1.0)
-    env = make_env(env_id)
-    final, checkpoints = train_gym_ppo(
-        env, GymPPOConfig(seed=args.seed), total_steps=args.steps,
-        checkpoint_fractions=fractions,
-    )
-    env.close()
+    # ---- the trained agent
+    #
+    # two modes, and the difference matters for what can be claimed. snapshotting
+    # one training run at four fractions gives four CORRELATED observations of a
+    # single trajectory: they share an initialisation, a data order and every
+    # gradient step up to the earliest snapshot. that supports a statement about
+    # how the verdict moves as one agent learns, and not a statement about how
+    # the two constructions behave across agents. for the latter the replicate
+    # has to be the training run, so --agent-seeds trains that many independent
+    # agents to full length and reports the spread across them.
+    replicate_mode = args.agent_seeds > 1
+    if replicate_mode:
+        units = []
+        for k in range(args.agent_seeds):
+            env = make_env(env_id)
+            net, _ = train_gym_ppo(
+                env, GymPPOConfig(seed=args.seed + k), total_steps=args.steps
+            )
+            env.close()
+            units.append((args.seed + k, net))
+            print(f"  trained independent agent {k + 1}/{args.agent_seeds}",
+                  flush=True)
+        final = units[-1][1]
+        unit_key, unit_name = "seed", "seed"
+    else:
+        fractions = (0.1, 0.25, 0.5, 1.0)
+        env = make_env(env_id)
+        final, units = train_gym_ppo(
+            env, GymPPOConfig(seed=args.seed), total_steps=args.steps,
+            checkpoint_fractions=fractions,
+        )
+        env.close()
+        unit_key, unit_name = "fraction", "progress"
 
-    print(f"  {'progress':>9} {'return':>10} {'span':>10} "
+    print(f"  {unit_name:>9} {'return':>10} {'span':>10} "
           f"{'z (env)':>10} {'z (weight)':>12} {'agree?':>8}")
 
     rows = []
-    for frac, net in checkpoints:
+    for frac, net in units:
         ret = evaluate_gym(net, env_id, n_episodes=25, seed=args.seed)
         span = attribution_span_fast(
             net, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed
@@ -167,7 +192,7 @@ def run_env(env_id: str, args) -> dict:
         same = short_verdict(r_env) == short_verdict(r_wt)
         rows.append(
             {
-                "fraction": frac, "return": ret, "span": span,
+                unit_key: frac, "return": ret, "span": span,
                 "z_env": r_env.z_score, "z_weight": r_wt.z_score,
                 "detected_env": bool(r_env.passes),
                 "detected_weight": bool(r_wt.passes),
@@ -175,7 +200,8 @@ def run_env(env_id: str, args) -> dict:
                 "verdict_weight": short_verdict(r_wt),
             }
         )
-        print(f"  {frac:>8.0%} {ret:>10.1f} {span:>10.2f} {r_env.z_score:>+10.2f} "
+        shown = f"{frac:>8.0%}" if not replicate_mode else f"{frac:>9d}"
+        print(f"  {shown} {ret:>10.1f} {span:>10.2f} {r_env.z_score:>+10.2f} "
               f"{r_wt.z_score:>+12.2f} {'yes' if same else 'NO':>8}", flush=True)
 
     # exact per-feature values for the converged agent only
@@ -183,7 +209,16 @@ def run_env(env_id: str, args) -> dict:
         final, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed
     )
     agree = sum(1 for r in rows if r["verdict_env"] == r["verdict_weight"])
-    print(f"\n  the two nulls agree on {agree}/{len(rows)} checkpoints")
+    noun = "independently trained agents" if replicate_mode else "checkpoints"
+    print(f"\n  the two nulls agree on {agree}/{len(rows)} {noun}")
+    if replicate_mode:
+        rets = np.array([r["return"] for r in rows], dtype=float)
+        spns = np.array([r["span"] for r in rows], dtype=float)
+        vs = {r["verdict_env"] for r in rows}
+        print(f"  across seeds: return {rets.mean():+.1f} +/- {rets.std(ddof=1):.1f}, "
+              f"span {spns.mean():+.2f} +/- {spns.std(ddof=1):.2f}")
+        print(f"  environment-null verdict is "
+              f"{'the same on every seed' if len(vs) == 1 else f'NOT stable: {sorted(vs)}'}")
 
     return {
         "env_id": env_id,
@@ -202,6 +237,11 @@ def run_env(env_id: str, args) -> dict:
         "exact_shapley_final": exact_vals.tolist(),
         "nulls_agree": agree,
         "n_checkpoints": len(rows),
+        # what the rows are. a reader, and the verifier, must not have to guess
+        # whether these are correlated snapshots or independent runs.
+        "unit": "independent_agent" if replicate_mode else "checkpoint_of_one_run",
+        "agent_seeds": int(args.agent_seeds),
+        "steps_per_agent": int(args.steps),
     }
 
 
@@ -213,6 +253,14 @@ def main() -> None:
     ap.add_argument("--null-steps", type=int, default=30_000)
     ap.add_argument("--n-null", type=int, default=12)
     ap.add_argument("--attr-episodes", type=int, default=20)
+    ap.add_argument("--agent-seeds", type=int, default=1,
+                    help="how many INDEPENDENT agents to train per environment. "
+                         "1 keeps the reported behaviour, snapshotting a single "
+                         "run at four fractions, which gives correlated "
+                         "observations of one trajectory. more than 1 trains "
+                         "that many agents to full length instead, so the "
+                         "replicate is the training run and the spread across "
+                         "them is a spread across agents")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--blind", choices=("gaussian", "resample"), default="gaussian",
                     help="how blinded observations are drawn. gaussian is the "

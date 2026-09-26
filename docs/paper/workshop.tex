@@ -73,11 +73,12 @@
   anything requires a reference distribution: what it would have looked like had
   the agent learned nothing. Reinforcement learning has no agreed way to build
   one, and the problem is harder than it appears. The construction available off the
-  shelf, randomising network parameters to generate reference draws, has almost
-  no power: across sixteen checkpoints on four control tasks it never exceeds
-  $z=2.96$, and its width closely tracks the standard deviation of
-  random-initialisation return, so it measures the variance of initialisation
-  and not the explanation. Run instead in its
+  shelf, randomising network parameters to generate reference draws, has very
+  little power: across sixteen checkpoints on four control tasks it fires once,
+  barely ($z=+3.00$), on the single fully converged agent, where an
+  environment-level null reaches $z=+191.9$. Its width closely tracks the
+  standard deviation of random-initialisation return, so it measures the variance
+  of initialisation and not the explanation. Run instead in its
   canonical form it answers a different question and clears the explanation we
   show to be empty. We then build the three natural replacements and
   each fails differently. A signal-free corpus varies the corpus as well as the
@@ -325,12 +326,15 @@ anything to explain.
 We build both nulls for the same task (Table~\ref{tab:nulls},
 Figure~\ref{fig:nullcmp}). A randomly initialised policy behaves arbitrarily, so
 masking its inputs moves return unpredictably and the reference distribution is
-very wide. Across sixteen checkpoints the parameter null never exceeds $z=2.96$,
-including on a converged CartPole policy scoring 404 of 500, while the
-environment null reaches $z=+153.3$. The two return the same verdict on eight of
-the sixteen, and every one of those eight is a checkpoint where the observed
-span is exactly zero and there is nothing to detect. On all five checkpoints
-with a non-zero span they disagree, without exception.
+very wide. Across sixteen checkpoints the parameter null fires once, barely
+($z=+3.00$), on the converged CartPole policy scoring 500 of 500, where the
+environment null reaches $z=+191.9$. The observed span is exactly zero at twelve
+of the sixteen, so only CartPole tests anything. The two return the same verdict
+on nine: four on Pendulum where both decline on a zero span, four on MountainCar
+where neither can decide, and the converged CartPole agent where both fire. Of
+the four non-zero spans they disagree on three. The parameter null is therefore
+not powerless, but its power appears at convergence and nowhere below it, which
+five independently trained agents per task confirm.
 
 \begin{table}[t]
 \centering\small
@@ -374,12 +378,13 @@ reference distribution cannot reject anything.}
 \end{figure*}
 
 Acrobot also shows the test tracking \emph{whether there is anything to explain}
-rather than agent quality: its agent fails completely until it learns and the
-span is exactly $0.00$ there. Its environment reference is a point mass at every
-checkpoint, so the comparison is unresolved rather than negative, which is the
-same failure blinding shows on our synthetic corpora. CartPole's observations
-matter at every skill level and the test fires throughout, and it is the only
-one of the four tasks supplying a non-zero span at every checkpoint. We do not claim
+rather than agent quality: its agent never learns at this budget, scoring
+exactly $-500$ with a span of exactly $0.00$ at every checkpoint and on five
+independent runs. Its environment reference is a point mass throughout, so the
+comparison is unresolved rather than negative, the same failure blinding shows on
+our synthetic corpora. CartPole's observations matter at every skill level and
+the environment null fires throughout, from return $158$ to $500$, and it is the
+only one of the four tasks supplying a non-zero span at all. We do not claim
 undertrained agents generally produce empty explanations.
 
 \subsection{Attribution is not identified by task performance}

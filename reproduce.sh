@@ -277,6 +277,16 @@ step "does it generalise? four control tasks"
 # cos^2 + sin^2 = 1. rerun with whole-row resampling, which stays on the
 # observation manifold by construction, so the paper can show the verdicts do not
 # depend on it. written separately because the reported table is the gaussian one.
+# four checkpoints from one run are correlated observations of one trajectory,
+# so they cannot support a claim about behaviour ACROSS agents. this trains five
+# independent agents per task instead, reusing the same references, so the
+# replicate is the training run.
+step "five independently trained agents per task"
+( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/seeds" \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
+    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) \
+    --agent-seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) )
+
 step "the same four tasks with manifold-preserving blinding"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/resample" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 --blind resample \

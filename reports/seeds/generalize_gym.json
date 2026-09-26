@@ -63,76 +63,87 @@
       ]
     },
     "env_null": {
-      "mean": -0.17708333333333334,
-      "std": 0.8675276172357089,
+      "mean": -0.8145833333333332,
+      "std": 2.517136017755905,
       "spans": [
+        -1.5500000000000007,
+        -0.15000000000000036,
+        0.0,
+        -1.1500000000000004,
+        0.0,
+        0.0,
+        -11.099999999999998,
+        -2.8499999999999996,
+        0.0,
+        1.9499999999999993,
+        -1.3999999999999986,
+        0.0,
+        0.0,
+        1.200000000000001,
+        0.0,
+        -4.4,
+        0.0,
+        0.0,
+        -0.09999999999999964,
         0.0,
         0.0,
         0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        -4.25,
         0.0,
         0.0
       ]
     },
-    "width_ratio": 162.37414028171193,
+    "width_ratio": 55.96203384546315,
     "checkpoints": [
       {
-        "fraction": 0.1,
-        "return": 291.32,
-        "span": 292.35,
-        "z_env": 337.1962776994259,
-        "z_weight": 1.6494627147147813,
-        "detected_env": true,
-        "detected_weight": false,
-        "verdict_env": "informative",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 0.25,
-        "return": 158.08,
-        "span": 140.75,
-        "z_env": 162.44679769663537,
-        "z_weight": 0.5732477478511667,
-        "detected_env": true,
-        "detected_weight": false,
-        "verdict_env": "informative",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 0.5,
-        "return": 250.24,
-        "span": 221.5,
-        "z_env": 255.52740792239615,
-        "z_weight": 1.1464954957023334,
-        "detected_env": true,
-        "detected_weight": false,
-        "verdict_env": "informative",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 1.0,
+        "seed": 0,
         "return": 500.0,
         "span": 482.25,
-        "z_env": 556.094208125085,
+        "z_env": 191.91040131553896,
         "z_weight": 2.9975710406211165,
+        "detected_env": true,
+        "detected_weight": true,
+        "verdict_env": "informative",
+        "verdict_weight": "informative"
+      },
+      {
+        "seed": 1,
+        "return": 160.0,
+        "span": 146.29999999999998,
+        "z_env": 58.445225961404326,
+        "z_weight": 0.6126474382607514,
+        "detected_env": true,
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 2,
+        "return": 165.2,
+        "span": 152.75,
+        "z_env": 61.00766198174714,
+        "z_weight": 0.6584362676556744,
+        "detected_env": true,
+        "detected_weight": false,
+        "verdict_env": "informative",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 3,
+        "return": 500.0,
+        "span": 486.9,
+        "z_env": 193.75773891160006,
+        "z_weight": 3.0305815920453627,
+        "detected_env": true,
+        "detected_weight": true,
+        "verdict_env": "informative",
+        "verdict_weight": "informative"
+      },
+      {
+        "seed": 4,
+        "return": 500.0,
+        "span": 486.35,
+        "z_env": 193.53923661529177,
+        "z_weight": 3.0266771182209897,
         "detected_env": true,
         "detected_weight": true,
         "verdict_env": "informative",
@@ -140,15 +151,15 @@
       }
     ],
     "exact_shapley_final": [
-      79.60000000000001,
-      84.83333333333334,
-      164.3,
-      153.51666666666665
+      93.2125,
+      94.82083333333334,
+      145.0625,
+      153.25416666666666
     ],
-    "nulls_agree": 1,
-    "n_checkpoints": 4,
-    "unit": "checkpoint_of_one_run",
-    "agent_seeds": 1,
+    "nulls_agree": 3,
+    "n_checkpoints": 5,
+    "unit": "independent_agent",
+    "agent_seeds": 5,
     "steps_per_agent": 400000
   },
   {
@@ -247,7 +258,7 @@
     "width_ratio": 109317634335.13565,
     "checkpoints": [
       {
-        "fraction": 0.1,
+        "seed": 0,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -258,7 +269,7 @@
         "verdict_weight": "not distinguishable from null"
       },
       {
-        "fraction": 0.25,
+        "seed": 1,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -269,7 +280,7 @@
         "verdict_weight": "not distinguishable from null"
       },
       {
-        "fraction": 0.5,
+        "seed": 2,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -280,7 +291,18 @@
         "verdict_weight": "not distinguishable from null"
       },
       {
-        "fraction": 1.0,
+        "seed": 3,
+        "return": -500.0,
+        "span": 0.0,
+        "z_env": 0.0,
+        "z_weight": -0.4219927578982836,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 4,
         "return": -500.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -300,9 +322,9 @@
       0.0
     ],
     "nulls_agree": 0,
-    "n_checkpoints": 4,
-    "unit": "checkpoint_of_one_run",
-    "agent_seeds": 1,
+    "n_checkpoints": 5,
+    "unit": "independent_agent",
+    "agent_seeds": 5,
     "steps_per_agent": 400000
   },
   {
@@ -401,7 +423,7 @@
     "width_ratio": 0.0,
     "checkpoints": [
       {
-        "fraction": 0.1,
+        "seed": 0,
         "return": -200.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -412,7 +434,7 @@
         "verdict_weight": "unresolved"
       },
       {
-        "fraction": 0.25,
+        "seed": 1,
         "return": -200.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -423,7 +445,7 @@
         "verdict_weight": "unresolved"
       },
       {
-        "fraction": 0.5,
+        "seed": 2,
         "return": -200.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -434,7 +456,18 @@
         "verdict_weight": "unresolved"
       },
       {
-        "fraction": 1.0,
+        "seed": 3,
+        "return": -200.0,
+        "span": 0.0,
+        "z_env": 0.0,
+        "z_weight": 0.0,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "unresolved",
+        "verdict_weight": "unresolved"
+      },
+      {
+        "seed": 4,
         "return": -200.0,
         "span": 0.0,
         "z_env": 0.0,
@@ -449,10 +482,10 @@
       0.0,
       0.0
     ],
-    "nulls_agree": 4,
-    "n_checkpoints": 4,
-    "unit": "checkpoint_of_one_run",
-    "agent_seeds": 1,
+    "nulls_agree": 5,
+    "n_checkpoints": 5,
+    "unit": "independent_agent",
+    "agent_seeds": 5,
     "steps_per_agent": 400000
   },
   {
@@ -519,75 +552,86 @@
       ]
     },
     "env_null": {
-      "mean": 3.8848899795492478,
-      "std": 21.712597138717776,
+      "mean": 8.017656628086579,
+      "std": 27.501477479539034,
       "spans": [
-        104.16182578987559,
+        2.4072700700605765,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
+        131.09014325809244,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        31.895144199345623,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.0,
-        9.786789019706475,
-        -15.115867040761714,
-        0.0,
-        0.0,
-        -5.595388259638412,
-        0.0,
+        27.03120154657927,
         0.0,
         0.0,
         0.0,
         0.0
       ]
     },
-    "width_ratio": 6.3964233914327675,
+    "width_ratio": 5.050018288296649,
     "checkpoints": [
       {
-        "fraction": 0.1,
-        "return": -1181.7204895064824,
-        "span": 0.0,
-        "z_env": -0.17892332062946698,
-        "z_weight": 1.5854965348415806,
-        "detected_env": false,
-        "detected_weight": false,
-        "verdict_env": "not distinguishable from null",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 0.25,
-        "return": -1236.5029044958326,
-        "span": 0.0,
-        "z_env": -0.17892332062946698,
-        "z_weight": 1.5854965348415806,
-        "detected_env": false,
-        "detected_weight": false,
-        "verdict_env": "not distinguishable from null",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 0.5,
-        "return": -1453.632357736447,
-        "span": 0.0,
-        "z_env": -0.17892332062946698,
-        "z_weight": 1.5854965348415806,
-        "detected_env": false,
-        "detected_weight": false,
-        "verdict_env": "not distinguishable from null",
-        "verdict_weight": "not distinguishable from null"
-      },
-      {
-        "fraction": 1.0,
+        "seed": 0,
         "return": -1401.10135036265,
         "span": 0.0,
-        "z_env": -0.17892332062946698,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 1,
+        "return": -1400.107104019604,
+        "span": 0.0,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 2,
+        "return": -1248.327131526585,
+        "span": 0.0,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 3,
+        "return": -1401.10135036265,
+        "span": 0.0,
+        "z_env": -0.29153548692253634,
+        "z_weight": 1.5854965348415806,
+        "detected_env": false,
+        "detected_weight": false,
+        "verdict_env": "not distinguishable from null",
+        "verdict_weight": "not distinguishable from null"
+      },
+      {
+        "seed": 4,
+        "return": -1248.327131526585,
+        "span": 0.0,
+        "z_env": -0.29153548692253634,
         "z_weight": 1.5854965348415806,
         "detected_env": false,
         "detected_weight": false,
@@ -600,10 +644,10 @@
       0.0,
       0.0
     ],
-    "nulls_agree": 4,
-    "n_checkpoints": 4,
-    "unit": "checkpoint_of_one_run",
-    "agent_seeds": 1,
+    "nulls_agree": 5,
+    "n_checkpoints": 5,
+    "unit": "independent_agent",
+    "agent_seeds": 5,
     "steps_per_agent": 400000
   }
 ]
