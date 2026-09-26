@@ -116,9 +116,9 @@ their own estimation error, and semantically legible. Every check we knew to
 apply passes, and the explanation is empty. We then build four reference
 distributions against which to test it, and each fails in its own way.
 Randomising network parameters to generate reference draws has almost no power:
-across sixteen checkpoints on four control tasks it never exceeds $z=2.45$, and
-a variance decomposition shows why, its width matching the standard deviation of
-random-initialisation return to three significant figures. Training on a
+across sixteen checkpoints on four control tasks it never exceeds $z=2.96$, and
+a variance decomposition shows why, its width closely tracking the standard
+deviation of random-initialisation return. Training on a
 signal-free corpus varies the corpus as well as the information. Blinding the
 observation channel removes the agent's capacity to respond, collapsing the
 reference onto a point mass, so that on two of our three cases it cannot
@@ -176,12 +176,12 @@ left implicit.}
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
 \item \textbf{Parameter randomisation is underpowered as a reference, and we give
-the mechanism.} Used to generate reference draws it never exceeds $z=2.45$ across
+the mechanism.} Used to generate reference draws it never exceeds $z=2.96$ across
 sixteen checkpoints on four control tasks, including on a converged CartPole
-policy scoring 404 of 500, where an environment-level null reaches $z=117$. A
+policy scoring 404 of 500, where an environment-level null reaches $z=153$. A
 variance decomposition explains it: the masked term is near-constant across
 random initialisations, so the span inherits the spread of initialisation
-return, which it matches to three significant figures (Section~\ref{sec:nulls}).
+return, which it tracks to within two percent (Section~\ref{sec:nulls}).
 Run in its canonical form \citep{adebayo2018sanity} it is sound but orthogonal,
 clearing our empty explanation at $\rho=0.38$ on behaviour and $\rho=-0.02$ on
 outcomes; what it flags depends on the target
@@ -831,14 +831,21 @@ return unpredictably and the reference distribution is very wide. The resulting
 test has almost no power. Across sixteen checkpoints the parameter null never
 exceeds $z=2.96$, including on a converged CartPole policy scoring 404 of 500,
 while the environment null reaches $z=+153.3$. The two constructions return the
-same verdict on only half the checkpoints, and the split falls one environment
-to each pattern. On CartPole they are in direct opposition: the environment null
-calls all four checkpoints informative where the parameter null declines. On
-Acrobot the environment null is a point mass and cannot decide, while the
-parameter null declines. On MountainCar neither can decide. Only on Pendulum do
-they agree, and what they agree on is that there is nothing to detect. The
-choice of null is not a detail; it decides the verdict, and the construction
-already available is substantially the weaker of the two.
+same verdict on eight of the sixteen, and which eight is the whole point: the
+observed span is exactly zero at eleven of the sixteen checkpoints, and
+\emph{every one of the eight agreements is a checkpoint where the span is zero
+and there is nothing to detect}. On all five checkpoints with a non-zero span
+the two disagree, without exception. Four are CartPole, where the environment
+null calls every checkpoint informative and the parameter null declines. The
+fifth is Acrobot's converged agent, where the environment null has collapsed to
+a point mass and cannot decide while the parameter null declines. MountainCar
+never leaves $-200$ and Pendulum's span is zero at every checkpoint, so their
+agreement is agreement about a statistic that is identically zero. We therefore
+do not claim these four tasks show the two constructions agreeing anywhere
+informative. They agree only where the question is empty, and on the only
+environment that supplies a non-zero span at every checkpoint they are in direct
+opposition. The choice of null is not a detail; it decides the verdict, and the
+construction already available is substantially the weaker of the two.
 
 Two environments qualify the claim. MountainCar is degenerate under \emph{both}
 constructions at $0.00 \pm 0.00$, because within our step budget no policy
@@ -846,7 +853,13 @@ reaches the goal and there is genuinely nothing to explain; both comparisons are
 unresolved and contribute no evidence. Pendulum narrows the gap to $5\times$
 because its environment null is itself wide ($27.50$), a blind agent on a
 dense-reward continuous task still varying in return. The $56\times$ figure is
-the extreme case, not the typical one. Acrobot shows the test tracking
+the extreme case, not the typical one. Pendulum also contributes no evidence
+about detection, for a reason worth stating rather than leaving in the table:
+its agent's span is exactly $0.00$ at every checkpoint while its return falls
+from $-1182$ to $-1454$ over training. An agent whose measured observation
+dependence is identically zero and whose return degrades is not a case where a
+reference distribution is being tested. Of the four tasks, only CartPole
+supplies a non-zero span at every checkpoint, and Acrobot supplies one. Acrobot shows the test tracking
 \emph{whether there is anything to explain} rather than agent quality: its agent
 scores $-500$ until it learns and the span is exactly $0.00$ there. Its
 environment reference is a point mass throughout, so the comparison is
@@ -1666,8 +1679,9 @@ The parameter null is wide because a randomly initialised network is sometimes
 an accidentally competent policy. &
 Width tracks how often random policies do well. &
 \textbf{Superseded.} Roughly right but imprecise: the width tracks the
-\emph{variance} of initialisation return rather than competence, and matches its
-standard deviation to three significant figures (Section~\ref{sec:nulls}). A
+\emph{variance} of initialisation return rather than competence, and tracks its
+standard deviation to within two percent on CartPole and Acrobot
+(Section~\ref{sec:nulls}). A
 tendency was replaced by a decomposition with a stated antecedent. \\
 \addlinespace
 A null that holds the corpus fixed, by blinding the observation channel, is more

@@ -75,21 +75,21 @@
   one, and the problem is harder than it appears. The construction available off the
   shelf, randomising network parameters to generate reference draws, has almost
   no power: across sixteen checkpoints on four control tasks it never exceeds
-  $z=2.45$, and its width matches the standard deviation of
-  random-initialisation return to three significant figures, so it measures the
-  variance of initialisation and not the explanation. Run instead in its
+  $z=2.96$, and its width closely tracks the standard deviation of
+  random-initialisation return, so it measures the variance of initialisation
+  and not the explanation. Run instead in its
   canonical form it answers a different question and clears the explanation we
   show to be empty. We then build the three natural replacements and
   each fails differently. A signal-free corpus varies the corpus as well as the
   information. Blinding the observation channel removes the agent's capacity to
-  respond, collapsing the reference onto a point mass and firing on a corpus
-  built to contain no signal. Permuting the outcomes, the direct analogue of the
+  respond, collapsing the reference onto a point mass, so that on two of our
+  three cases it cannot decide at all. Permuting the outcomes, the direct analogue of the
   supervised label-permutation test, leaves the price forecasting a label it no
   longer matches and hands the null agents an arbitrage worth \$49 an episode.
   In each construction we built, removing the information also perturbed
   something else, and the perturbation decided the verdict. We motivate this with an agent whose explanation is
   stable across seeds, semantically legible, and empty, and which can be driven
-  from $39.9\%$ to $3.2\%$ of attribution mass at no measurable cost in return.
+  from $39.9\%$ to $3.2\%$ of attribution mass at no detected cost in return.
   \end{quote}
   \vspace{1.1em}
   \end{@twocolumnfalse}
@@ -128,11 +128,12 @@ be empty.
 \begin{enumerate}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
 \item Parameter randomisation is a near-powerless reference in RL, and a variance
 decomposition explains it: the span inherits the spread of random-initialisation
-return, which it matches to three significant figures.
+return, which it tracks to within two percent on the tasks where either is
+non-degenerate.
 \item Three replacements, three distinct failures, each with a measured
 mechanism.
-\item A worked case of an explanation that passes every conventional check and
-carries no information.
+\item A worked case of an explanation that passes every conventional check we
+could apply and carries no information.
 \item Attribution is not identified by task performance: it can be steered at a
 cost that, in our controls, tracks whether the feature is load-bearing.
 \end{enumerate}
@@ -243,7 +244,7 @@ random & $-18.532$ & 9.33 & $<$0.0001 \\
 PPO's shortfall is its own: on synthetic data with no signal by construction the
 same agent scores $-0.47 \pm 0.47$. Yet across five seeds whose pairwise
 performance differences are indistinguishable in all ten pairs, its attributions
-have cross-seed rank correlation $0.849$ with $100\%$ agreement on the top
+have cross-seed rank correlation $0.850$ with $100\%$ agreement on the top
 feature, a top-5 ranking whose adjacent gaps exceed their combined standard
 errors, and a legible story: time-to-expiry dominates, reading as an agent that
 learned when not to trade.
@@ -291,9 +292,9 @@ against once a $9\%$ round-trip fee is paid. Scoring the same architecture on
 the same real episodes for \emph{calling} the settlement rather than trading it,
 against a null of 24 agents trained on those episodes with observations
 blinded, gives a span of $+7.46$ against $-0.48 \pm 2.34$: $z=+3.40$,
-informative, unchanged in all $4{,}000$ resamples. The trading agent on
+informative, unchanged in all $10{,}000$ resamples. The trading agent on
 identical episodes and an identical null gives $+7.41$ against $+2.47 \pm 2.29$,
-$z=+2.16$, which the two-part rule declines, though only $64\%$ of resamples
+$z=+2.16$, which the two-part rule declines, though only $66\%$ of resamples
 agree and we report it as borderline. The two spans are nearly the same size;
 what separates them is the null, since a blind agent cannot call the outcome at
 all but can still decline to trade. The market data is not uninformative. The
@@ -324,35 +325,39 @@ anything to explain.
 We build both nulls for the same task (Table~\ref{tab:nulls},
 Figure~\ref{fig:nullcmp}). A randomly initialised policy behaves arbitrarily, so
 masking its inputs moves return unpredictably and the reference distribution is
-very wide. Across sixteen checkpoints the parameter null never exceeds $z=2.45$,
+very wide. Across sixteen checkpoints the parameter null never exceeds $z=2.96$,
 including on a converged CartPole policy scoring 404 of 500, while the
-environment null reaches $z=+117.6$. The two disagree on five of the sixteen.
+environment null reaches $z=+153.3$. The two return the same verdict on eight of
+the sixteen, and every one of those eight is a checkpoint where the observed
+span is exactly zero and there is nothing to detect. On all five checkpoints
+with a non-zero span they disagree, without exception.
 
 \begin{table}[t]
 \centering\small
-\caption{Null construction on four control tasks. MountainCar is degenerate under both: no policy in the budget reaches the goal.}
+\caption{Null construction on four control tasks, 24 draws each. MountainCar is degenerate under both: no policy in the budget reaches the goal. Pendulum's agent has a span of exactly zero at every checkpoint, so it constrains the widths but supplies no detection evidence.}
 \label{tab:nulls}
 \begin{tabular}{lrrr}
 \toprule
 Environment & Parameter & Environment & Ratio \\
 \midrule
-CartPole & $\pm \mathbf{138.92}$ & $\pm \mathbf{3.29}$ & $42\times$ \\
-Acrobot & $\pm \mathbf{124.94}$ & $\pm \mathbf{0.00}$ & degenerate \\
+CartPole & $\pm \mathbf{140.86}$ & $\pm \mathbf{2.52}$ & $56\times$ \\
+Acrobot & $\pm \mathbf{109.32}$ & $\pm \mathbf{0.00}$ & degenerate \\
 MountainCar & $\pm \mathbf{0.00}$ & $\pm \mathbf{0.00}$ & $0\times$ \\
-Pendulum & $\pm \mathbf{131.42}$ & $\pm \mathbf{37.79}$ & $3\times$ \\
+Pendulum & $\pm \mathbf{138.88}$ & $\pm \mathbf{27.50}$ & $5\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Why it is wide.} The gap has a mechanism, and it is not about
-explanations. On every task the parameter null's width equals the spread of
-random-initialisation return to three significant figures: $138.38$ against
-$138.92$ on CartPole, $123.04$ against $124.94$ on Acrobot. In
+explanations. On every task the parameter null's width closely tracks the spread of
+random-initialisation return: $140.43$ against $140.86$ on CartPole and
+$110.59$ against $109.32$ on Acrobot, both inside two percent, and $127.40$
+against $138.88$ on Pendulum, inside nine. In
 $\Delta = \vfn(N) - \vfn(\emptyset)$ the masked term is near-constant for a
 random network (sd $1.8\%$ of the unmasked term's on CartPole), because a policy
 not using its observations loses little when they go. The span inherits the
 unmasked variance entire: \emph{parameter randomisation measures the variance of
-initialisation}, which is why a test built on it has no power.
+initialisation}, which is why a test built on it has almost no power here.
 
 \begin{figure*}[t]
 \centering
@@ -363,9 +368,12 @@ reference distribution cannot reject anything.}
 \end{figure*}
 
 Acrobot also shows the test tracking \emph{whether there is anything to explain}
-rather than agent quality: its agent fails completely until it learns, the span
-is exactly $0.00$ there, and the test correctly declines. CartPole's observations
-matter at every skill level and the test fires throughout. We do not claim
+rather than agent quality: its agent fails completely until it learns and the
+span is exactly $0.00$ there. Its environment reference is a point mass at every
+checkpoint, so the comparison is unresolved rather than negative, which is the
+same failure blinding shows on our synthetic corpora. CartPole's observations
+matter at every skill level and the test fires throughout, and it is the only
+one of the four tasks supplying a non-zero span at every checkpoint. We do not claim
 undertrained agents generally produce empty explanations.
 
 \subsection{Attribution is not identified by task performance}
@@ -377,30 +385,35 @@ marginal: the same perturbation the attribution measures
 
 \begin{table}[t]
 \centering\small
-\caption{Steering one feature's attribution.}
+\caption{Steering one feature's attribution. Every figure in a row comes from one run at invariance penalty $\lambda=20$, fixed in advance. $p$ is a cluster bootstrap against the $\lambda=0$ agent, resampling seeds and then episodes within seeds.}
 \label{tab:steer}
 \begin{tabular}{lrrr}
 \toprule
 Corpus & Attribution & Return & $p$ \\
 \midrule
-market & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.66}$ \\
-planted signal & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+7.92}$ & $<$0.001 \\
+market & $39.9\% \to \mathbf{3.2\%}$ & $-3.49 \to -1.65$ & $\mathbf{0.32}$ \\
+planted signal & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+8.66}$ & $<$0.001 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 
 The attribution is equally suppressible in both cases. What differs is the price:
-suppressing the planted signal destroys $81\%$ of return; on the market it costs
-nothing measurable. Explanations are steerable at no cost exactly where they are
-not tracking anything, corroborating Section 4.1 by a route sharing no machinery
-with the null test. The control matters: had steering succeeded on both, the
+suppressing the planted signal destroys $81\%$ of return, while on the market no
+return difference is detected. A non-significant paired comparison is not
+evidence of equivalence, so the claim is the weaker one: the attribution moved
+almost entirely without a detected cost. Explanations are steerable without a
+detected cost exactly where they are not tracking anything, corroborating
+Section 4.1 by a route sharing no machinery with the null test. The control matters: had steering succeeded on both, the
 penalty would merely be defeating the attribution method.
 
 This differs from \citet{slack2020fooling}, who construct classifiers that detect
 the off-manifold points LIME and SHAP query. Here the agent is trained normally
 and the resulting explanation is \emph{correct} about the resulting model; the
-point is that behaviour does not pin it down.
+point is that task performance does not pin it down. On $4{,}096$ held-out
+states the steered and unsteered agents agree on the greedy action only
+$66.0\%$ of the time, so they are not the same policy and the claim is about
+performance rather than behaviour.
 
 \subsection{Three replacements, three failures}
 \label{sec:cost}
@@ -445,7 +458,7 @@ The test adapts \citet{adebayo2018sanity}; the outcomes framing is
 whether the decomposition among features is right. Temporal credit assignment and
 off-policy attribution are named, not solved; these are
 FastSVERL's~\citep{beechey2025fastsverl} territory. An earlier mechanism we
-proposed for the $42\times$ gap (that randomising weights perturbs the
+proposed for the $56\times$ gap (that randomising weights perturbs the
 measurement's domain and compounds along the trajectory) was tested and
 rejected: over horizons 4 to 28 both nulls grow at indistinguishable rates
 ($\alpha=0.94$ against $0.83$). A variance decomposition accounts for it

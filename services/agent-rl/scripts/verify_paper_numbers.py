@@ -181,6 +181,29 @@ if g:
           f"{'yes' if one_each else 'NO':>21}")
     if not one_each:
         failures.append(f"gym: paper reports one environment per pattern, got {patterns}")
+
+    # the load-bearing claim: the two constructions agree only where the
+    # observed span is identically zero, so no agreement is an agreement about
+    # a case with anything to detect. an earlier version of this paragraph
+    # credited Pendulum with a genuine agreement, which it is not: its span is
+    # 0.00 at every checkpoint while its return degrades over training.
+    nonzero = [c for r in g for c in r["checkpoints"] if abs(c["span"]) > 1e-9]
+    zero = [c for r in g for c in r["checkpoints"] if abs(c["span"]) <= 1e-9]
+    checks += 1
+    none_agree = all(c["verdict_env"] != c["verdict_weight"] for c in nonzero)
+    print(f"  [{'x' if none_agree else ' '}] {'the nulls never agree on a non-zero span':<52} "
+          f"{f'{len(nonzero)} checkpoints' if none_agree else 'NO':>21}")
+    if not none_agree:
+        failures.append("gym: paper says the two nulls disagree on every non-zero span")
+    check("checkpoints with a zero span", 11, len(zero), 0.001)
+    check("checkpoints with a non-zero span", 5, len(nonzero), 0.001)
+    checks += 1
+    pend = next(r for r in g if r["env_id"].startswith("Pendulum"))
+    pend_zero = all(abs(c["span"]) <= 1e-9 for c in pend["checkpoints"])
+    print(f"  [{'x' if pend_zero else ' '}] {'pendulum span is zero at every checkpoint':<52} "
+          f"{'yes' if pend_zero else 'NO':>21}")
+    if not pend_zero:
+        failures.append("gym: paper says pendulum contributes no detection evidence")
     checks += 1
     opposed = patterns.get(("informative", "not distinguishable from null"), 0)
     print(f"  [{'x' if opposed == 4 else ' '}] {'cartpole: env informative where weight declines':<52} "
@@ -608,6 +631,59 @@ if collected is None or claimed is None:
     print("  [ ] could not read one side of the comparison; skipping")
 else:
     check("tests the paper claims", claimed, collected, 0.0)
+
+# -------------------------------------------- the workshop version agrees
+#
+# nothing checked workshop.tex, which is exactly why it drifted: it kept a
+# steering p-value of 0.66 and a return of +7.92 taken from two different
+# penalties, a gym table at 12 draws, and a "three significant figures" claim,
+# all of which had already been corrected in main.tex. rather than re-derive
+# every claim twice, this asserts that the numbers the two documents SHARE are
+# the same number, which is the drift that actually happened.
+print("\nworkshop version: does it agree with the full paper?")
+ws = ROOT / "docs" / "paper" / "workshop.tex"
+mn = ROOT / "docs" / "paper" / "main.tex"
+if not (ws.exists() and mn.exists()):
+    print("  [ ] one of the two documents is missing; skipping")
+else:
+    wt, mt = ws.read_text(), mn.read_text()
+
+    # (label, regex) -- the capture group must be the shared number
+    SHARED = [
+        ("cartpole parameter-null sd", r"CartPole\s*&[^&]*?([\d]+\.[\d]+)\}\$"),
+        ("steering market p", r"market\s*&[^&]*&[^&]*&\s*\$\\mathbf\{([\d.]+)\}\$"),
+        ("steering planted return", r"planted signal\s*&[^&]*&[^&]*\\to \\mathbf\{\+([\d.]+)\}\$"),
+        ("max z under the parameter null", r"never exceeds?\s*\$z=([\d.]+)\$"),
+        ("max z under the environment null", r"environment null reaches \$z=\+([\d.]+)\$"),
+        ("cross-seed rank correlation", r"cross-seed rank correlation \$([\d.]+)\$"),
+    ]
+    for label, rx in SHARED:
+        mw = re.search(rx, wt)
+        mm = re.search(rx, mt)
+        checks += 1
+        if not mw or not mm:
+            where = "workshop" if not mw else "main"
+            print(f"  [ ] {label + ' (not found in ' + where + ')':<52} {'SKIP':>21}")
+            continue
+        a, b = float(mw.group(1)), float(mm.group(1))
+        ok = abs(a - b) < 1e-9
+        print(f"  [{'x' if ok else ' '}] {label:<52} "
+              f"{f'both {a:g}' if ok else f'ws {a:g} vs main {b:g}':>21}")
+        if not ok:
+            failures.append(f"workshop disagrees with main.tex on {label}: {a} vs {b}")
+
+    # claims the corrected decision rule falsified, in either document
+    BANNED = {
+        "three significant figures": "the width correspondence is not exact",
+        "the test correctly declines": "a degenerate reference is unresolved, not negative",
+    }
+    for phrase, why in BANNED.items():
+        checks += 1
+        hits = [n for n, t in (("main.tex", mt), ("workshop.tex", wt)) if phrase in t]
+        print(f"  [{'x' if not hits else ' '}] {'neither document says ' + repr(phrase):<52} "
+              f"{'yes' if not hits else ', '.join(hits):>21}")
+        if hits:
+            failures.append(f"{' and '.join(hits)} still says {phrase!r}: {why}")
 
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)
