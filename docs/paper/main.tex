@@ -532,7 +532,7 @@ control near the optimum.
 All results derive from public endpoints with no API keys. Hyperparameters were
 fixed a priori from synthetic sweeps where the correct answer is known
 analytically, not tuned on validation performance. The full pipeline is one
-command; 391 tests cover the environment, the attribution implementations, and
+command; 397 tests cover the environment, the attribution implementations, and
 six no-lookahead properties verified by mutation testing. Every numerical claim
 in this paper is asserted against its source artifact by a script that runs as
 the pipeline's final stage.
@@ -866,6 +866,27 @@ environment reference is a point mass throughout, so the comparison is
 unresolved rather than negative, which is the same failure the matched
 construction shows on our synthetic corpora. We do not claim undertrained agents generally produce empty
 explanations; they do not.
+
+\paragraph{Is the environment null an off-manifold artefact?}
+Our blinded observations are drawn per coordinate from a moment-matched
+Gaussian, which does not respect constraints between coordinates. On Pendulum
+the observation is $(\cos\theta, \sin\theta, \dot\theta)$, so the first two
+coordinates must satisfy $\cos^2 + \sin^2 = 1$; under Gaussian blinding only
+$0.5\%$ of draws lie within one percent of that constraint, against $100\%$ for
+real observations. A reference built from impossible states is a fair thing to
+distrust, so we rebuilt it by resampling whole observation rows from a buffer of
+real ones, which removes the information while staying on the manifold by
+construction, and reran all four tasks at the same budget.
+
+Every one of the sixteen verdicts is unchanged. What moves is the width, and it
+moves in the direction that was costing us power: the environment null narrows
+from $2.52$ to $0.87$ on CartPole, so the ratio against the parameter null grows
+from $56\times$ to $162\times$, and on Pendulum from $27.50$ to $21.71$. The
+off-manifold draws were adding variance to the reference, which makes the test
+\emph{more} conservative rather than less. The gap we report is therefore a lower
+bound on the gap between the two constructions, and the conclusion of this
+section does not depend on how the observation channel is blinded. We continue to
+report the Gaussian numbers throughout because they are the conservative ones.
 
 \paragraph{Why the parameter null is wide.}
 \label{par:why}
@@ -1419,12 +1440,21 @@ differs is the price: where the feature is the planted signal, suppressing it
 destroys $81\%$ of return, while on the market no return difference is detected
 ($p=0.32$).
 
-\paragraph{Not detected is not preserved.} A non-significant paired bootstrap
-does not establish that performance is unchanged; it establishes that this
-experiment, at three seeds and this episode count, did not detect a change. We
-have not run an equivalence or non-inferiority test, and the claim we make is
-the weaker one: a feature's attribution can be suppressed almost entirely
-without a detectable cost in return. The penalty reported here
+\paragraph{Not detected is not preserved, so we bound it.} A non-significant
+paired bootstrap does not establish that performance is unchanged; it
+establishes that this experiment did not detect a change. What it leaves open is
+how large a change it could have missed, so we report that directly. Suppressing
+the market feature moves return by $+1.84$ per episode, $95\%$ interval
+$[-1.18, +5.46]$. The interval contains zero, and it also excludes any cost
+larger than $1.18$ per episode. Suppressing the planted signal costs $-36.38$,
+interval $[-46.04, -18.98]$. \emph{The two intervals do not overlap}: the
+largest cost the market experiment cannot rule out is a sixteenth of the
+smallest cost consistent with the planted signal. That is the quantitative form
+of the claim, and it is stronger than a pair of $p$-values on either side of a
+threshold. We still do not claim equivalence, and we set no practical
+equivalence margin, because choosing one after seeing the interval would repeat
+the selection effect this experiment was rebuilt to remove. The penalty reported
+here
 ($\lambda=20$) is fixed in advance rather than selected as the strongest
 suppression. The $p$-value resamples \emph{seeds}, and then episodes within
 seeds, because the unit of independent replication in a multi-seed RL

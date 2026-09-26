@@ -61,6 +61,7 @@ from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import explain_behaviour  # noqa: E402
 from nano_rl.metrics import (  # noqa: E402
+    cluster_bootstrap_ci,
     cluster_bootstrap_p_value,
     paired_bootstrap_p_value,
 )
@@ -193,6 +194,16 @@ def run_corpus(
             r["p_cluster"] = float(
                 cluster_bootstrap_p_value(r["pnl"], baseline_pnl)
             )
+            # a p-value above alpha says zero is not excluded. it does not say
+            # what else is not excluded, which is the whole question for a
+            # claim of the form "no detected cost". the interval answers it.
+            lo, hi = cluster_bootstrap_ci(r["pnl"], baseline_pnl)
+            r["return_diff_ci"] = [float(lo), float(hi)]
+            r["return_diff"] = float(
+                np.mean([a.mean() - b.mean()
+                         for a, b in zip(map(np.asarray, r["pnl"]),
+                                         map(np.asarray, baseline_pnl))])
+            )
         r["p_vs_baseline"] = p
         r.pop("pnl")
         rows.append(r)
@@ -230,6 +241,10 @@ def run_corpus(
           f"(cluster p = {p_cluster:.3f}, pooled p = {p_pooled:.3f}; "
           f"this is not an equivalence test)")
     print(f"  per-seed p: {[round(x, 4) for x in chosen.get('p_per_seed', [])]}")
+    ci = chosen.get("return_diff_ci")
+    if ci:
+        print(f"  return difference {chosen.get('return_diff', float('nan')):+.3f}, "
+              f"95% interval [{ci[0]:+.3f}, {ci[1]:+.3f}] per episode")
     print(f"  return {base['return_mean']:+.3f} -> {chosen['return_mean']:+.3f} "
           f"(change {chosen['return_mean'] - base['return_mean']:+.3f})")
     verdict = ("STEERABLE WITHOUT DETECTED COST" if (drop > 0.5 and undetected)

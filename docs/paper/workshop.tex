@@ -358,6 +358,12 @@ random network (sd $1.8\%$ of the unmasked term's on CartPole), because a policy
 not using its observations loses little when they go. The span inherits the
 unmasked variance entire: \emph{parameter randomisation measures the variance of
 initialisation}, which is why a test built on it has almost no power here.
+Blinding draws each coordinate independently, which on Pendulum satisfies
+$\cos^2 + \sin^2 = 1$ for only $0.5\%$ of draws. Resampling whole observation
+rows instead, which stays on the manifold by construction, leaves all sixteen
+verdicts unchanged and narrows the environment null from $2.52$ to $0.87$ on
+CartPole, so the off-manifold draws were costing the test power rather than
+manufacturing it.
 
 \begin{figure*}[t]
 \centering
@@ -400,9 +406,12 @@ planted signal & $46.5\% \to \mathbf{1.5\%}$ & $+45.04 \to \mathbf{+8.66}$ & $<$
 
 The attribution is equally suppressible in both cases. What differs is the price:
 suppressing the planted signal destroys $81\%$ of return, while on the market no
-return difference is detected. A non-significant paired comparison is not
-evidence of equivalence, so the claim is the weaker one: the attribution moved
-almost entirely without a detected cost. Explanations are steerable without a
+return difference is detected. A non-significant comparison is not evidence of
+equivalence, so we bound the effect instead of asserting one. The market moves
+by $+1.84$ per episode, $95\%$ interval $[-1.18, +5.46]$; the planted signal by
+$-36.38$, interval $[-46.04, -18.98]$. \emph{The intervals do not overlap}: the
+largest cost the market experiment cannot exclude is a sixteenth of the smallest
+cost consistent with the planted signal. Explanations are steerable without a
 detected cost exactly where they are not tracking anything, corroborating
 Section 4.1 by a route sharing no machinery with the null test. The control matters: had steering succeeded on both, the
 penalty would merely be defeating the attribution method.

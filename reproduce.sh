@@ -272,6 +272,16 @@ step "does it generalise? four control tasks"
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
+# the blinded observations above are drawn per coordinate, which does not respect
+# constraints between coordinates: on Pendulum only 0.5% of them satisfy
+# cos^2 + sin^2 = 1. rerun with whole-row resampling, which stays on the
+# observation manifold by construction, so the paper can show the verdicts do not
+# depend on it. written separately because the reported table is the gaussian one.
+step "the same four tasks with manifold-preserving blinding"
+( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/resample" \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 --blind resample \
+    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
+
 # -------------------------------------------------------------------- done
 step "confidence intervals on every reported z-score"
 # stated rather than left to the default: the committed intervals were once

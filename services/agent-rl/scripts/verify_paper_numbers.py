@@ -23,9 +23,38 @@ failures: list[str] = []
 checks = 0
 
 
+# every artifact load() was asked for, so the manifest check below can tell an
+# artifact nothing verifies from one that does not exist.
+requested: set[str] = set()
+
+# artifacts the paper does not quote numbers from. listed explicitly so that a
+# NEW artifact with no coverage shows up as a gap rather than being assumed
+# intentional.
+UNCHECKED_BY_DESIGN = {
+    "pipeline_timing.json",   # wall clock, not a claim
+    "explanations.json",      # per-feature dump, summarised in stability.json
+}
+
+
 def load(name: str):
+    """read an artifact, or record a failure if it is absent.
+
+    fails closed. this used to return None for a missing file, and every caller
+    guards with `if artifact:`, so a missing artifact skipped its entire check
+    group and the run still reported success. an incomplete verification that
+    prints "all claims match" is worse than no verification.
+    """
+    global checks
+    requested.add(name)
     p = REPORTS / name
-    return json.loads(p.read_text()) if p.exists() else None
+    if not p.exists():
+        checks += 1
+        failures.append(
+            f"{name}: artifact missing, so every claim it backs went unchecked")
+        print(f"  [ ] {name + ': MISSING, its claims were not checked':<52} "
+              f"{'FAIL':>21}")
+        return None
+    return json.loads(p.read_text())
 
 
 def check(label: str, claimed: float, actual: float | None, tol: float = 0.005) -> None:
@@ -127,6 +156,35 @@ if st:
     # to carry 0.38, which was the median of the per-seed values and is not a
     # combined test.
     check("market steered p, cluster", 0.32, me["p_cluster"], 0.15)
+    # the interval is the load-bearing number now: the claim is not "p > 0.05"
+    # but "the cost cannot be as large as the planted signal's".
+    check("market return difference", 1.837, me["return_diff"], 0.05)
+    check("market interval low", -1.18, me["return_diff_ci"][0], 0.15)
+    check("market interval high", 5.46, me["return_diff_ci"][1], 0.15)
+    check("planted return difference", -36.377, se["return_diff"], 0.05)
+    check("planted interval low", -46.04, se["return_diff_ci"][0], 0.15)
+    check("planted interval high", -18.98, se["return_diff_ci"][1], 0.15)
+    checks += 1
+    m_lo, m_hi = me["return_diff_ci"]
+    s_lo, s_hi = se["return_diff_ci"]
+    disjoint = m_lo > s_hi          # market's worst case above planted's best
+    print(f"  [{'x' if disjoint else ' '}] {'the two return intervals do not overlap':<52} "
+          f"{f'{m_lo:+.2f} > {s_hi:+.2f}' if disjoint else 'NO':>21}")
+    if not disjoint:
+        failures.append("steering: paper says the two return intervals are disjoint")
+    checks += 1
+    ratio = abs(s_hi) / abs(m_lo) if m_lo else 0.0
+    ok_ratio = 14.0 <= ratio <= 18.0
+    print(f"  [{'x' if ok_ratio else ' '}] {'planted floor is ~16x the market ceiling':<52} "
+          f"{f'{ratio:.1f}x':>21}")
+    if not ok_ratio:
+        failures.append(f"steering: paper says a sixteenth, artifact gives {ratio:.1f}x")
+    checks += 1
+    contains_zero = m_lo < 0.0 < m_hi
+    print(f"  [{'x' if contains_zero else ' '}] {'the market interval contains zero':<52} "
+          f"{'yes' if contains_zero else 'NO':>21}")
+    if not contains_zero:
+        failures.append("steering: a non-detection must have an interval containing zero")
     check("market steered p, pooled", 0.023, me["p_vs_baseline"], 0.30)
     check("market per-seed p spread", 0.001, min(me["p_per_seed"]), 0.60)
     check("synthetic baseline attribution", 0.465, sb["target_share_mean"], 0.05)
@@ -628,7 +686,12 @@ if paper.exists():
     claimed = int(m.group(1)) if m else None
 
 if collected is None or claimed is None:
-    print("  [ ] could not read one side of the comparison; skipping")
+    # also fails closed: a regex that stops matching must not silently retire
+    # the check it guards.
+    checks += 1
+    side = "pytest collection" if collected is None else "the paper's stated count"
+    failures.append(f"test count: could not read {side}")
+    print(f"  [ ] {'could not read ' + side:<52} {'FAIL':>21}")
 else:
     check("tests the paper claims", claimed, collected, 0.0)
 
@@ -684,6 +747,121 @@ else:
               f"{'yes' if not hits else ', '.join(hits):>21}")
         if hits:
             failures.append(f"{' and '.join(hits)} still says {phrase!r}: {why}")
+
+# ------------------------------------------- manifold-preserving blinding
+#
+# the reviewer objection this answers: blinded observations are drawn per
+# coordinate, which on Pendulum violates cos^2 + sin^2 = 1, so the environment
+# null might be an artefact of impossible states rather than of removed
+# information. rerun with whole-row resampling, every verdict must agree.
+rs_path = REPORTS / "resample" / "generalize_gym.json"
+print("\nsection 6.1: does the environment null survive on-manifold blinding?")
+if not rs_path.exists():
+    checks += 1
+    failures.append("resample/generalize_gym.json missing: the manifold "
+                    "robustness claim is unchecked")
+    print(f"  [ ] {'resample sweep missing':<52} {'FAIL':>21}")
+elif g:
+    rs = json.loads(rs_path.read_text())
+    checks += 1
+    pairs = [(a, b) for a, b in zip(g, rs)]
+    same = all(
+        ca["verdict_env"] == cb["verdict_env"]
+        for a, b in pairs
+        for ca, cb in zip(a["checkpoints"], b["checkpoints"])
+    )
+    n = sum(len(a["checkpoints"]) for a, _ in pairs)
+    print(f"  [{'x' if same else ' '}] {'every verdict is unchanged under resampling':<52} "
+          f"{f'{n}/{n}' if same else 'NO':>21}")
+    if not same:
+        failures.append("resample: paper says every gym verdict is unchanged")
+    by = {a["env_id"].split("-")[0].lower(): (a, b) for a, b in pairs}
+    check("cartpole env null sd, resampled", 0.87,
+          by["cartpole"][1]["env_null"]["std"], 0.05)
+    check("cartpole ratio, resampled", 162.0,
+          by["cartpole"][1]["width_ratio"], 0.05)
+    check("pendulum env null sd, resampled", 21.71,
+          by["pendulum"][1]["env_null"]["std"], 0.05)
+    # the direction matters to the argument: off-manifold draws must have been
+    # making the reference WIDER, so the reported gap is a lower bound.
+    checks += 1
+    narrower = all(
+        b["env_null"]["std"] <= a["env_null"]["std"] + 1e-9 for a, b in pairs
+    )
+    print(f"  [{'x' if narrower else ' '}] {'on-manifold blinding narrows every reference':<52} "
+          f"{'yes' if narrower else 'NO':>21}")
+    if not narrower:
+        failures.append("resample: paper says the gaussian reference was the wider one")
+    # the agent's own span cannot depend on how the NULL agents were blinded
+    checks += 1
+    spans_equal = all(
+        abs(ca["span"] - cb["span"]) < 1e-9
+        for a, b in pairs for ca, cb in zip(a["checkpoints"], b["checkpoints"])
+    )
+    print(f"  [{'x' if spans_equal else ' '}] {'the observed spans are untouched by blinding':<52} "
+          f"{'yes' if spans_equal else 'NO':>21}")
+    if not spans_equal:
+        failures.append("resample: blinding the null agents changed the observed span, "
+                        "which would be a bug rather than a result")
+
+# ------------------------------------------------------------- power curve
+#
+# section 5.4 quotes a detection threshold and the market agent's distance from
+# it. nothing read this artifact until the coverage check below was added, so
+# the threshold could have moved without anything noticing.
+pc = load("power_curve.json")
+print("\nsection 5.4: how much edge is required")
+if pc:
+    check("detection threshold edge", 3.45, pc["detection_threshold_edge"], 0.05)
+    rows = pc["power_curve"]
+    checks += 1
+    zs = [r["z"] for r in rows]
+    monotone = all(b >= a - 1.0 for a, b in zip(zs, zs[1:]))
+    print(f"  [{'x' if monotone else ' '}] {'z rises with planted signal strength':<52} "
+          f"{'yes' if monotone else 'NO':>21}")
+    if not monotone:
+        failures.append("power curve: z should rise with planted strength")
+    # the paper's claim is that detection STARTS somewhere in the sweep, so the
+    # curve must contain both outcomes. a sweep that detects everywhere, or
+    # nothing, calibrates nothing.
+    checks += 1
+    both = any(r["detected"] for r in rows) and any(not r["detected"] for r in rows)
+    ndet = sum(1 for r in rows if r["detected"])
+    print(f"  [{'x' if both else ' '}] {'the sweep spans detected and not detected':<52} "
+          f"{f'{ndet}/{len(rows)} detected' if both else 'NO':>21}")
+    if not both:
+        failures.append("power curve: the sweep does not bracket the threshold")
+    # power_curve re-estimates the span with its own coalition and episode
+    # budget, so its market z is an INDEPENDENT estimate of the same quantity
+    # rather than a copy of the headline. asserting equality would be wrong:
+    # 0.17 here against 0.23 in sanity_test.json is estimator noise on a
+    # quantity whose reference has sd 5.11. what must agree is the verdict.
+    checks += 1
+    pc_z = pc["real_agent_null_test"]["z_score"]
+    st_z = (load("sanity_test.json") or {}).get(
+        "results", {}).get("real_market", {}).get("z_score")
+    agrees = (st_z is not None and abs(pc_z) < 2.0 and abs(st_z) < 2.0
+              and not pc["real_agent_null_test"]["passes"])
+    print(f"  [{'x' if agrees else ' '}] "
+          f"{'an independent re-estimate reaches the same verdict':<52} "
+          f"{f'z {pc_z:.2f} vs {st_z:.2f}' if agrees else 'NO':>21}")
+    if not agrees:
+        failures.append(
+            f"power curve: its independent market estimate (z={pc_z:.2f}) should "
+            f"decline like the headline (z={st_z})")
+
+# ------------------------------------------------- does anything go unchecked?
+print("\nartifact coverage: is any artifact quoted by nobody?")
+present = {f.name for f in REPORTS.glob("*.json")}
+uncovered = sorted(present - requested - UNCHECKED_BY_DESIGN)
+checks += 1
+print(f"  [{'x' if not uncovered else ' '}] "
+      f"{'every artifact is read by at least one check':<52} "
+      f"{f'{len(requested & present)}/{len(present)}' if not uncovered else str(uncovered):>21}")
+if uncovered:
+    failures.append(
+        f"no check reads these artifacts, so nothing would notice if they "
+        f"changed: {uncovered}")
 
 # ---------------------------------------------------------------- summary
 print("\n" + "=" * 78)

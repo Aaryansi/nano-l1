@@ -20,6 +20,7 @@ from nano_rl.baselines import (
 from nano_rl.env.features import N_FEATURES, feature_index
 from nano_rl.metrics import (
     EPISODES_PER_YEAR,
+    cluster_bootstrap_ci,
     cluster_bootstrap_p_value,
     compute_metrics,
     hit_rate,
@@ -257,3 +258,59 @@ class TestClusterBootstrap:
         eff, base = self._one_odd_seed(rng)
         p = cluster_bootstrap_p_value(eff, base)
         assert 0.0 <= p <= 1.0
+
+
+class TestClusterBootstrapInterval:
+    """the interval a non-significant result needs.
+
+    "no detected cost" is only informative alongside a bound on what the cost
+    could have been. a p-value alone cannot distinguish "the effect is small"
+    from "the experiment could not tell", which is the objection the steering
+    claim has to answer.
+    """
+
+    def test_it_brackets_a_known_effect(self):
+        rng = np.random.default_rng(0)
+        base = [rng.normal(0, 50, 1200) for _ in range(4)]
+        eff = [b + rng.normal(20.0, 50, 1200) for b in base]
+        lo, hi = cluster_bootstrap_ci(eff, base)
+        assert lo < 20.0 < hi, f"20 should lie inside [{lo}, {hi}]"
+
+    def test_it_excludes_zero_when_the_effect_is_real(self):
+        rng = np.random.default_rng(1)
+        base = [rng.normal(0, 50, 1200) for _ in range(5)]
+        eff = [b + rng.normal(25.0, 50, 1200) for b in base]
+        lo, hi = cluster_bootstrap_ci(eff, base)
+        assert lo > 0.0
+
+    def test_it_contains_zero_when_there_is_no_effect(self):
+        rng = np.random.default_rng(2)
+        base = [rng.normal(0, 50, 1200) for _ in range(4)]
+        same = [b + rng.normal(0.0, 50, 1200) for b in base]
+        lo, hi = cluster_bootstrap_ci(same, base)
+        assert lo < 0.0 < hi
+
+    def test_it_agrees_with_the_p_value_it_accompanies(self):
+        # if the interval excludes zero the p-value should reject, and vice
+        # versa. they resample the same way, so disagreement means a bug.
+        rng = np.random.default_rng(3)
+        base = [rng.normal(0, 50, 1000) for _ in range(4)]
+        for shift in (0.0, 5.0, 30.0):
+            eff = [b + rng.normal(shift, 50, 1000) for b in base]
+            lo, hi = cluster_bootstrap_ci(eff, base)
+            p = cluster_bootstrap_p_value(eff, base)
+            excludes_zero = lo > 0 or hi < 0
+            assert excludes_zero == (p < 0.05), (
+                f"shift={shift}: interval [{lo:.2f},{hi:.2f}] and p={p:.3f} disagree"
+            )
+
+    def test_fewer_than_two_seeds_is_undefined(self):
+        lo, hi = cluster_bootstrap_ci([np.arange(10, dtype=float)], [np.ones(10)])
+        assert np.isnan(lo) and np.isnan(hi)
+
+    def test_the_interval_is_ordered(self):
+        rng = np.random.default_rng(4)
+        base = [rng.normal(0, 50, 900) for _ in range(3)]
+        eff = [b + rng.normal(3.0, 50, 900) for b in base]
+        lo, hi = cluster_bootstrap_ci(eff, base)
+        assert lo <= hi

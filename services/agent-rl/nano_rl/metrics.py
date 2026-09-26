@@ -224,3 +224,45 @@ def cluster_bootstrap_p_value(
     slots = np.arange(k)[None, :]
     boot = within[picks, rows, slots].mean(axis=1)
     return float((np.abs(boot) >= abs(observed)).mean())
+
+
+def cluster_bootstrap_ci(
+    groups_a: list,
+    groups_b: list,
+    n_boot: int = 10_000,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -> tuple[float, float]:
+    """percentile interval for the mean per-seed paired difference.
+
+    the companion to cluster_bootstrap_p_value, and the thing a
+    non-significant result actually needs. a p-value above alpha says the data
+    do not rule out zero; it says nothing about what else they do not rule out.
+    the interval does, which is what lets a reader see whether "no detected
+    cost" means "the cost is small" or "the experiment could not tell".
+
+    resamples seeds and then episodes within seeds, as the p-value does, but
+    does NOT centre the differences: the null is not being imposed here, the
+    observed distribution is being propagated.
+    """
+    diffs = [
+        np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+        for a, b in zip(groups_a, groups_b)
+    ]
+    diffs = [d for d in diffs if len(d) > 0]
+    k = len(diffs)
+    if k < 2:
+        return (float("nan"), float("nan"))
+
+    rng = np.random.default_rng(seed)
+    within = np.empty((k, n_boot, k), dtype=float)
+    for j, d in enumerate(diffs):
+        idx = rng.integers(0, len(d), size=(n_boot, k, len(d)))
+        within[j] = d[idx].mean(axis=2)
+
+    picks = rng.integers(0, k, size=(n_boot, k))
+    rows = np.arange(n_boot)[:, None]
+    slots = np.arange(k)[None, :]
+    boot = within[picks, rows, slots].mean(axis=1)
+    lo, hi = np.percentile(boot, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    return (float(lo), float(hi))
