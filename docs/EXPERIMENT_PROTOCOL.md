@@ -26,6 +26,7 @@ Market comparisons between synthetic and real corpora are descriptive because ex
 - Use the same evaluation episodes and masking randomness within a paired policy comparison. Keep episode/time-block identity when comparing training seeds.
 - Report every observed training seed. Do not select the seed closest to a mean as the observed statistic. Report per-seed comparisons and summarize their variation.
 - Label full-observation replacement separately from market-only replacement, which preserves the agent's true inventory state. Empirical row resampling preserves single-row support; it does not prove preservation of trajectory or hidden-state consistency.
+- Compare the existing full-observation replacement with two market-input interventions that retain the real clock and all four inventory features. The first draws a fresh donor episode at each matching decision step; the second fixes a donor episode for the whole market trajectory. Use all evaluation episodes and all declared policy seeds, with independent synthetic training corpora and a common held-out synthetic evaluation corpus. Retained entry prices and unrealized P&L can reveal market information; these are state-preservation controls, not complete information-removal claims. Record masking seeds and treat uncertainty as conditional on those draws.
 
 **Budgets and controls**
 
