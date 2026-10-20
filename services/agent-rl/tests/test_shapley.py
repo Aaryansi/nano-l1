@@ -127,6 +127,25 @@ class TestAxioms:
 
 
 class TestNonlinear:
+    @pytest.mark.parametrize("seed", [3, 13, 41])
+    def test_kernel_unanimity_game_does_not_credit_dummy_features(self, seed):
+        """Four cooperating features split one unit; two dummies get none."""
+        v = lambda masks: np.all(masks[:, :4], axis=1).astype(float)
+        got = kernel_shap(v, 6, n_samples=20000, seed=seed)
+        np.testing.assert_allclose(got.values, [.25, .25, .25, .25, 0., 0.], atol=.025)
+        assert got.efficiency_gap < 1e-9
+
+    def test_kernel_matches_independent_reference_on_higher_order_interaction(self):
+        shap = pytest.importorskip("shap")
+        model = lambda x: np.prod(x[:, :4], axis=1)
+        background = np.zeros((1, 6))
+        point = np.ones(6)
+        reference = np.asarray(shap.KernelExplainer(model, background).shap_values(
+            point, nsamples=64, l1_reg=0, silent=True)).reshape(-1)
+        got = kernel_shap(lambda masks: model(masks.astype(float)), 6,
+                          n_samples=20000, seed=13)
+        np.testing.assert_allclose(got.values, reference, atol=.025)
+
     def test_interaction_is_split_between_participants(self) -> None:
         """for f = x0 * x1 with zero-mean background, both must share credit.
 

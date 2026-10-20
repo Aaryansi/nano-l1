@@ -182,11 +182,14 @@ def kernel_shap(
     empty = float(v(np.zeros((1, n_features), dtype=bool))[0])
     full = float(v(np.ones((1, n_features), dtype=bool))[0])
 
-    # sample coalition sizes by the kernel weight, then a uniform coalition of
-    # that size. sizes near 1 and n-1 dominate, which is what makes kernel shap
-    # sample-efficient.
+    # There are comb(n, s) coalitions of size s. Their TOTAL kernel mass is
+    # comb(n, s) * kernel(n, s) = (n-1)/(s*(n-s)). Drawing a size from that
+    # mass, then a uniform coalition, makes unweighted regression converge to
+    # the kernel-weighted objective. Using a SINGLE coalition's kernel weight
+    # here divides by comb(n, s) twice and systematically credits dummy features
+    # in nonlinear games, even with arbitrarily many samples.
     sizes = np.arange(1, n_features)
-    weights = np.array([_shapley_kernel_weight(n_features, int(s)) for s in sizes])
+    weights = (n_features - 1) / (sizes * (n_features - sizes))
     weights = weights / weights.sum()
 
     masks = np.zeros((n_samples, n_features), dtype=bool)
