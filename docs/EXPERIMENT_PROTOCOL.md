@@ -46,6 +46,10 @@ Every explanation rollout must agree with scalar evaluation on actions, observat
 
 Control tasks contribute evidence about detection only when agents demonstrate both improvement over the declared baseline and nonzero observation dependence. Report failed training and degenerate rewards explicitly. More tasks on which the agent does not learn do not provide stronger evidence about sensitivity. Separate checkpoints along one training trajectory from independently trained agents.
 
+The corrected control release uses the independent Stable Baselines3 2.5.0 PPO implementation, with separate policy/value trunks, two 64-unit actor layers, four independently seeded environment copies, 10 optimization epochs, minibatches of 64, and zero entropy coefficient. Total rollout size is 2,048 interactions across the copies. The native implementation remains selectable for comparison. Attribution exports only the trained categorical actor; the exported container's unused value head is zero and is not a calibrated critic. Exporting snapshots must not consume the training RNG stream.
+
+The six control settings are CartPole, Acrobot, MountainCar, Pendulum with nine discrete torque choices, deterministic 4-by-4 FrozenLake, and CliffWalking capped at 200 steps. Grid observations are two normalized coordinates. Declare convergence thresholds of 475, -100, -110, -300, 0.8, and -20 respectively, together with nonzero observation dependence. These are evaluation gates, not claims that training will succeed. Keep all failed cases in the report. Record requested and actual interaction budgets, since complete 2,048-step rollout batches can exceed the requested count.
+
 Calibration of the PPO critic compares predicted policy return with realized policy return. Converting a state value into a settlement probability requires a separate justified model and is not used here. Market calibration is descriptive; marginal calibration and small linear residual correlations do not prove absence of exploitable conditional information. Report entry/hold costs separately from open/close round-trip costs.
 
 **Release requirements**

@@ -59,6 +59,20 @@ class DiscretizedAction(gym.ActionWrapper):
         return np.array([self._grid[int(a)]], dtype=np.float32)
 
 
+class GridObservation(gym.ObservationWrapper):
+    """Expose a grid state's two normalized coordinates rather than an ID."""
+    def __init__(self, env):
+        super().__init__(env)
+        inner = env.unwrapped
+        self.grid_shape = inner.desc.shape if hasattr(inner, "desc") else inner.shape
+        self.observation_space = gym.spaces.Box(0., 1., shape=(2,), dtype=np.float32)
+
+    def observation(self, observation):
+        row, column = divmod(int(observation), self.grid_shape[1])
+        return np.array([row / (self.grid_shape[0] - 1),
+                         column / (self.grid_shape[1] - 1)], dtype=np.float32)
+
+
 def make_env(env_id: str, **kwargs) -> gym.Env:
     """gym.make, with a continuous action space discretised.
 
@@ -67,7 +81,13 @@ def make_env(env_id: str, **kwargs) -> gym.Env:
     evaluated or masked. wrapping in some paths and not others would silently
     compare different environments.
     """
+    if env_id == "FrozenLake-v1":
+        kwargs.setdefault("is_slippery", False)
+    if env_id == "CliffWalking-v0":
+        kwargs.setdefault("max_episode_steps", 200)
     env = gym.make(env_id, **kwargs)
+    if env_id in {"FrozenLake-v1", "CliffWalking-v0"}:
+        env = GridObservation(env)
     if isinstance(env.action_space, gym.spaces.Box):
         env = DiscretizedAction(env)
     return env
@@ -169,6 +189,8 @@ class GymPPOConfig:
     minibatch_size: int = 256
     hidden: int = 64
     seed: int = 0
+    backend: str = "native"
+    n_envs: int = 1
 
 
 def train_gym_ppo(
@@ -190,6 +212,11 @@ def train_gym_ppo(
     the standard CartPole bug and it makes the agent believe falling over and
     surviving to the limit are the same event.
     """
+    if cfg.backend == "sb3":
+        from nano_rl.envs.control_training import train_independent_ppo
+        return train_independent_ppo(env, cfg, total_steps, checkpoint_fractions)
+    if cfg.backend != "native":
+        raise ValueError(f"unknown training backend: {cfg.backend}")
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
