@@ -57,7 +57,7 @@ from nano_rl.env.features import (  # noqa: E402
     feature_index,
     fit_normalizer,
 )
-from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, synthetic_train_eval  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import explain_behaviour  # noqa: E402
 from nano_rl.metrics import (  # noqa: E402
@@ -281,12 +281,13 @@ def main() -> None:
     )
 
     # ---------------------------------------------------------- the control
-    lb = make_learnable_corpus(n_episodes=1500, seed=args.seed)
+    synthetic = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=args.seed)
+    lb = synthetic.train
     ln = fit_normalizer(lb)
 
     synth_rows = run_corpus(
         "LEARNABLE SYNTHETIC (the target feature IS the signal)",
-        lb, lb, ln, SIGNAL_OBS_IDX,
+        lb, synthetic.evaluation, ln, SIGNAL_OBS_IDX,
         args.coefs, args.updates, args.seeds, args.n_states, args.seed,
         "steering should FAIL: removing the signal must cost return",
     )
@@ -354,6 +355,7 @@ def main() -> None:
 
     (out / "steering.json").write_text(json.dumps(
         {"real_market": real_rows, "learnable_synthetic": synth_rows,
+         "synthetic_data": synthetic.metadata(),
          "steerable_real": bool(steerable_real),
          "steerable_synthetic": bool(steerable_synth),
          "decided_on": "p_cluster",

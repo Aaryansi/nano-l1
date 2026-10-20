@@ -38,7 +38,7 @@ from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import FEATURE_NAMES, N_FEATURES, fit_normalizer  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus, synthetic_train_eval  # noqa: E402
 from nano_rl.explain.outcome_schemes import (  # noqa: E402
     leave_one_out,
     only_one_in,
@@ -103,9 +103,11 @@ def main() -> None:
     banner(f"1. NULL DISTRIBUTIONS, {args.n_null} agents per scheme")
     nulls: dict[str, list[float]] = {"span": [], "leave_one_out": [], "only_one_in": []}
     for k in range(args.n_null):
-        nb = make_null_corpus(n_episodes=900, seed=1000 + k)
+        nb_pair = synthetic_train_eval(make_null_corpus, n_episodes=900, seed=1000 + k)
+        nb = nb_pair.train
         nn = fit_normalizer(nb)
         agent = train(nb, nn, args.updates, args.seed + k)
+        nb = nb_pair.evaluation
         roll = VectorizedRollout(nb, normalizer=nn, max_position=100.0)
         bg = build_background(roll, n_samples=192, seed=args.seed + k)
         r = all_schemes(agent, nb, bg, nn, args.episodes, args.seed + k)
@@ -121,9 +123,11 @@ def main() -> None:
 
     # -------------------------------------------------------- power check
     banner("2. PLANTED SIGNAL: every scheme must fire")
-    lb = make_learnable_corpus(n_episodes=900, seed=args.seed)
+    lb_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=900, seed=args.seed)
+    lb = lb_pair.train
     ln = fit_normalizer(lb)
     la = train(lb, ln, args.updates, args.seed)
+    lb = lb_pair.evaluation
     lroll = VectorizedRollout(lb, normalizer=ln, max_position=100.0)
     lbg = build_background(lroll, n_samples=192, seed=args.seed)
     lr = all_schemes(la, lb, lbg, ln, args.episodes, args.seed)

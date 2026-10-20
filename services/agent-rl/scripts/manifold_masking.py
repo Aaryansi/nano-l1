@@ -48,7 +48,7 @@ from nano_rl.env.features import (  # noqa: E402
     N_FEATURES,
     fit_normalizer,
 )
-from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus, synthetic_train_eval  # noqa: E402
 from nano_rl.explain.manifold import (  # noqa: E402
     masked_value_fn,
     offmanifold_distance,
@@ -178,9 +178,11 @@ def main() -> None:
     banner(f"4. THE VERDICT UNDER CONDITIONAL MASKING, {args.n_null} nulls")
     nulls = []
     for i in range(args.n_null):
-        nb = make_null_corpus(n_episodes=900, seed=1000 + i)
+        nb_pair = synthetic_train_eval(make_null_corpus, n_episodes=900, seed=1000 + i)
+        nb = nb_pair.train
         nn = fit_normalizer(nb)
         na = train(nb, nn, args.updates, args.seed + i)
+        nb = nb_pair.evaluation
         nroll = VectorizedRollout(nb, normalizer=nn, max_position=100.0)
         nbg = build_background(nroll, n_samples=192, seed=args.seed + i)
         s, _ = span_and_loo(na, nb, nbg, nn, args.episodes, args.seed + i,
@@ -188,9 +190,12 @@ def main() -> None:
         nulls.append(s)
         print(f"  null {i + 1}/{args.n_null}: span {s:>+8.2f}", flush=True)
 
-    lb = make_learnable_corpus(n_episodes=900, seed=args.seed)
+    lb_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=900, seed=args.seed)
+
+    lb = lb_pair.train
     ln = fit_normalizer(lb)
     la = train(lb, ln, args.updates, args.seed)
+    lb = lb_pair.evaluation
     lroll = VectorizedRollout(lb, normalizer=ln, max_position=100.0)
     lbg = build_background(lroll, n_samples=192, seed=args.seed)
     span_signal, _ = span_and_loo(la, lb, lbg, ln, args.episodes, args.seed,

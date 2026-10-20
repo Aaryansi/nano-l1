@@ -50,7 +50,7 @@ from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.prediction import BlindEnv, observation_moments  # noqa: E402
-from nano_rl.env.synthetic import make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import synthetic_train_eval, make_null_corpus  # noqa: E402
 from nano_rl.explain.rollout import (  # noqa: E402
     VectorizedRollout,
     build_background,
@@ -171,10 +171,12 @@ def main() -> None:
     banner(f"NULL A: signal-free corpora ({args.n_null} agents)")
     a_nulls = {t: [] for t in TARGETS}
     for k in range(args.n_null):
-        nb = make_null_corpus(n_episodes=900, seed=1000 + k)
+        nb_pair = synthetic_train_eval(make_null_corpus, n_episodes=900, seed=1000 + k)
+        nb = nb_pair.train
         nn = fit_normalizer(nb)
         ag = train_on(BinaryMarketEnv(nb, normalizer=nn, max_position=100.0),
                       args.updates, args.seed + k)
+        nb = nb_pair.evaluation
         nr = VectorizedRollout(nb, normalizer=nn, max_position=100.0)
         nbg = build_background(nr, n_samples=192, seed=args.seed + k)
         s = all_spans(ag, nr, states_of(nr, args.states, args.seed + k), nbg,

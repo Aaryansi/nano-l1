@@ -41,14 +41,15 @@ from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
-from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus, synthetic_train_eval  # noqa: E402
+from nano_rl.explain.rollout import VectorizedRollout, build_background, masked_span  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
-    attribution_span,
+    NOT_DISTINGUISHABLE,
+    UNRESOLVED,
     check_resolving_power,
     consistency_across_runs,
     short_verdict,
-    test_against_null,
+    test_span_against_null,
 )
 from nano_rl.explain.trajectory import (  # noqa: E402
     OutcomeAttributionConfig,
@@ -79,6 +80,12 @@ def attribute(agent, batch, norm, seed: int, coalitions: int, episodes: int):
     )
 
 
+def endpoint_span(agent, batch, norm, seed):
+    roll = VectorizedRollout(batch, normalizer=norm, max_position=100.)
+    background = build_background(roll, n_samples=256, seed=seed)
+    return masked_span(agent, roll, background, seed)
+
+
 def build_null_distribution(
     n_null: int, updates: int, coalitions: int, episodes: int, base_seed: int
 ) -> list:
@@ -90,12 +97,14 @@ def build_null_distribution(
     """
     out = []
     for k in range(n_null):
-        nb = make_null_corpus(n_episodes=1200, seed=1000 + k)
+        pair = synthetic_train_eval(make_null_corpus, n_episodes=1200, seed=1000 + k)
+        nb = pair.train
         nn = fit_normalizer(nb)
-        agent = train(nb, nn, updates, base_seed + k)
-        att = attribute(agent, nb, nn, base_seed + k, coalitions, episodes)
-        out.append(att)
-        print(f"    null {k + 1}/{n_null}: span {attribution_span(att):+8.4f}",
+        reference_seed = base_seed + 10_000 + k
+        agent = train(nb, nn, updates, reference_seed)
+        span = endpoint_span(agent, pair.evaluation, nn, reference_seed)
+        out.append(span)
+        print(f"    null {k + 1}/{n_null}: span {span:+8.4f}",
               flush=True)
     return out
 
@@ -124,28 +133,28 @@ def main() -> None:
     nulls = build_null_distribution(
         args.n_null, args.updates, args.coalitions, args.episodes, args.seed
     )
-    null_spans = np.array([attribution_span(a) for a in nulls])
+    null_spans = np.asarray(nulls)
     print(f"\n  null span: {null_spans.mean():+.4f} +/- {null_spans.std(ddof=1):.4f}")
 
     results = {}
 
     # ------------------------------------------------------ power: must pass
-    banner("1. PLANTED SIGNAL (the test must PASS, or it has no power)")
-    lb = make_learnable_corpus(n_episodes=1200, seed=args.seed)
+    banner("1. PLANTED SIGNAL (single positive-control trial)")
+    signal_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1200, seed=args.seed)
+    lb = signal_pair.train
     ln = fit_normalizer(lb)
     la = train(lb, ln, args.updates, args.seed)
-    latt = attribute(la, lb, ln, args.seed, args.coalitions, args.episodes)
-    r_signal = test_against_null(latt, nulls)
+    r_signal = test_span_against_null(endpoint_span(la, signal_pair.evaluation, ln, args.seed), nulls)
     print(f"  {r_signal.summary()}")
     results["planted_signal"] = r_signal.as_dict()
 
     # ----------------------------------------- specificity: must not reject
-    banner("2. NULL CORPUS (the test must NOT reject, or it has no specificity)")
-    hb = make_null_corpus(n_episodes=1200, seed=9999)
+    banner("2. NULL CORPUS (single negative-control trial)")
+    null_pair = synthetic_train_eval(make_null_corpus, n_episodes=1200, seed=9999)
+    hb = null_pair.train
     hn = fit_normalizer(hb)
     ha = train(hb, hn, args.updates, args.seed + 77)
-    hatt = attribute(ha, hb, hn, args.seed, args.coalitions, args.episodes)
-    r_null = test_against_null(hatt, nulls)
+    r_null = test_span_against_null(endpoint_span(ha, null_pair.evaluation, hn, args.seed), nulls)
     print(f"  {r_null.summary()}")
     results["held_out_null"] = r_null.as_dict()
 
@@ -158,18 +167,18 @@ def main() -> None:
         print(f"  no checkpoints in {args.runs}")
         raise SystemExit(1)
 
-    real_atts = []
+    real_atts, spans = [], []
     for c in ckpts:
         a = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(c))
         real_atts.append(
             attribute(a, split.test, split.normalizer, args.seed,
                       args.coalitions, args.episodes)
         )
-        print(f"  {c.name}: span {attribution_span(real_atts[-1]):+8.4f}", flush=True)
+        spans.append(endpoint_span(a, split.test, split.normalizer, args.seed))
+        print(f"  {c.name}: full-test span {spans[-1]:+8.4f}", flush=True)
 
-    spans = [attribution_span(a) for a in real_atts]
-    mean_att = real_atts[int(np.argmin(np.abs(np.array(spans) - np.mean(spans))))]
-    r_real = test_against_null(mean_att, nulls)
+    per_seed = [test_span_against_null(span, nulls).as_dict() for span in spans]
+    r_real = test_span_against_null(spans[0], nulls)  # fixed first seed, never selected by its result
     print(f"\n  {r_real.summary()}")
     results["real_market"] = r_real.as_dict()
 
@@ -185,21 +194,12 @@ def main() -> None:
         print(f"  {label:<22}{r.statistic:>+10.4f}{r.p_rank:>9.4f}  "
               f"{short_verdict(r)}")
 
-    ok_power = r_signal.passes
-    ok_spec = not r_null.passes
-    print(f"\n  test has power       : {'yes' if ok_power else 'NO'} "
-          f"(rejects on planted signal)")
-    print(f"  test has specificity : {'yes' if ok_spec else 'NO'} "
-          f"(does not reject on null)")
-
-    print(f"\n  and the point of the exercise:")
-    print(f"    explanations of the real agent are CONSISTENT across seeds, "
-          f"rank correlation {consistency:+.3f}")
-    print(f"    while the same explanations are "
-          f"{'NOT ' if not r_real.passes else ''}distinguishable from "
-          f"explanations of nothing (p = {r_real.p_rank:.4f})")
-    if not r_real.passes and consistency > 0.6:
-        print("\n    consistency is therefore not evidence of validity.")
+    ok_power = None if r_signal.verdict == UNRESOLVED else r_signal.passes
+    ok_spec = None if r_null.verdict == UNRESOLVED else r_null.verdict == NOT_DISTINGUISHABLE
+    print(f"\n  single positive-control trial: {short_verdict(r_signal)}")
+    print(f"  single negative-control trial: {short_verdict(r_null)}")
+    print("  these trials do not estimate power or specificity")
+    print(f"  subset attribution rank correlation across seeds: {consistency:+.3f}")
 
     plots.null_test(
         {
@@ -218,8 +218,16 @@ def main() -> None:
         "results": results,
         "real_consistency_rank_corr": consistency,
         "real_spans_per_seed": spans,
-        "test_has_power": bool(ok_power),
-        "test_has_specificity": bool(ok_spec),
+        "positive_control_detected": ok_power,
+        "null_control_not_flagged": ok_spec,
+        "real_results_per_seed": per_seed,
+        "primary_real_checkpoint": ckpts[0].name,
+        "endpoint_evaluation_episodes": len(split.test),
+        "feature_attribution_episodes": min(args.episodes, len(split.test)),
+        "synthetic_data": {"signal": signal_pair.metadata(), "null": null_pair.metadata(),
+                           "reference_train_seeds": list(range(1000, 1000 + args.n_null)),
+                           "reference_policy_seeds": list(range(args.seed + 10000, args.seed + 10000 + args.n_null)),
+                           "reference_evaluation_seeds": list(range(1001000, 1001000 + args.n_null))},
     }
     (out / "sanity_test.json").write_text(json.dumps(payload, indent=2))
     print(f"\nwrote {out}/sanity_test.json")

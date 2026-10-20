@@ -42,7 +42,7 @@ from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.prediction import BlindEnv, observation_moments  # noqa: E402
-from nano_rl.env.synthetic import make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import synthetic_train_eval, make_null_corpus  # noqa: E402
 from nano_rl.explain.rollout import (  # noqa: E402
     VectorizedRollout,
     build_background,
@@ -102,10 +102,12 @@ def main():
     print("  span is measured there. the corpus differs from the observation's.")
     a_spans = []
     for k in range(args.n_null):
-        nb = make_null_corpus(n_episodes=900, seed=1000 + k)
+        nb_pair = synthetic_train_eval(make_null_corpus, n_episodes=900, seed=1000 + k)
+        nb = nb_pair.train
         nn = fit_normalizer(nb)
         ag = train(BinaryMarketEnv(nb, normalizer=nn, max_position=100.0),
                    args.updates, args.seed + k)
+        nb = nb_pair.evaluation
         r = VectorizedRollout(nb, normalizer=nn, max_position=100.0)
         a_spans.append(masked_span(ag, r, build_background(r, 192, args.seed + k),
                             args.seed + k))
