@@ -283,7 +283,8 @@ step "horizon scaling: why does the weight null fail?"
 
 step "positive control: does the test fire on a learnable REAL task?"
 ( cd "$RL" && "$PY" scripts/positive_control.py --corpus "$CORPUS" \
-    --out "$REPORTS" --runs "$RUNS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
+    --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) \
+    --seeds "$SEEDS" --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "40 100") )
 
 # the paper's headline verdict turned out to depend on this, so it is measured
 # rather than assumed. same agent, same measurement corpus, two null

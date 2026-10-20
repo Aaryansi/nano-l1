@@ -78,6 +78,20 @@ class TestReward:
 
 
 class TestRolloutParity:
+    def test_objectives_share_all_observation_transitions(self, corpus):
+        from nano_rl.env.binary_market import BinaryMarketEnv
+        batch, norm = corpus
+        trading = BinaryMarketEnv(batch, normalizer=norm)
+        prediction = PredictionEnv(batch, normalizer=norm)
+        for ep in range(len(batch)):
+            ot, _ = trading.reset(options={"episode": ep})
+            op, _ = prediction.reset(options={"episode": ep})
+            for action in [1, 2, 2, 0, 1, 1]:
+                np.testing.assert_array_equal(ot, op)
+                ot, _, _, _, _ = trading.step(action)
+                op, _, _, _, _ = prediction.step(action)
+            np.testing.assert_array_equal(ot, op)
+
     @pytest.mark.parametrize("action", [0, 1, 2])
     def test_constant_policy_matches_the_env(self, corpus, action):
         batch, norm = corpus
