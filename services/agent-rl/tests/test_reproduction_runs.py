@@ -100,3 +100,23 @@ def test_pinned_snapshot_and_tamper_detection(tmp_path):
         stream.write(b"modified")
     with pytest.raises(ValueError, match="hash mismatch"):
         verifier.verify_snapshot(target)
+
+
+def test_control_artifact_validation_catches_modified_episode_returns(tmp_path):
+    def endpoint(span):
+        return {"span": span, "full": [span, span], "masked": [0., 0.],
+                "episode_seeds": [0, 1]}
+    reference = {"spans": [1., 3.], "mean": 2., "std": np.sqrt(2.),
+                 "rollouts": [endpoint(1.), endpoint(3.)]}
+    payload = [{"env_id": "test", "attribution_episodes": 2, "competence_episodes": 2,
+                "weight_null": reference, "env_null": reference,
+                "random_init_return": {"returns": [1., 3.], "mean": 2., "std": np.sqrt(2.)},
+                "checkpoints": [{"span": 2., "span_rollouts": endpoint(2.), "return": 2.,
+                                 "return_rollouts": [1., 3.], "return_episode_seeds": [0, 1]}]}]
+    path = tmp_path / "generalize_gym.json"
+    path.write_text(json.dumps(payload))
+    manifest.validate_control_returns(tmp_path)
+    payload[0]["checkpoints"][0]["span_rollouts"]["masked"][0] = 1.
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="control span differs"):
+        manifest.validate_control_returns(tmp_path)

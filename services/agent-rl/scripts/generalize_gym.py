@@ -112,20 +112,16 @@ def run_env(env_id: str, args) -> dict:
     # competent policy. both quantities are in return units, so they can be
     # compared directly rather than through a normalisation that would have to
     # be argued for.
-    weight_spans, weight_returns = [], []
+    weight_spans, weight_returns, weight_rollouts = [], [], []
     for k in range(args.n_null):
         torch.manual_seed(10_000 + k)
         net = ActorCritic(n_feat, n_act, 64)
-        weight_spans.append(
-            attribution_span_fast(
-                net, env_id, bg, n_feat,
-                n_episodes=args.attr_episodes, seed=args.seed + k,
-            )
-        )
-        weight_returns.append(
-            evaluate_gym(net, env_id, n_episodes=args.attr_episodes,
-                         seed=args.seed + k)
-        )
+        raw = attribution_span_fast(net, env_id, bg, n_feat,
+            n_episodes=args.attr_episodes, seed=args.seed + k, return_samples=True)
+        raw["initialization_seed"] = 10_000 + k
+        weight_rollouts.append(raw)
+        weight_spans.append(raw["span"])
+        weight_returns.append(float(np.mean(raw["full"])))
     weight_spans = np.array(weight_spans)
     weight_returns = np.array(weight_returns)
 
@@ -138,7 +134,7 @@ def run_env(env_id: str, args) -> dict:
     # resampling whole observations keeps every within-observation constraint
     # exact while still carrying no information about the current state.
     pool = observation_pool(env_id, seed=args.seed) if args.blind == "resample" else None
-    env_spans = []
+    env_spans, env_rollouts = [], []
     for k in range(args.n_null):
         blind = BlindObservation(make_env(env_id), mean, std, seed=2000 + k,
                                  pool=pool)
@@ -146,12 +142,11 @@ def run_env(env_id: str, args) -> dict:
             blind, training_config(2000 + k, args.trainer), total_steps=args.null_steps
         )
         blind.close()
-        env_spans.append(
-            attribution_span_fast(
-                net, env_id, bg, n_feat,
-                n_episodes=args.attr_episodes, seed=args.seed + k,
-            )
-        )
+        raw = attribution_span_fast(net, env_id, bg, n_feat,
+            n_episodes=args.attr_episodes, seed=args.seed + k, return_samples=True)
+        raw["training_seed"] = 2000 + k
+        env_rollouts.append(raw)
+        env_spans.append(raw["span"])
     env_spans = np.array(env_spans)
 
     print(f"  random-init return: {weight_returns.mean():>+9.3f} "
@@ -203,10 +198,13 @@ def run_env(env_id: str, args) -> dict:
 
     rows = []
     for frac, net in units:
-        ret = evaluate_gym(net, env_id, n_episodes=25, seed=args.seed)
-        span = attribution_span_fast(
-            net, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed
+        return_samples = evaluate_gym(net, env_id, n_episodes=25, seed=args.seed, return_samples=True)
+        ret = float(np.mean(return_samples))
+        span_rollouts = attribution_span_fast(
+            net, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed,
+            return_samples=True
         )
+        span = span_rollouts["span"]
         r_env = test_span_against_null(span, env_spans)
         r_wt = test_span_against_null(span, weight_spans)
         # compare verdicts rather than bool(passes): a degenerate null
@@ -217,6 +215,9 @@ def run_env(env_id: str, args) -> dict:
         rows.append(
             {
                 unit_key: frac, "return": ret, "span": span,
+                "return_rollouts": return_samples.tolist(),
+                "return_episode_seeds": list(range(args.seed, args.seed + 25)),
+                "span_rollouts": span_rollouts,
                 "competence": competence_gate(env_id, ret, span),
                 "z_env": r_env.z_score, "z_weight": r_wt.z_score,
                 "detected_env": bool(r_env.passes),
@@ -247,6 +248,9 @@ def run_env(env_id: str, args) -> dict:
 
     return {
         "env_id": env_id,
+        "background_seed": args.seed,
+        "attribution_episodes": args.attr_episodes,
+        "competence_episodes": 25,
         "trainer": args.trainer,
         "training_config": asdict(training_config(args.seed, args.trainer)),
         "n_eligible_agents": sum(r["competence"]["eligible_for_sensitivity_claim"] for r in rows),
@@ -254,13 +258,13 @@ def run_env(env_id: str, args) -> dict:
         "n_features": n_feat,
         "weight_null": {"mean": float(weight_spans.mean()),
                         "std": float(weight_spans.std(ddof=1)),
-                        "spans": weight_spans.tolist()},
+                        "spans": weight_spans.tolist(), "rollouts": weight_rollouts},
         "random_init_return": {"mean": float(weight_returns.mean()),
                                "std": float(weight_returns.std(ddof=1)),
                                "returns": weight_returns.tolist()},
         "env_null": {"mean": float(env_spans.mean()),
                      "std": float(env_spans.std(ddof=1)),
-                     "spans": env_spans.tolist()},
+                     "spans": env_spans.tolist(), "rollouts": env_rollouts},
         "width_ratio": ratio,
         "checkpoints": rows,
         "exact_shapley_final": exact_vals.tolist(),

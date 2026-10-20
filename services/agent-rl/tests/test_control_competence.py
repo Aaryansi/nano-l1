@@ -7,7 +7,9 @@ import pytest
 import torch
 from stable_baselines3 import PPO
 
-from nano_rl.envs.gym_null import make_env, GymPPOConfig, train_gym_ppo
+from nano_rl.envs.gym_null import (make_env, GymPPOConfig, train_gym_ppo,
+                                 evaluate_gym, attribution_span_fast)
+from nano_rl.agents.networks import ActorCritic
 from nano_rl.envs.control_training import export_actor
 
 spec = importlib.util.spec_from_file_location("generalize_gym", Path(__file__).resolve().parents[1] / "scripts/generalize_gym.py")
@@ -91,3 +93,17 @@ def test_intermediate_snapshot_includes_its_budget_optimizer_update():
     finally:
         short_env.close()
         long_env.close()
+
+
+def test_control_endpoint_records_reconstruct_scores_with_common_episode_seeds():
+    torch.manual_seed(15)
+    actor = ActorCritic(4, 2, 64)
+    background = np.random.default_rng(7).normal(size=(32, 4)).astype(np.float32)
+    raw = attribution_span_fast(actor, "CartPole-v1", background, 4,
+                               n_episodes=3, seed=11, return_samples=True)
+    unmasked = evaluate_gym(actor, "CartPole-v1", n_episodes=3, seed=11, return_samples=True)
+    np.testing.assert_array_equal(raw["full"], unmasked)
+    assert raw["span"] == np.mean(raw["full"]) - np.mean(raw["masked"])
+    assert raw["episode_seeds"] == [11, 12, 13]
+    assert attribution_span_fast(actor, "CartPole-v1", background, 4,
+                                 n_episodes=3, seed=11) == raw["span"]

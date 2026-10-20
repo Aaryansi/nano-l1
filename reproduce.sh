@@ -29,7 +29,7 @@ UPDATES=100
 EXPLAIN_UPDATES=60
 N_NULL=24
 NULL_UPDATES=40
-STEER_SEEDS=3
+STEER_SEEDS=10
 GYM_STEPS=400000
 QUICK=0
 TESTS_ONLY=0
@@ -338,9 +338,6 @@ step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$FIGURES" )
 
-step "recording and validating the generated run"
-( cd "$RL" && "$PY" scripts/run_manifest.py --corpus "$CORPUS" \
-    --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase complete --quick "$QUICK" )
 if [ "$VERIFY_PAPER" = 1 ]; then
   step "verifying manuscript claims against this run"
   ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py --reports "$REPORTS" )
@@ -359,6 +356,10 @@ cat > "$REPORTS/pipeline_timing.json" <<JSON
   "cores": $(sysctl -n hw.ncpu 2>/dev/null || echo 0)
 }
 JSON
+
+step "recording and validating the generated run"
+( cd "$RL" && "$PY" scripts/run_manifest.py --corpus "$CORPUS" \
+    --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase complete --quick "$QUICK" )
 
 step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"
 echo "figures and json in $REPORTS:"
