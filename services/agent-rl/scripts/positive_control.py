@@ -1,28 +1,9 @@
-"""a positive control on real data: same features, same episodes, two objectives.
+"""Compare objectives on the same real episodes with matched training budgets.
 
-the objection this answers: every case where the null test fires elsewhere in
-this project is synthetic, so perhaps the test detects planted signal rather
-than information, and would decline on any real corpus.
-
-the control holds the corpus, the features, the normalizer, the walk-forward
-split and the null construction fixed, and varies only the objective.
-
-    prediction   +1 per step the call agrees with settlement. the market's
-                 implied probability is calibrated, so this is learnable.
-    trading      change in equity net of the exchange's fees. the same price
-                 offers nothing to trade against once costs are paid.
-
-if the test fires on the first and declines on the second, it is separating
-tasks by whether their observations carry usable information, not by whether
-the data is real. that is the claim.
-
-both nulls are built the same way and on the SAME real episodes: agents trained
-where the observation channel has been replaced by draws matched to the real
-observation moments. this is a stricter comparison than the synthetic null
-corpora used elsewhere, because the corpus is held fixed too.
-
-usage:
-    python scripts/positive_control.py --corpus data/corpus/corpus_candles_60s_spot.npz
+Both policies are trained from scratch at each requested budget. State
+transitions, observations, normalization, evaluation episodes, and initialization
+seeds are shared. Rewards differ. Per-seed standardized-span contrasts are
+descriptive; differing arm-wise verdicts do not establish an objective effect.
 """
 
 from __future__ import annotations
@@ -59,9 +40,6 @@ from nano_rl.explain.sanity import (  # noqa: E402
     test_span_against_null,
 )
 
-FULL = np.ones(N_FEATURES, dtype=bool)
-EMPTY = np.zeros(N_FEATURES, dtype=bool)
-
 
 def banner(t: str) -> None:
     print(f"\n{'=' * 80}\n{t}\n{'=' * 80}", flush=True)
@@ -74,140 +52,102 @@ def train(env, updates: int, seed: int) -> PPOAgent:
     return agent
 
 
-def run_task(name: str, make_env, make_roll, split, args, agent=None) -> dict:
-    """train (or reuse) an agent, measure the span, build a matched blind null.
-
-    the trading arm passes the paper's own checkpoint rather than training a
-    fresh one. a freshly trained agent at this budget is a DIFFERENT agent from
-    the one the rest of the paper explains, and it uses its observations more,
-    so training one here would have the control and the paper disagreeing about
-    the same row for a reason that has nothing to do with the objective.
-    """
-    banner(f"{name.upper()}: same episodes, same features")
-
-    if agent is None:
-        agent = train(make_env(split.train), args.updates, args.seed)
+def run_task(name, make_env, make_roll, split, updates, seeds, n_null, seed):
+    """Train both objectives from scratch at identical explicit budgets."""
+    banner(f"{name.upper()}: {updates} updates, {seeds} independent agents")
     roll = make_roll(split.test)
-    bg = build_background(
-        VectorizedRollout(split.test, normalizer=split.normalizer,
-                          max_position=100.0),
-        n_samples=192, seed=args.seed,
-    )
-    observed = masked_span(agent, roll, bg, args.seed)
-    ret = float(roll.run(greedy_policy(agent))["returns"].mean())
-    print(f"  trained agent: return {ret:+.3f}   span {observed:+.3f}")
-
-    # the null: agents trained on these same real episodes with the
-    # observation channel carrying nothing.
-    moments_env = make_env(split.train)
-    mean, sd = observation_moments(moments_env, seed=args.seed)
+    background = build_background(
+        VectorizedRollout(split.test, normalizer=split.normalizer, max_position=100.),
+        n_samples=192, seed=seed)
+    mean, sd = observation_moments(make_env(split.train), seed=seed)
     nulls = []
-    for k in range(args.n_null):
+    for k in range(n_null):
+        policy_seed = 10000 + seed + k
         blind = BlindEnv(make_env(split.train), mean, sd, seed=3000 + k)
-        nulls.append(masked_span(train(blind, args.updates, args.seed + k), roll, bg,
-                          args.seed + k))
-        print(f"  null {k + 1}/{args.n_null}: span {nulls[-1]:>+8.3f}", flush=True)
+        agent = train(blind, updates, policy_seed)
+        nulls.append(masked_span(agent, roll, background, policy_seed))
+        print(f"  reference {k + 1}/{n_null}: {nulls[-1]:+.3f}", flush=True)
+    rows, raw_returns = [], []
+    for k in range(seeds):
+        agent = train(make_env(split.train), updates, seed + k)
+        span = masked_span(agent, roll, background, seed)
+        returns = roll.run(greedy_policy(agent))["returns"]
+        comparison = test_span_against_null(span, nulls)
+        row = {"seed": seed + k, "return": float(returns.mean()), "span": span,
+               "result": comparison.as_dict(), "fires": comparison.passes,
+               "verdict": short_verdict(comparison)}
+        rows.append(row)
+        raw_returns.append(returns)
+        print(f"  seed {seed + k}: {comparison.summary()}", flush=True)
+    primary = rows[0]
+    return {"task": name, "updates": updates, "n_seeds": seeds,
+            "return": primary["return"], "span": primary["span"],
+            "result": primary["result"], "fires": primary["fires"],
+            "verdict": primary["verdict"], "per_seed": rows,
+            "return_mean_across_seeds": float(np.mean([r["return"] for r in rows])),
+            "span_mean_across_seeds": float(np.mean([r["span"] for r in rows])),
+            "null_spans": nulls, "null_mean": float(np.mean(nulls)),
+            "null_std": float(np.std(nulls, ddof=1))}, np.stack(raw_returns)
 
-    r = test_span_against_null(observed, nulls)
-    a = np.array(nulls)
-    print(f"\n  null      {a.mean():+.3f} +/- {a.std(ddof=1):.3f}")
-    print(f"  observed  {observed:+.3f}   z {r.z_score:+.2f}   "
-          f"{short_verdict(r)}")
 
-    return {
-        "task": name, "return": ret, "span": observed,
-        "null_spans": list(map(float, nulls)),
-        "null_mean": float(a.mean()), "null_std": float(a.std(ddof=1)),
-        "result": r.as_dict(), "fires": bool(r.passes),
-        "verdict": short_verdict(r),
-    }
+def direct_contrast(prediction, trading):
+    """Describe paired standardized-span differences without a significance claim."""
+    pairs = []
+    for a, b in zip(prediction["per_seed"], trading["per_seed"], strict=True):
+        za, zb = a["result"]["z_score"], b["result"]["z_score"]
+        difference = float(za - zb) if np.isfinite(za) and np.isfinite(zb) else None
+        pairs.append({"seed": a["seed"], "difference": difference})
+    values = [r["difference"] for r in pairs if r["difference"] is not None]
+    return {"estimand": "prediction minus trading standardized span, conditional on estimated references",
+            "per_seed": pairs, "n_defined": len(values),
+            "mean_difference": float(np.mean(values)) if values else None,
+            "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"}
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", required=True)
-    ap.add_argument("--runs", default="runs/ppo")
     ap.add_argument("--out", default="reports")
-    ap.add_argument("--n-null", type=int, default=12)
+    ap.add_argument("--n-null", type=int, default=24)
     ap.add_argument("--updates", type=int, default=40)
+    ap.add_argument("--budgets", type=int, nargs="+")
+    ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
-    check_resolving_power(args.n_null, what="the positive control null")
-
+    if args.seeds < 1 or any(n < 1 for n in (args.budgets or [args.updates])):
+        raise SystemExit("seeds and training budgets must be positive")
+    check_resolving_power(args.n_null, what="the matched objective-control reference")
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-
-    batch = EpisodeBatch.load(args.corpus)
-    split = walk_forward_split(batch)
+    split = walk_forward_split(EpisodeBatch.load(args.corpus))
     norm = split.normalizer
-
-    banner("POSITIVE CONTROL ON REAL DATA")
-    print("  identical corpus, features, normalizer and split throughout.")
-    print("  the objective is the only thing that varies.")
-    print(f"  train {len(split.train)} episodes, test {len(split.test)}")
-
-    ckpts = sorted(Path(args.runs).glob("seed*.pt"))
-    if not ckpts:
-        raise SystemExit(f"no checkpoints in {args.runs}; train first")
-    paper_agent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(ckpts[0]))
-    print(f"  trading arm reuses {ckpts[0].name}, the checkpoint the paper explains")
-
-    results = [
-        run_task(
-            "prediction",
-            lambda b: PredictionEnv(b, normalizer=norm, max_position=100.0),
-            lambda b: PredictionRollout(b, normalizer=norm, max_position=100.0),
-            split, args,
-        ),
-        run_task(
-            "trading",
-            lambda b: BinaryMarketEnv(b, normalizer=norm, max_position=100.0),
-            lambda b: VectorizedRollout(b, normalizer=norm, max_position=100.0),
-            split, args, agent=paper_agent,
-        ),
+    tasks = [
+        ("prediction", lambda b: PredictionEnv(b, normalizer=norm, max_position=100.),
+         lambda b: PredictionRollout(b, normalizer=norm, max_position=100.)),
+        ("trading", lambda b: BinaryMarketEnv(b, normalizer=norm, max_position=100.),
+         lambda b: VectorizedRollout(b, normalizer=norm, max_position=100.)),
     ]
-
-    banner("VERDICT")
-    print(f"  {'task':<14}{'return':>10}{'span':>10}{'z':>10}{'verdict':>24}")
-    for r in results:
-        print(f"  {r['task']:<14}{r['return']:>+10.2f}{r['span']:>+10.2f}"
-              f"{r['result']['z_score']:>+10.2f}"
-              f"{short_verdict(r['result']):>24}")
-
-    pred = next(r for r in results if r["task"] == "prediction")
-    trade = next(r for r in results if r["task"] == "trading")
-    separated = pred["fires"] and not trade["fires"]
-    # a positive control that cannot decide has not passed and has not failed.
-    # saying so matters more here than anywhere else in the pipeline: this is
-    # the step whose whole job is to show the test can fire on real data.
-    undecided = [r["task"] for r in results if r["verdict"] == "unresolved"]
-    print()
-    if undecided:
-        print(f"  the reference could not decide on {', '.join(undecided)}.")
-        print("  the positive control neither passed nor failed, so it does")
-        print("  not license any claim about the test's power on real data.")
-    elif separated:
-        print("  the test fires on the prediction task and declines on the")
-        print("  trading task, on identical real episodes. it is separating")
-        print("  tasks by whether observations carry usable information,")
-        print("  not by whether the corpus is synthetic.")
-    elif pred["fires"] and trade["fires"]:
-        print("  the test fires on BOTH. the trading result elsewhere in this")
-        print("  project does not survive a blinded-real null and the paper")
-        print("  must say so.")
-    else:
-        print("  the test does NOT fire on a task that is learnable from a")
-        print("  calibrated price. that is a power failure on real data and")
-        print("  the paper must say so.")
-
-    (out / "positive_control.json").write_text(json.dumps({
-        "tasks": results,
-        "separated": bool(separated),
-        "undecided_tasks": undecided,
-        "n_train": len(split.train),
-        "n_test": len(split.test),
-    }, indent=2))
-    print(f"\nwrote {out}/positive_control.json")
+    sweep, raw = [], []
+    budgets = args.budgets or [args.updates]
+    for updates in budgets:
+        rows, raw_budget = [], []
+        for name, make_env, make_roll in tasks:
+            row, returns = run_task(name, make_env, make_roll, split, updates,
+                                    args.seeds, args.n_null, args.seed)
+            rows.append(row)
+            raw_budget.append(returns)
+        undecided = [r["task"] for r in rows if r["verdict"] == "unresolved"]
+        separated = None if undecided else rows[0]["fires"] and not rows[1]["fires"]
+        sweep.append({"updates": updates, "tasks": rows,
+                      "contrast": direct_contrast(*rows), "separated": separated,
+                      "undecided_tasks": undecided})
+        raw.append(raw_budget)
+    payload = dict(sweep[0], budget_sweep=sweep, n_train=len(split.train),
+                   n_test=len(split.test), design="matched objectives and budgets; freshly trained policies")
+    (out / "positive_control.json").write_text(json.dumps(payload, indent=2))
+    np.savez_compressed(out / "positive_control_returns.npz", returns=np.asarray(raw),
+                        budgets=np.asarray(budgets), open_epoch=split.test.open_epoch)
+    print(f"wrote {out / 'positive_control.json'}")
 
 
 if __name__ == "__main__":

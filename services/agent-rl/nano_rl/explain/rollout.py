@@ -88,9 +88,15 @@ class VectorizedRollout:
         )
         return np.concatenate([market, pos_block], axis=1).astype(np.float32)
 
+    def score_step(self, actions: np.ndarray, t: int):
+        """Optional alternate reward, with the same inventory transitions."""
+        return None
+
     def run(self, policy: BatchPolicy) -> dict[str, np.ndarray]:
         """replay every episode. returns per-episode totals."""
         n = self.n_episodes
+        objective_return = np.zeros(n)
+        alternate_objective = False
         cash = np.zeros(n)
         position = np.zeros(n)
         avg_entry = np.zeros(n)
@@ -101,6 +107,10 @@ class VectorizedRollout:
         for t in range(self.n_steps):
             obs = self.observations(t, position, avg_entry, steps_in)
             actions = np.asarray(policy(obs), dtype=int)
+            score = self.score_step(actions, t)
+            if score is not None:
+                objective_return += score
+                alternate_objective = True
             target = np.asarray(ACTION_TO_TARGET, dtype=float)[actions] * self.max_position
             delta = target - position
 
@@ -148,7 +158,7 @@ class VectorizedRollout:
         equity = cash + position * settlement
 
         return {
-            "returns": equity,
+            "returns": objective_return if alternate_objective else equity,
             "trades": trades,
             "fees": fees,
             "final_position": position,

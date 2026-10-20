@@ -1,38 +1,8 @@
-"""the same real episodes, scored on calling the outcome rather than trading it.
+"""Trading-state observations scored against settlement rather than P&L.
 
-every case where our null test FIRES is otherwise synthetic, which invites the
-obvious objection: perhaps the test only detects planted signal, and would
-decline on any real corpus. this module supplies the positive control that
-answers it, using nothing but real settled contracts.
-
-the construction is deliberately minimal. the observations, the normalizer, the
-episodes and the walk-forward split are all identical to the trading task. only
-the objective changes:
-
-    trading      reward is change in mark-to-market equity, net of the
-                 exchange's fees. beating the market requires an edge over its
-                 own price.
-
-    prediction   reward is +1 for each step the agent's call agrees with the
-                 eventual settlement, -1 for each step it disagrees, 0 for
-                 abstaining. agreeing with the market's price is enough.
-
-the difference matters because the market's implied probability is well
-calibrated (weighted mean absolute error 0.0172). a calibrated price is highly
-informative ABOUT THE OUTCOME while offering nothing to trade against, since
-the fee schedule takes more than the edge. so the same feature stream should
-carry information on the prediction task and none on the trading task, and the
-test should say so.
-
-this turns a single negative result into a matched pair on identical data. if
-the test fired on both we would have learned nothing; if it declined on both,
-the test would look inert. the informative outcome is the one that separates
-them, and it is the one we get.
-
-reward here is allowed to depend on the settlement, which is not lookahead: an
-objective may reference the outcome, an OBSERVATION may not. nothing in the
-18-feature state vector sees the future, and the no-lookahead suite still
-governs the features this env serves.
+Prediction and trading use exactly the same action effects and observation
+construction. The prediction score replaces only reward and excludes shadow
+execution costs. Settlement is allowed in reward and never enters observations.
 """
 
 from __future__ import annotations
@@ -52,102 +22,27 @@ def outcome_sign(settlement: np.ndarray) -> np.ndarray:
 
 
 class PredictionEnv(BinaryMarketEnv):
-    """BinaryMarketEnv with the trading objective replaced by a scored call.
+    """Identical trading state transitions, scored for calling settlement.
 
-    subclassed rather than reimplemented so the observation construction, the
-    normalizer handling and the episode ordering are literally the same code.
-    if they were merely similar, a difference in results could be a difference
-    in the environment rather than in the objective, which is the one thing
-    this control exists to rule out.
-
-    the agent's current call occupies the position block of the observation,
-    which is the natural analogue of inventory and keeps the state 18-dimensional
-    so both tasks are explained by identical machinery.
+    The shadow inventory executes exactly as in the trading task, including
+    entry price and holding time. Only the reward used for learning differs.
+    Shadow execution costs are recorded in info but do not enter this score.
     """
 
-    def step(self, action: int):  # type: ignore[override]
+    def step(self, action: int):
+        observation, _, terminated, truncated, info = super().step(action)
         call = float(ACTION_TO_TARGET[int(action)])
-        mark = float(
-            0.5
-            * (
-                self.batch.bid[self._ep, self._t]
-                + self.batch.ask[self._ep, self._t]
-            )
-        )
-
-        # the call is carried in the position slot; there is no execution, no
-        # fill and no fee, so nothing touches the cost model.
-        if call != 0.0 and self._pos.position != call * self.max_position:
-            self._pos.steps_in_position = 0
-        self._pos.position = call * self.max_position
-        self._pos.avg_entry_price = mark if call != 0.0 else 0.0
-        self._pos.steps_in_position += 1 if call != 0.0 else 0
-        if call == 0.0:
-            self._pos.steps_in_position = 0
-
         reward = call * float(outcome_sign(self.batch.settlement[self._ep]))
-
-        self._t += 1
-        terminated = self._t >= self.n_steps
-
-        info = {
-            "call": call,
-            "position": self._pos.position,
-            "correct": float(reward > 0.0),
-            "settlement": float(self.batch.settlement[self._ep]),
-        }
-        return self._obs(), float(reward), terminated, False, info
+        info.update(call=call, correct=float(reward > 0),
+                    settlement=float(self.batch.settlement[self._ep]))
+        return observation, reward, terminated, truncated, info
 
 
 class PredictionRollout(VectorizedRollout):
-    """batched replay of the prediction task, for attribution.
+    """Use shared trading transitions and replace only the objective score."""
 
-    mirrors VectorizedRollout.run's interface exactly, returning a "returns"
-    key, so every masking and attribution utility in nano_rl.explain works on
-    this task with no changes.
-    """
-
-    def run(self, policy) -> dict[str, np.ndarray]:  # type: ignore[override]
-        n = self.n_episodes
-        sign = outcome_sign(self.batch.settlement)
-
-        total = np.zeros(n)
-        correct = np.zeros(n)
-        calls = np.zeros(n)
-        avg_entry = np.zeros(n)
-        steps_in = np.zeros(n)
-
-        for t in range(self.n_steps):
-            obs = self.observations(
-                t, calls * self.max_position, avg_entry, steps_in
-            )
-            new_calls = _CALLS[np.asarray(policy(obs), dtype=int)]
-
-            mark = 0.5 * (self.batch.bid[:, t] + self.batch.ask[:, t])
-            # mirrors PredictionEnv.step exactly: abstaining resets the counter
-            # to zero, but switching to a NEW call starts it at one, because the
-            # env increments after assigning the position. an earlier version
-            # reset to zero on a change, which left this feature one step behind
-            # the env for the whole episode. constant-policy parity tests cannot
-            # see that, since a constant policy ignores its observation.
-            steps_in = np.where(
-                new_calls == 0.0, 0.0,
-                np.where(new_calls != calls, 1.0, steps_in + 1.0),
-            )
-            avg_entry = np.where(new_calls != 0.0, mark, 0.0)
-            calls = new_calls
-
-            step_reward = calls * sign
-            total += step_reward
-            correct += (step_reward > 0.0).astype(float)
-
-        return {
-            "returns": total,
-            "correct": correct,
-            "trades": np.zeros(n),
-            "fees": np.zeros(n),
-            "final_position": calls * self.max_position,
-        }
+    def score_step(self, actions, t):
+        return _CALLS[actions] * outcome_sign(self.batch.settlement)
 
 
 class BlindEnv:
