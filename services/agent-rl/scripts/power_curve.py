@@ -39,8 +39,8 @@ from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
-from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.env.synthetic import synthetic_train_eval, make_learnable_corpus  # noqa: E402
+from nano_rl.explain.rollout import VectorizedRollout, build_background, masked_span  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     attribution_span,
     ranking_gap_diagnostic,
@@ -103,30 +103,24 @@ def main() -> None:
     rows = []
 
     for st in strengths:
-        batch = make_learnable_corpus(
-            n_episodes=1200, signal_strength=st, seed=args.seed
-        )
+        pair = synthetic_train_eval(make_learnable_corpus,
+            n_episodes=1200, signal_strength=st, seed=args.seed)
+        batch = pair.train
         norm = fit_normalizer(batch)
         agent = train(batch, norm, args.updates, args.seed)
 
         ev = BinaryMarketEnv(
-            batch, max_position=100.0, normalizer=norm, random_episode_order=False
+            pair.evaluation, max_position=100.0, normalizer=norm, random_episode_order=False
         )
-        edge = float(agent.evaluate(ev, n_episodes=500)["returns"].mean())
+        edge = float(agent.evaluate(ev, n_episodes=len(pair.evaluation))["returns"].mean())
 
-        roll = VectorizedRollout(batch, normalizer=norm, max_position=100.0)
+        roll = VectorizedRollout(pair.evaluation, normalizer=norm, max_position=100.0)
         bg = build_background(roll, n_samples=256, seed=args.seed)
-        att = explain_outcomes(
-            agent, batch, bg, normalizer=norm,
-            cfg=OutcomeAttributionConfig(
-                n_coalitions=args.coalitions, n_episodes=args.episodes,
-                seed=args.seed,
-            ),
-        )
-        res = test_span_against_null(attribution_span(att), null_spans)
+        res = test_span_against_null(masked_span(agent, roll, bg, args.seed), null_spans)
         rows.append(
             {
                 "signal_strength": st,
+                "data": pair.metadata(),
                 "agent_edge": edge,
                 "span": res.statistic,
                 "z": res.z_score,
@@ -146,7 +140,6 @@ def main() -> None:
         print(f"\n  detection threshold: the test flags explanations as informative")
         print(f"  once the agent's measured edge reaches about "
               f"{thresh:+.2f} per episode.")
-        print(f"  for reference, the real agent earns -0.418 per episode.")
     else:
         thresh = float("nan")
         print("\n  nothing detected across the sweep")
@@ -156,7 +149,7 @@ def main() -> None:
         [r["z"] for r in rows],
         [r["detected"] for r in rows],
         out / "power_curve.png",
-        real_edge=-0.418,
+        real_edge=None,
         subtitle=f"null from {len(null_spans)} agents with nothing to learn; "
                  f"detection at |z| > 1.96",
     )
@@ -220,6 +213,7 @@ def main() -> None:
         "null_spans": null_spans.tolist(),
         "power_curve": rows,
         "detection_threshold_edge": thresh,
+        "design": "one training seed per strength; an effect-size sweep, not a power estimate",
         "ranking_gap_diagnostic": cert,
         "real_agent_null_test": res_real.as_dict(),
     }

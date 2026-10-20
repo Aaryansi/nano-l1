@@ -53,7 +53,7 @@ from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
+from nano_rl.env.synthetic import synthetic_train_eval, make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import (  # noqa: E402
     OutcomeAttributionConfig,
@@ -237,12 +237,14 @@ def main() -> None:
     mroll = VectorizedRollout(test, normalizer=norm, max_position=100.0)
     mbg = build_background(mroll, n_samples=192, seed=args.seed)
 
-    planted = make_learnable_corpus(n_episodes=1500, seed=args.seed)
+    planted_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=args.seed)
+    planted = planted_pair.train
     pnorm = fit_normalizer(planted)
     penv_train = BinaryMarketEnv(planted, max_position=100.0, normalizer=pnorm)
     penv_train.reset(seed=args.seed)
     pagent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=args.seed))
     pagent.train(penv_train, n_updates=args.updates, verbose=False)
+    planted = planted_pair.evaluation
     penv = BinaryMarketEnv(planted, max_position=100.0, normalizer=pnorm,
                            random_episode_order=False)
     proll = VectorizedRollout(planted, normalizer=pnorm, max_position=100.0)

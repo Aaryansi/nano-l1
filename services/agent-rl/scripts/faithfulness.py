@@ -46,7 +46,7 @@ from nano_rl.env.features import (  # noqa: E402
 from nano_rl.env.synthetic import (  # noqa: E402
     DECOY_IDX,
     make_decoy_corpus,
-    make_learnable_corpus,
+    make_learnable_corpus, synthetic_train_eval,
 )
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import (  # noqa: E402
@@ -255,9 +255,11 @@ def deletion_experiment(out: Path, updates: int, seed: int) -> dict:
     print("  the ranking that degrades return FASTER is the more faithful one.")
     print("  a random ranking is the control.\n")
 
-    batch = make_learnable_corpus(n_episodes=1500, seed=seed)
+    pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=seed)
+    batch = pair.train
     norm = fit_normalizer(batch)
     agent = train_on(batch, norm, updates, seed)
+    batch = pair.evaluation
 
     roll = VectorizedRollout(batch, normalizer=norm, max_position=100.0)
     background = build_background(roll, n_samples=256, seed=seed)

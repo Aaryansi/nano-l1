@@ -44,7 +44,7 @@ from nano_rl.env.features import (  # noqa: E402
     SIGNAL_OBS_IDX,
     fit_normalizer,
 )
-from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
+from nano_rl.env.synthetic import synthetic_train_eval, make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.trajectory import (  # noqa: E402
     OutcomeAttributionConfig,
@@ -75,13 +75,15 @@ def ground_truth_validation(out: Path, updates: int, seed: int) -> dict:
     print("  planted feature ranks FIRST and carries the majority of the mass,")
     print("  not that everything else is exactly zero.\n")
 
-    batch = make_learnable_corpus(n_episodes=1500, seed=seed)
+    pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=seed)
+    batch = pair.train
     norm = fit_normalizer(batch)
 
     env = BinaryMarketEnv(batch, max_position=100.0, normalizer=norm)
     env.reset(seed=seed)
     agent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=seed))
     agent.train(env, n_updates=updates, verbose=False)
+    batch = pair.evaluation
 
     eval_env = BinaryMarketEnv(
         batch, max_position=100.0, normalizer=norm, random_episode_order=False
@@ -138,13 +140,15 @@ def naive_versus_trajectory(out: Path, updates: int, seed: int) -> dict:
     print("  'hold' is driven by the inventory it already has, while the money")
     print("  was earned by the signal several steps earlier.\n")
 
-    batch = make_learnable_corpus(n_episodes=1500, seed=seed)
+    pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=seed)
+    batch = pair.train
     norm = fit_normalizer(batch)
 
     env = BinaryMarketEnv(batch, max_position=100.0, normalizer=norm)
     env.reset(seed=seed)
     agent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=seed))
     agent.train(env, n_updates=updates, verbose=False)
+    batch = pair.evaluation
 
     # search for a state where the agent is genuinely HOLDING an open
     # position mid-episode. an earlier version explained a fixed step 7 of

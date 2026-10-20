@@ -45,7 +45,7 @@ from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import N_FEATURES, fit_normalizer  # noqa: E402
 from nano_rl.env.prediction import BlindEnv, observation_moments  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus, synthetic_train_eval  # noqa: E402
 from nano_rl.explain.rollout import (  # noqa: E402
     VectorizedRollout,
     build_background,
@@ -139,18 +139,20 @@ def main() -> None:
     cases = []
 
     # 1. planted signal: the test must fire, or it has no power
-    lb = make_learnable_corpus(n_episodes=args.episodes, seed=args.seed)
+    signal_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=args.episodes, seed=args.seed)
+    lb = signal_pair.train
     ln = fit_normalizer(lb)
     la = train_on(BinaryMarketEnv(lb, normalizer=ln, max_position=100.0),
                   args.updates, args.seed)
-    cases.append(run_case("planted signal", lb, lb, ln, la, args))
+    cases.append(run_case("planted signal", lb, signal_pair.evaluation, ln, la, args))
 
     # 2. a signal-free corpus: the test must decline, or it has no specificity
-    hb = make_null_corpus(n_episodes=args.episodes, seed=9999)
+    null_pair = synthetic_train_eval(make_null_corpus, n_episodes=args.episodes, seed=9999)
+    hb = null_pair.train
     hn = fit_normalizer(hb)
     ha = train_on(BinaryMarketEnv(hb, normalizer=hn, max_position=100.0),
                   args.updates, args.seed + 77)
-    cases.append(run_case("null corpus", hb, hb, hn, ha, args))
+    cases.append(run_case("null corpus", hb, null_pair.evaluation, hn, ha, args))
 
     # 3. the real market, trained on the real train split and evaluated once
     batch = EpisodeBatch.load(args.corpus)
@@ -170,25 +172,14 @@ def main() -> None:
               f"{c['null_std']:>10.2f}{c['result']['z_score']:>+9.2f}"
               f"{short_verdict(c['result']):>22}")
 
-    by = {c["case"]: c for c in cases}
-    power = by["planted signal"]["fires"]
-    spec = not by["null corpus"]["fires"]
-    print()
-    print(f"  fires on a planted signal (power)        : {power}")
-    print(f"  declines on a signal-free corpus (spec.) : {spec}")
-    if not (power and spec):
-        print("\n  the matched construction has lost power or specificity, and")
-        print("  the paper cannot adopt it without saying so.")
-    else:
-        print("\n  the matched construction keeps both. the real-market verdict")
-        print(f"  under it is: {'informative' if by['real market']['fires'] else 'not distinguishable'}")
+    print("\n  These are single control trials, not estimates of power or specificity.")
+    collapsed = any(c["null_std"] < 1e-6 for c in cases)
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "matched_null_test.json").write_text(json.dumps({
         "cases": cases,
-        "has_power": bool(power),
-        "has_specificity": bool(spec),
+        "synthetic_data": {"signal": signal_pair.metadata(), "null": null_pair.metadata()},
     }, indent=2))
     print(f"\nwrote {out}/matched_null_test.json")
 

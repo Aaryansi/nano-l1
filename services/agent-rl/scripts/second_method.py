@@ -35,7 +35,7 @@ from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import FEATURE_NAMES, N_FEATURES, fit_normalizer  # noqa: E402
-from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus  # noqa: E402
+from nano_rl.env.synthetic import make_learnable_corpus, make_null_corpus, synthetic_train_eval  # noqa: E402
 from nano_rl.explain.gradients import ig_attribution_profile, ig_span  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
@@ -127,9 +127,11 @@ def main() -> None:
 
     null_spans = []
     for k in range(args.n_null):
-        nb = make_null_corpus(n_episodes=1000, seed=1000 + k)
+        nb_pair = synthetic_train_eval(make_null_corpus, n_episodes=1000, seed=1000 + k)
+        nb = nb_pair.train
         nn = fit_normalizer(nb)
         agent = train(nb, nn, args.updates, args.seed + k)
+        nb = nb_pair.evaluation
         nenv = BinaryMarketEnv(nb, max_position=100.0, normalizer=nn,
                                random_episode_order=False)
         states = sample_states(nenv, agent, args.n_states, args.seed + k)
@@ -138,9 +140,11 @@ def main() -> None:
     print(f"  IG null span: {null_spans.mean():+.5f} +/- {null_spans.std(ddof=1):.5f}")
 
     # power check: a corpus with a planted signal must be detected
-    lb = make_learnable_corpus(n_episodes=1000, seed=args.seed)
+    lb_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1000, seed=args.seed)
+    lb = lb_pair.train
     ln = fit_normalizer(lb)
     la = train(lb, ln, args.updates, args.seed)
+    lb = lb_pair.evaluation
     lenv = BinaryMarketEnv(lb, max_position=100.0, normalizer=ln,
                            random_episode_order=False)
     l_states = sample_states(lenv, la, args.n_states, args.seed)

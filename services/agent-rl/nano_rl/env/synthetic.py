@@ -24,6 +24,7 @@ exercise the actual reward accounting and cost model rather than a mock.
 from __future__ import annotations
 
 import numpy as np
+from dataclasses import dataclass
 
 from nano_rl.env.binary_market import EpisodeBatch
 from nano_rl.env.costs import fee_dollars
@@ -33,6 +34,25 @@ from nano_rl.env.features import N_SPOT
 # here because it is the semantically honest place: for a "BTC up?" contract,
 # the underlying's move genuinely should predict resolution.
 SIGNAL_IDX = 0
+
+
+@dataclass(frozen=True)
+class SyntheticTrainEval:
+    train: EpisodeBatch
+    evaluation: EpisodeBatch
+    train_seed: int
+    evaluation_seed: int
+
+    def metadata(self) -> dict:
+        return {"train_seed": self.train_seed, "evaluation_seed": self.evaluation_seed,
+                "train_episodes": len(self.train), "evaluation_episodes": len(self.evaluation)}
+
+
+def synthetic_train_eval(factory, *, seed: int, **kwargs) -> SyntheticTrainEval:
+    """Independent corpus draws from one specified population distribution."""
+    evaluation_seed = seed + 1_000_000
+    return SyntheticTrainEval(factory(seed=seed, **kwargs),
+                              factory(seed=evaluation_seed, **kwargs), seed, evaluation_seed)
 
 
 def make_learnable_corpus(
