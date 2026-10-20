@@ -141,6 +141,53 @@ class TestVaryingPolicies:
 
 
 class TestObservationParity:
+    @pytest.mark.parametrize("costs_enabled", [True, False])
+    @pytest.mark.parametrize("sequence", [
+        [FLAT] * 8,
+        [FLAT, FLAT, LONG, LONG, FLAT, FLAT, SHORT, SHORT],
+        [LONG, SHORT, FLAT, FLAT, LONG, LONG, SHORT, FLAT],
+    ])
+    def test_complete_observation_trajectories(self, corpus, sequence, costs_enabled):
+        """Parity must hold after actions, including repeated flat decisions."""
+        norm = fit_normalizer(corpus)
+        vec = VectorizedRollout(corpus, normalizer=norm, costs_enabled=costs_enabled)
+        observed = []
+
+        def scripted(obs):
+            observed.append(obs.copy())
+            return np.full(len(obs), sequence[len(observed) - 1])
+
+        got = vec.run(scripted)
+        env = BinaryMarketEnv(corpus, normalizer=norm,
+                              cost_model=CostModel(enabled=costs_enabled))
+        for ep in range(len(corpus)):
+            obs, _ = env.reset(options={"episode": ep})
+            total = 0.0
+            for t, action in enumerate(sequence):
+                np.testing.assert_allclose(obs, observed[t][ep], atol=1e-6,
+                                           err_msg=f"episode {ep}, step {t}")
+                if obs[-4] == 0:
+                    assert obs[-1] == 0, "flat inventory has no elapsed holding time"
+                obs, reward, _, _, info = env.step(action)
+                total += reward
+            assert total == pytest.approx(got["returns"][ep], abs=1e-9)
+            assert info["fees"] == pytest.approx(got["fees"][ep], abs=1e-9)
+            assert info["trades"] == got["trades"][ep]
+            assert info["position"] == got["final_position"][ep]
+
+    def test_policy_that_responds_to_flat_counter(self, corpus):
+        """The old defect changed actions and P&L, not just a passive counter."""
+        norm = fit_normalizer(corpus)
+
+        def policy(obs):
+            return np.where(obs[:, -1] > 0, LONG, FLAT)
+
+        got = VectorizedRollout(corpus, normalizer=norm).run(policy)
+        want = reference_run(corpus, lambda obs, t: policy(obs), norm)
+        np.testing.assert_array_equal(got["returns"], np.zeros(len(corpus)))
+        for key in got:
+            np.testing.assert_allclose(got[key], want[key], atol=1e-9)
+
     def test_observations_match_step_by_step(self, corpus) -> None:
         """the observation vectors themselves must be identical, not just pnl."""
         norm = fit_normalizer(corpus)

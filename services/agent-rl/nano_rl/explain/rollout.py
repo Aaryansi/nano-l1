@@ -24,7 +24,7 @@ import numpy as np
 
 from nano_rl.env.binary_market import ACTION_TO_TARGET, EpisodeBatch
 from nano_rl.env.costs import TAKER_FEE_COEF
-from nano_rl.env.features import N_KALSHI, FeatureNormalizer
+from nano_rl.env.features import N_KALSHI, FeatureNormalizer, advance_position_steps
 
 # a batched policy maps (n_episodes, n_features) observations to (n_episodes,)
 # integer actions.
@@ -140,11 +140,7 @@ class VectorizedRollout:
             )
             avg_entry = np.where(new_pos == 0.0, 0.0, avg_entry)
 
-            flipped = traded & (np.sign(new_pos) != np.sign(position))
-            steps_in = np.where(
-                ~traded, steps_in + 1, np.where(flipped, 0.0, steps_in + 1)
-            )
-            steps_in = np.where(new_pos == 0.0, 0.0, steps_in)
+            steps_in = advance_position_steps(steps_in, position, new_pos)
             position = new_pos
 
         # terminal: mark the position at the true settlement value
