@@ -145,6 +145,20 @@ def build_market_features(
     )
 
 
+def advance_position_steps(steps, old_position, new_position):
+    """Elapsed holding steps after an action, for scalars or episode arrays.
+
+    Flat inventory, a new position, and a direction change start at zero.
+    Keeping, adding to, or reducing an open position advances its clock.
+    """
+    return np.where(
+        (np.asarray(new_position) == 0)
+        | (np.sign(new_position) != np.sign(old_position)),
+        0,
+        np.asarray(steps) + 1,
+    )
+
+
 @dataclass
 class PositionState:
     """the agent's inventory, in yes-equivalent contracts.
@@ -172,7 +186,9 @@ class PositionState:
         classic source of silently wrong pnl.
         """
         if delta == 0.0:
-            self.steps_in_position += 1
+            self.steps_in_position = int(advance_position_steps(
+                self.steps_in_position, self.position, self.position
+            ))
             return 0.0
 
         old_pos = self.position
@@ -195,11 +211,11 @@ class PositionState:
             self.avg_entry_price = price if new_pos != 0.0 else 0.0
 
         self.position = new_pos
+        self.steps_in_position = int(advance_position_steps(
+            self.steps_in_position, old_pos, new_pos
+        ))
         if new_pos == 0.0:
             self.avg_entry_price = 0.0
-            self.steps_in_position = 0
-        else:
-            self.steps_in_position = 0 if np.sign(new_pos) != np.sign(old_pos) else self.steps_in_position + 1
 
         return float(realized)
 
