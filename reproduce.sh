@@ -294,6 +294,10 @@ step "is the span an artefact of off-manifold masking?"
     --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
+step "separating market replacement from inventory and time replacement"
+( cd "$RL" && "$PY" scripts/state_masking.py --corpus "$CORPUS" \
+    --runs "$RUNS" --out "$REPORTS" --seeds "$SEEDS" --updates "$EXPLAIN_UPDATES" )
+
 # four classic-control tasks, not two. box2d environments are deliberately not
 # used: they need a system swig binary to build, which would trade the
 # one-command property for one more feature dimension.

@@ -8,11 +8,12 @@ about the masking, not about the agent.
 
 this script answers it in four parts.
 
-1. the span is masking-mode invariant BY CONSTRUCTION, because v(N) masks
-   nothing and v(empty) replaces the whole observation with a single real
-   background row. neither is off-manifold, and with an empty kept set there is
-   nothing to condition on. the two modes must agree to sampling noise. this is
-   a falsifiable prediction about our own implementation, so we check it.
+1. the two endpoint values agree for these implementations: full observation
+   uses the real inputs and empty observation uses an empirical background row.
+   Shared single-row support does not establish consistency with the actual
+   inventory, hidden state, clock, or preceding history. state_masking.py
+   separately examines interventions that preserve inventory, time, and donor
+   market trajectories.
 
 2. marginal masking really is off-manifold at intermediate coalitions. we
    measure the distance from synthetic states to the nearest real state under
@@ -56,6 +57,7 @@ from nano_rl.explain.manifold import (  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.diagnostics import magnitude_rank_correlation  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
+    UNRESOLVED,
     check_resolving_power,
     short_verdict,
     test_span_against_null,
@@ -123,8 +125,8 @@ def main() -> None:
     # ------------------------------------------------------------- part 1
     banner("1. IS THE SPAN INVARIANT TO THE MASKING MODE?")
     print("  predicted: yes. v(N) masks nothing and v(empty) substitutes one")
-    print("  whole real background row, so neither coalition leaves the")
-    print("  manifold and there is nothing to condition on at the empty set.")
+    print("  whole empirical background row. There is nothing to condition")
+    print("  on at the empty set; joint sequential consistency is not guaranteed.")
     print()
     span_marg, loo_marg = span_and_loo(
         agent, split.test, rbg, split.normalizer, args.episodes, args.seed,
@@ -152,7 +154,7 @@ def main() -> None:
     print(f"  {'kept features':>16}{'marginal':>12}{'conditional':>14}")
     dist_rows = []
     # both endpoints are included on purpose: they are the two coalitions the
-    # span is built from, and the claim is that neither leaves the manifold.
+    # span is built from; this tests row support, not sequential consistency.
     for n_kept in (N_FEATURES, N_FEATURES - 1, 12, 9, 4, 0):
         m = EMPTY.copy()
         m[:n_kept] = True
@@ -214,20 +216,18 @@ def main() -> None:
 
     # ------------------------------------------------------------ verdict
     banner("VERDICT")
-    invariant = abs(span_cond - span_marg) < max(1.0, 0.15 * abs(span_marg))
-    holds = r_signal.passes and not r_real.passes
+    invariant = bool(np.isclose(span_cond, span_marg, rtol=0., atol=1e-9))
+    holds = (None if UNRESOLVED in (r_signal.verdict, r_real.verdict)
+             else bool(r_signal.passes and not r_real.passes))
     separated = all(d["marginal"] > d["conditional"] for d in dist_rows[1:-1])
     print(f"  span invariant to masking mode                : {invariant}")
     print(f"  conditional masking is nearer the manifold     : {separated}")
-    print(f"  verdict unchanged under conditional masking    : {holds}")
-    if invariant and holds:
-        print("\n  the headline result is not an artefact of off-manifold")
-        print("  masking. the per-feature ranking is the part that moves.")
-    else:
-        print("\n  the result DOES depend on the masking mode, and the paper")
-        print("  must say so.")
+    print(f"  signal rejected and market not rejected         : {holds}")
+    print("  Endpoint agreement tests these implementations, not immunity to")
+    print("  sequential distribution shift. Feature-level rankings can still differ.")
     res["span_invariant"] = bool(invariant)
-    res["verdict_holds"] = bool(holds)
+    res["signal_rejected_market_not"] = holds
+    res["support_scope"] = "empirical observation rows only; no joint sequential guarantee"
     res["conditional_nearer_manifold"] = bool(separated)
     res["feature_names"] = list(FEATURE_NAMES)
 
