@@ -1,37 +1,11 @@
-"""can an agent's explanation be changed while its performance is held fixed?
+"""Measure feature-attribution suppression and its held-out return cost.
 
-this is the safety-relevant question in the project. if an explanation can be
-steered without cost, then it reflects a training choice rather than the task,
-and an overseer inspecting attributions is inspecting something the developer
-controls. the threat model is concrete: a developer who wanted their agent to
-appear not to use a sensitive feature could arrange it, and standard attribution
-inspection would not notice.
-
-the method is an auxiliary penalty during ppo training on the divergence
-between pi(.|s) and pi(.|s') where the target feature is resampled from the
-batch marginal. that is the same interventional perturbation shapley
-attribution measures, so the penalty attacks the attribution directly.
-
-THE CONTROL IS THE POINT. the experiment is run on two corpora:
-
-  real market        the target feature dominates the explanation but the
-                     agent has no measurable edge. prediction: steering
-                     succeeds, since nothing load-bearing is being removed.
-
-  learnable synthetic  the target feature is the planted signal and is
-                     genuinely necessary. prediction: steering FAILS, because
-                     removing it costs return.
-
-if both hold, the finding is sharp and falsifiable: **explanations are steerable
-exactly when they are not tracking anything real.** that ties directly to the
-null test, which says the real agent's explanation is not tracking anything.
-
-if steering also succeeds on the synthetic corpus, the result is weaker and
-different: it would mean the penalty is defeating the attribution method rather
-than changing what the agent uses, and the report must say so.
-
-usage:
-    python scripts/steer_explanation.py --corpus data/corpus/corpus_candles_60s_spot.npz
+The penalty is fixed rather than selected by the evaluation result. Market
+uncertainty crosses training seeds with shared UTC-day evaluation blocks;
+synthetic uncertainty uses shared independent episodes. Raw paired returns are
+retained so intervals can be reconstructed. Non-rejection is not equivalence,
+and two controls do not establish a general relation between suppression cost
+and feature relevance.
 """
 
 from __future__ import annotations
@@ -124,7 +98,7 @@ def run_condition(
             eval_batch, max_position=100.0, normalizer=norm,
             random_episode_order=False,
         )
-        res = agent.evaluate(ev, n_episodes=min(500, len(eval_batch)))
+        res = agent.evaluate(ev, n_episodes=len(eval_batch))
         returns.append(float(res["returns"].mean()))
         all_pnl.append(res["returns"])
 
@@ -143,13 +117,15 @@ def run_condition(
         "target_share_mean": float(np.mean(shares)),
         "target_share_std": float(np.std(shares)),
         "pnl": all_pnl,
+        "return_per_seed": returns,
+        "target_share_per_seed": shares,
     }
 
 
 def run_corpus(
     name: str, train_batch, eval_batch, norm, target: int,
     coefs: list[float], updates: int, seeds: int, n_states: int,
-    base_seed: int, prediction: str,
+    base_seed: int, prediction: str, block_ids=None,
 ) -> list[dict]:
     banner(f"{name}   target feature: `{FEATURE_NAMES[target]}`")
     print(f"  prediction: {prediction}\n")
@@ -192,12 +168,12 @@ def run_corpus(
             # disagree the two come apart, and the paper quotes the
             # conservative one.
             r["p_cluster"] = float(
-                cluster_bootstrap_p_value(r["pnl"], baseline_pnl)
+                cluster_bootstrap_p_value(r["pnl"], baseline_pnl, block_ids=block_ids)
             )
             # a p-value above alpha says zero is not excluded. it does not say
             # what else is not excluded, which is the whole question for a
             # claim of the form "no detected cost". the interval answers it.
-            lo, hi = cluster_bootstrap_ci(r["pnl"], baseline_pnl)
+            lo, hi = cluster_bootstrap_ci(r["pnl"], baseline_pnl, block_ids=block_ids)
             r["return_diff_ci"] = [float(lo), float(hi)]
             r["return_diff"] = float(
                 np.mean([a.mean() - b.mean()
@@ -205,7 +181,7 @@ def run_corpus(
                                          map(np.asarray, baseline_pnl))])
             )
         r["p_vs_baseline"] = p
-        r.pop("pnl")
+        r["pnl"] = [np.asarray(x).tolist() for x in r["pnl"]]
         rows.append(r)
 
         print(
@@ -247,8 +223,8 @@ def run_corpus(
               f"95% interval [{ci[0]:+.3f}, {ci[1]:+.3f}] per episode")
     print(f"  return {base['return_mean']:+.3f} -> {chosen['return_mean']:+.3f} "
           f"(change {chosen['return_mean'] - base['return_mean']:+.3f})")
-    verdict = ("STEERABLE WITHOUT DETECTED COST" if (drop > 0.5 and undetected)
-               else "STEERING HAS A DETECTED COST")
+    verdict = ("LARGE SUPPRESSION; NO RETURN DIFFERENCE DETECTED" if (drop > 0.5 and undetected)
+               else "RETURN DIFFERENCE DETECTED" if not undetected else "SUPPRESSION BELOW CRITERION")
     print(f"  -> {verdict}")
     return rows
 
@@ -277,7 +253,8 @@ def main() -> None:
         "REAL MARKET (agent has no measurable edge)",
         split.train, split.test, split.normalizer, target_real,
         args.coefs, args.updates, args.seeds, args.n_states, args.seed,
-        "steering should SUCCEED: nothing load-bearing is being removed",
+        "measure suppression and held-out return cost",
+        block_ids=np.floor(split.test.open_epoch / 86400).astype(int),
     )
 
     # ---------------------------------------------------------- the control
@@ -289,7 +266,7 @@ def main() -> None:
         "LEARNABLE SYNTHETIC (the target feature IS the signal)",
         lb, synthetic.evaluation, ln, SIGNAL_OBS_IDX,
         args.coefs, args.updates, args.seeds, args.n_states, args.seed,
-        "steering should FAIL: removing the signal must cost return",
+        "measure suppression and held-out return cost",
     )
 
     # -------------------------------------------------------------- verdict
@@ -328,21 +305,8 @@ def main() -> None:
     steerable_real = rd > 0.5 and rp >= 0.05
     steerable_synth = sd > 0.5 and sp >= 0.05
 
-    print()
-    if steerable_real and not steerable_synth:
-        print("  the explanation is steerable on the real market and NOT on the")
-        print("  corpus where the feature genuinely matters. so explanations are")
-        print("  steerable exactly where they are not tracking anything real,")
-        print("  which is precisely what the null test says of the real agent.")
-    elif steerable_real and steerable_synth:
-        print("  steering succeeded on BOTH, including where the feature is")
-        print("  genuinely load-bearing. that is a weaker and different result:")
-        print("  the penalty is defeating the attribution method rather than")
-        print("  changing what the agent relies on. reported as such.")
-    elif not steerable_real:
-        print("  steering did not succeed even on the real market. the")
-        print("  explanation resists being changed at fixed performance, which")
-        print("  is evidence it tracks something the penalty cannot remove.")
+    print("\n  Report suppression, signed return differences, and intervals together.")
+    print("  These two controls do not establish a general law or performance equivalence.")
 
     plots.steering(
         {"real market": real_rows, "learnable synthetic": synth_rows},
@@ -356,6 +320,10 @@ def main() -> None:
     (out / "steering.json").write_text(json.dumps(
         {"real_market": real_rows, "learnable_synthetic": synth_rows,
          "synthetic_data": synthetic.metadata(),
+         "evaluation_open_epoch": {"market": split.test.open_epoch.tolist(),
+                                   "synthetic": synthetic.evaluation.open_epoch.tolist()},
+         "resampling": {"market": "shared UTC-day blocks crossed with seeds",
+                        "synthetic": "shared episodes crossed with seeds"},
          "steerable_real": bool(steerable_real),
          "steerable_synthetic": bool(steerable_synth),
          "decided_on": "p_cluster",

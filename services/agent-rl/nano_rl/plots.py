@@ -247,28 +247,17 @@ def learning_curves(logs: list[dict], path: Path) -> None:
 def value_calibration(
     bins: list[tuple[float, float, int]],
     path: Path,
-    title: str = "critic calibration against realised settlement",
+    title: str = "critic calibration against on-policy return",
     subtitle: str = "",
 ) -> None:
-    """reliability diagram: predicted value against realised frequency.
-
-    this figure is only possible because every episode resolves to a known 0/1
-    (docs/MDP.md section 1.2). the diagonal is perfect calibration.
-    """
+    """Binned predicted and stochastic on-policy returns, both in dollars."""
     fig, ax = _new_fig(6.2, 5.4)
 
-    ax.plot(
-        [0, 1], [0, 1], color=REFERENCE, linewidth=1.4, linestyle="--", zorder=2,
-    )
-    ax.annotate(
-        "perfect calibration",
-        xy=(0.62, 0.62),
-        xytext=(4, -14),
-        textcoords="offset points",
-        color=INK_MUTED,
-        fontsize=8.5,
-        rotation=38,
-    )
+    all_values = [x for row in bins for x in row[:2]] or [0., 1.]
+    lo, hi = min(all_values), max(all_values)
+    pad = max((hi - lo) * .1, .1)
+    limits = (lo - pad, hi + pad)
+    ax.plot(limits, limits, color=REFERENCE, linewidth=1.4, linestyle="--", zorder=2)
 
     if bins:
         pred = [b[0] for b in bins]
@@ -282,13 +271,13 @@ def value_calibration(
             edgecolors=SURFACE, linewidths=2.0,
         )
 
-    ax.set_xlim(-0.03, 1.03)
-    ax.set_ylim(-0.03, 1.03)
+    ax.set_xlim(*limits)
+    ax.set_ylim(*limits)
     _style_axes(
         ax,
         title,
-        "predicted probability of yes",
-        "realised frequency of yes",
+        "predicted policy return (dollars)",
+        "realised policy return (dollars)",
         pad=26 if subtitle else 10,
     )
     if subtitle:

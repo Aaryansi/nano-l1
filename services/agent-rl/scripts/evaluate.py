@@ -41,10 +41,13 @@ from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.costs import CostModel  # noqa: E402
 from nano_rl.env.features import N_FEATURES  # noqa: E402
+from nano_rl.explain.rollout import VectorizedRollout
 from nano_rl.metrics import (  # noqa: E402
     Metrics,
     compute_metrics,
     paired_bootstrap_p_value,
+    cluster_bootstrap_p_value,
+    cluster_bootstrap_ci,
 )
 
 
@@ -78,42 +81,32 @@ def run_agent(env: BinaryMarketEnv, agent: PPOAgent) -> dict:
     return {"pnl": res["returns"], "trades": res["trades"], "fees": res["fees"]}
 
 
-def critic_calibration(
-    agent: PPOAgent, env: BinaryMarketEnv, n_bins: int = 10
-) -> list[tuple[float, float, int]]:
-    """reliability of the critic's value against realised settlement.
+def critic_calibration(agent, env, n_bins=10, repetitions=8, seed=0):
+    """Compare V(s0) in dollars with stochastic on-policy episode returns.
 
-    the critic predicts pnl in dollars, not a probability, so it is mapped to
-    an implied probability before binning. for a flat agent at step 0 the
-    natural mapping is the value of going long: buying `q` contracts at the ask
-    is worth q*(P(yes) - ask), so P(yes) = V/q + ask.
-
-    this is the phase-5c "explain the value predictions" target, and it is only
-    possible because every episode resolves to a known 0/1.
+    The PPO critic estimates its stochastic policy, not a forced long position
+    and not the greedy evaluation policy. No probability transform is applied.
     """
-    preds, outcomes = [], []
-    max_pos = env.max_position
-
-    for ep in range(len(env.batch)):
-        obs, _ = env.reset(options={"episode": ep})
-        obs_t = torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
-        v = float(agent.net.value(obs_t).item())
-        ask = float(env.batch.ask[ep, 0])
-        implied = v / max_pos + ask
-        preds.append(implied)
-        outcomes.append(float(env.batch.settlement[ep]))
-
-    preds_a = np.clip(np.array(preds), 0.0, 1.0)
-    out_a = np.array(outcomes)
-
-    edges = np.linspace(0.0, 1.0, n_bins + 1)
-    rows = []
-    for i in range(n_bins):
-        m = (preds_a >= edges[i]) & (preds_a < edges[i + 1])
-        if m.sum() < 20:
-            continue
-        rows.append((float(preds_a[m].mean()), float(out_a[m].mean()), int(m.sum())))
-    return rows
+    if repetitions < 1 or n_bins < 1:
+        raise ValueError("repetitions and bins must be positive")
+    roll = VectorizedRollout(env.batch, normalizer=env.normalizer,
+                             max_position=env.max_position,
+                             costs_enabled=env.cost_model.enabled)
+    zeros = np.zeros(len(env.batch))
+    initial = roll.observations(0, zeros, zeros, zeros)
+    with torch.no_grad():
+        preds = agent.net.value(torch.as_tensor(initial, dtype=torch.float32)).numpy()
+    rng = np.random.default_rng(seed)
+    def policy(obs):
+        probs = agent.net.action_probs(torch.as_tensor(obs, dtype=torch.float32)).numpy()
+        return np.minimum((rng.random(len(obs))[:, None] > probs.cumsum(axis=1)).sum(axis=1), 2)
+    draws = np.stack([roll.run(policy)["returns"] for _ in range(repetitions)])
+    targets = draws.mean(axis=0)
+    order = np.argsort(preds, kind="stable")
+    bins = [(float(preds[idx].mean()), float(targets[idx].mean()), len(idx))
+            for idx in np.array_split(order, min(n_bins, len(order))) if len(idx)]
+    return {"bins": bins, "predictions": preds, "realized_returns": targets,
+            "stochastic_return_draws": draws, "repetitions": repetitions}
 
 
 def load_agents(run_dir: Path, tag: str = "") -> list[PPOAgent]:
@@ -294,7 +287,11 @@ def main() -> None:
     if logs:
         plots.learning_curves(logs, out / "learning_curves.png")
 
-    cal = critic_calibration(agents[0], test_env)
+    critic = critic_calibration(agents[0], test_env)
+    cal = critic["bins"]
+    episode_data.update(critic_predictions=critic["predictions"],
+                        critic_realized_returns=critic["realized_returns"],
+                        critic_stochastic_return_draws=critic["stochastic_return_draws"])
     if cal:
         err = sum(abs(r[1] - r[0]) * r[2] for r in cal) / sum(r[2] for r in cal)
         plots.value_calibration(
@@ -316,6 +313,11 @@ def main() -> None:
             labels=abl_names,
         )
 
+    blocks = np.floor(split.test.open_epoch / 86400).astype(int)
+    flat_groups = [np.zeros_like(row) for row in ppo_pnls]
+    interval = cluster_bootstrap_ci(ppo_pnls, flat_groups, block_ids=blocks)
+    block_test = cluster_bootstrap_p_value(ppo_pnls, flat_groups, block_ids=blocks)
+
     # -------------------------------------------------------------- results
     payload = {
         "test_episodes": len(split.test),
@@ -336,6 +338,11 @@ def main() -> None:
         "paired_bootstrap_p_vs_flat": sig,
         "zero_cost_ablation": ablation,
         "critic_calibration_error": err,
+        "critic_calibration": {"target": "stochastic on-policy return in dollars",
+                               "repetitions": critic["repetitions"], "bins": cal},
+        "ppo_seed_day_bootstrap": {"p_value": block_test, "ci95": list(interval),
+                                   "n_seeds": len(ppo_pnls), "n_utc_days": len(np.unique(blocks)),
+                                   "design": "crossed seeds and shared UTC-day episode blocks"},
     }
     np.savez_compressed(out / "evaluation_returns.npz", **episode_data)
     (out / "results.json").write_text(json.dumps(payload, indent=2))
