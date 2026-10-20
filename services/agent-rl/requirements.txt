@@ -12,6 +12,8 @@ pandas==2.2.3
 # rl
 gymnasium==1.0.0
 torch==2.5.1
+# independent control-task trainer; market PPO remains the local implementation
+stable-baselines3==2.5.0
 
 # baselines (shared with the existing agent-py logistic-regression model)
 scikit-learn==1.8.0

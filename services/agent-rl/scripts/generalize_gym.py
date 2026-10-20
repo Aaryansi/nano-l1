@@ -22,6 +22,7 @@ usage:
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import json
 import sys
 from pathlib import Path
@@ -68,6 +69,28 @@ def make_background(env_id: str, n: int = 512, seed: int = 0) -> np.ndarray:
             obs, _ = env.reset()
     env.close()
     return np.asarray(rows, dtype=np.float32)
+
+
+# Declared convergence gates for these small control tasks, in native reward units.
+COMPETENCE_RETURN = {"CartPole-v1": 475., "Acrobot-v1": -100.,
+                     "MountainCar-v0": -110., "Pendulum-v1": -300.,
+                     "FrozenLake-v1": .8, "CliffWalking-v0": -20.}
+
+
+def competence_gate(env_id, episode_return, span):
+    threshold = COMPETENCE_RETURN.get(env_id)
+    learned = threshold is not None and episode_return >= threshold
+    dependent = abs(span) > 1e-6
+    return {"return_threshold": threshold, "meets_return_threshold": learned,
+            "observation_dependent": dependent,
+            "eligible_for_sensitivity_claim": learned and dependent}
+
+
+def training_config(seed, backend):
+    if backend == "sb3":
+        return GymPPOConfig(seed=seed, backend=backend, update_epochs=10,
+                            minibatch_size=64, entropy_coef=0., n_envs=4)
+    return GymPPOConfig(seed=seed, backend=backend)
 
 
 def run_env(env_id: str, args) -> dict:
@@ -120,7 +143,7 @@ def run_env(env_id: str, args) -> dict:
         blind = BlindObservation(make_env(env_id), mean, std, seed=2000 + k,
                                  pool=pool)
         net, _ = train_gym_ppo(
-            blind, GymPPOConfig(seed=2000 + k), total_steps=args.null_steps
+            blind, training_config(2000 + k, args.trainer), total_steps=args.null_steps
         )
         blind.close()
         env_spans.append(
@@ -156,7 +179,7 @@ def run_env(env_id: str, args) -> dict:
         for k in range(args.agent_seeds):
             env = make_env(env_id)
             net, _ = train_gym_ppo(
-                env, GymPPOConfig(seed=args.seed + k), total_steps=args.steps
+                env, training_config(args.seed + k, args.trainer), total_steps=args.steps
             )
             env.close()
             units.append((args.seed + k, net))
@@ -168,7 +191,7 @@ def run_env(env_id: str, args) -> dict:
         fractions = (0.1, 0.25, 0.5, 1.0)
         env = make_env(env_id)
         final, units = train_gym_ppo(
-            env, GymPPOConfig(seed=args.seed), total_steps=args.steps,
+            env, training_config(args.seed, args.trainer), total_steps=args.steps,
             checkpoint_fractions=fractions,
         )
         env.close()
@@ -193,6 +216,7 @@ def run_env(env_id: str, args) -> dict:
         rows.append(
             {
                 unit_key: frac, "return": ret, "span": span,
+                "competence": competence_gate(env_id, ret, span),
                 "z_env": r_env.z_score, "z_weight": r_wt.z_score,
                 "detected_env": bool(r_env.passes),
                 "detected_weight": bool(r_wt.passes),
@@ -222,6 +246,10 @@ def run_env(env_id: str, args) -> dict:
 
     return {
         "env_id": env_id,
+        "trainer": args.trainer,
+        "training_config": asdict(training_config(args.seed, args.trainer)),
+        "n_eligible_agents": sum(r["competence"]["eligible_for_sensitivity_claim"] for r in rows),
+        "competence_policy": "failed or observation-independent agents do not establish detection sensitivity",
         "n_features": n_feat,
         "weight_null": {"mean": float(weight_spans.mean()),
                         "std": float(weight_spans.std(ddof=1)),
@@ -242,6 +270,9 @@ def run_env(env_id: str, args) -> dict:
         "unit": "independent_agent" if replicate_mode else "checkpoint_of_one_run",
         "agent_seeds": int(args.agent_seeds),
         "steps_per_agent": int(args.steps),
+        "actual_steps_per_agent": int(np.ceil(args.steps / 2048) * 2048),
+        "null_steps": int(args.null_steps),
+        "actual_null_steps": int(np.ceil(args.null_steps / 2048) * 2048),
     }
 
 
@@ -262,6 +293,7 @@ def main() -> None:
                          "replicate is the training run and the spread across "
                          "them is a spread across agents")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--trainer", choices=("native", "sb3"), default="native")
     ap.add_argument("--blind", choices=("gaussian", "resample"), default="gaussian",
                     help="how blinded observations are drawn. gaussian is the "
                          "moment-matched per-coordinate draw the reported "
@@ -297,6 +329,14 @@ def main() -> None:
     if total_agree == 0:
         print("  they never agree, so the choice of null decides every verdict")
 
+    eligible = [row for task in results for row in task["checkpoints"]
+                if row["competence"]["eligible_for_sensitivity_claim"]]
+    resolved = [row for row in eligible if "unresolved" not in
+                (row["verdict_env"], row["verdict_weight"])]
+    print(f"  competent observation-dependent agents: {len(eligible)}/{total_pairs}")
+    print(f"  eligible agents with two resolved references: {len(resolved)}")
+    print("  failed learning and unresolved references do not establish detection sensitivity")
+
     # ---- the conjecture the horizon experiment left open
     banner("IS THE WEIGHT NULL WIDE BECAUSE RANDOM NETS ARE SOMETIMES COMPETENT?")
     print("  conjectured mechanism: a randomly initialised net is occasionally")
@@ -312,19 +352,11 @@ def main() -> None:
         b = r["weight_null"]["std"]
         rr.append(a)
         ws.append(b)
-        print(f"  {r['env_id']:<18}{a:>18.2f}{b:>17.2f}{b / max(a, 1e-9):>9.2f}")
+        ratio_text = f"{b / a:.2f}" if a > 1e-12 else "undefined"
+        print(f"  {r['env_id']:<18}{a:>18.2f}{b:>17.2f}{ratio_text:>9}")
 
     conj: dict = {"n_environments": len(results)}
-    if len(results) >= 3:
-        c = float(np.corrcoef(rr, ws)[0, 1])
-        conj["return_sd_vs_null_sd_corr"] = c
-        print(f"\n  correlation across {len(results)} environments: {c:+.3f}")
-        # with a handful of environments this is suggestive at best, and the
-        # paper must not report it as though it were an estimate.
-        print("  n is small; this is consistent-with, not evidence-for.")
-        conj["supported"] = bool(c > 0.8)
-    else:
-        print("\n  too few environments to correlate anything")
+    print("  report within-task width ratios; cross-task native rewards have different units")
     conj["random_return_sd"] = list(map(float, rr))
     conj["weight_null_sd"] = list(map(float, ws))
     conj["env_ids"] = [r["env_id"] for r in results]

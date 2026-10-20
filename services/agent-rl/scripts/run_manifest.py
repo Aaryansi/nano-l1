@@ -37,7 +37,7 @@ def build_manifest(corpus: Path, checkpoints: Path, phase: str, quick: bool) -> 
                          capture_output=True, text=True, check=True)
     dirty = subprocess.run(["git", "diff", "HEAD", "--quiet"], cwd=ROOT)
     packages = {name: importlib.metadata.version(name)
-                for name in ("numpy", "torch", "gymnasium", "scikit-learn")}
+                for name in ("numpy", "torch", "gymnasium", "scikit-learn", "stable-baselines3")}
     source_paths = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT, capture_output=True, text=True, check=True,

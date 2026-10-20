@@ -308,9 +308,9 @@ step "is the span an artefact of off-manifold masking?"
 # four classic-control tasks, not two. box2d environments are deliberately not
 # used: they need a system swig binary to build, which would trade the
 # one-command property for one more feature dimension.
-step "does it generalise? four control tasks"
+step "does it generalise? six control tasks"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
-    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 # the blinded observations above are drawn per coordinate, which does not respect
@@ -324,13 +324,13 @@ step "does it generalise? four control tasks"
 # replicate is the training run.
 step "five independently trained agents per task"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/seeds" \
-    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) \
     --agent-seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) )
 
-step "the same four tasks with manifold-preserving blinding"
+step "the same six tasks with manifold-preserving blinding"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/resample" \
-    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 --blind resample \
+    --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 --blind resample \
     --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 # -------------------------------------------------------------------- done
