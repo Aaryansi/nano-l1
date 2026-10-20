@@ -1,16 +1,8 @@
 """regenerate the paper's figures at publication size.
 
-the repository figures are drawn at 8-9 inches for screen reading. dropped into
-a 3.3-inch journal column they are legible only under magnification, which is
-the single most common way a good result is presented badly.
-
-this redraws the five figures the paper uses, at the width they will actually
-occupy, with type sized relative to that width rather than to the screen. two
-are full-width (spanning both columns) because they carry two panels or a wide
-axis; three are single-column.
-
-reads the same json the analysis wrote, so these cannot drift from the numbers
-verify_paper_numbers.py checks.
+Read the selected run's artifacts explicitly. Plot descriptive reference
+comparisons, retaining unresolved cases and dataset-specific observations.
+A figure does not validate the scientific assumptions behind a reference.
 
 usage:
     python scripts/paper_figures.py --out ../../docs/paper/figures
@@ -80,6 +72,19 @@ def _arrow(ax, p0, p1, *, color=INK, lw=0.9, ls="-", rad=0.0):
         shrinkA=0, shrinkB=0))
 
 
+def reference_label(result):
+    result = result.get("result", result)
+    verdict = result.get("verdict", "")
+    if "unresolved" in verdict.lower():
+        return "unresolved"
+    rejected = result.get("passes", result.get("detected", result.get("fires", False)))
+    return "outside reference" if rejected else "not rejected"
+
+
+def z_label(value):
+    return f"$z={value:+.2f}$" if np.isfinite(value) else "z undefined"
+
+
 def fig_method(out: Path):
     """full width: the two nulls as interventions on the agent-environment loop.
 
@@ -95,10 +100,10 @@ def fig_method(out: Path):
     panels = (
         ("(a) parameter randomisation", True,
          "weights resampled, so the policy never learned anything.\n"
-         "masking its inputs moves return arbitrarily."),
-        ("(b) observation corruption (ours)", False,
+         "input replacement measures its return sensitivity."),
+        ("(b) training with replaced observations", False,
          "the policy is trained normally on a real reward.\n"
-         "the only thing withheld is information."),
+         "replacement can also change state/history consistency."),
     )
 
     for ax, (title, hot, note) in zip(axes, panels):
@@ -155,10 +160,10 @@ def fig_null_test(d, out: Path):
     ax.text(mu, -1.35, "null draws", color=MUTED, fontsize=6.5, ha="center")
 
     for i, (name, r) in enumerate(cases):
-        inside = lo <= r["statistic"] <= hi
-        ax.scatter([r["statistic"]], [i], s=55, color=C2 if inside else C1,
+        status = reference_label(r)
+        ax.scatter([r["statistic"]], [i], s=55, color=REF if status == "unresolved" else C1 if r["passes"] else C2,
                    zorder=5, edgecolors="white", linewidths=1.1)
-        ax.annotate(f"$z={r['z_score']:+.2f}$", xy=(r["statistic"], i),
+        ax.annotate(z_label(r["z_score"]), xy=(r["statistic"], i),
                     xytext=(7, 0), textcoords="offset points",
                     color=INK, fontsize=7, va="center")
 
@@ -176,23 +181,24 @@ def fig_power(d, out: Path):
     rows = d["power_curve"]
     e = np.array([r["agent_edge"] for r in rows])
     z = np.array([r["z"] for r in rows])
-    det = np.array([r["detected"] for r in rows], dtype=bool)
+    statuses = [reference_label(row) for row in rows]
 
     fig, ax = plt.subplots(figsize=(COL, 2.1), facecolor="white")
     ax.axhspan(-1.96, 1.96, color=REF, alpha=0.18, zorder=1)
-    o = np.argsort(e)
-    ax.plot(e[o], z[o], color=C1, lw=1.4, zorder=3)
-    ax.scatter(e[~det], z[~det], s=34, color=C2, zorder=4,
-               edgecolors="white", linewidths=1.0, label="not detected")
-    ax.scatter(e[det], z[det], s=34, color=C1, zorder=4,
-               edgecolors="white", linewidths=1.0, label="detected")
-    ax.axvline(-0.595, color=C2, lw=1.0, ls=":", zorder=2)
-    ax.annotate("real agent", xy=(-0.595, z.max() * 0.82), xytext=(4, 0),
-                textcoords="offset points", color=INK, fontsize=6.5)
-    ax.text(e.min(), 0.2, "not distinguishable from nothing",
-            color=MUTED, fontsize=6.5, va="bottom")
+    order = np.argsort(e)
+    ax.plot(e[order], z[order], color=C1, lw=1.4, zorder=3)
+    for status, color, marker in (("outside reference", C1, "o"),
+                                  ("not rejected", C2, "o"),
+                                  ("unresolved", REF, "x")):
+        selected = np.array([item == status for item in statuses])
+        if not selected.any():
+            continue
+        ax.scatter(e[selected], z[selected], s=34, color=color, marker=marker,
+                   zorder=4, label=status)
+    ax.text(.02, .98, "normal criterion shaded; rank criterion also required",
+            transform=ax.transAxes, color=MUTED, fontsize=5.7, va="top")
     style(ax, xlabel="agent's measured edge (\\$ / episode)",
-          ylabel="detection $z$")
+          ylabel="reference distance $z$")
     ax.legend(frameon=False, fontsize=6.5, labelcolor=MUTED, loc="lower right",
               handletextpad=0.4, borderpad=0.2)
     save(fig, out / "fig_power.png")
@@ -299,10 +305,10 @@ def fig_nullchoice(d, out: Path):
         ax.scatter(v, np.full_like(v, y), s=9, color=color, zorder=4,
                    edgecolors="white", linewidths=0.4)
         z = block_["result"]["z_score"]
-        verdict = "informative" if block_["result"]["passes"] else "not distinguishable"
+        verdict = reference_label(block_["result"])
         # anchored to the axes edge, not to the data, so the two rows'
         # annotations line up instead of tracking their own maxima
-        ax.annotate(f"$z={z:+.2f}$   {verdict}", xy=(1.0, y),
+        ax.annotate(f"{z_label(z)}   {verdict}", xy=(1.0, y),
                     xycoords=("axes fraction", "data"),
                     xytext=(-2, -11), textcoords="offset points",
                     fontsize=6.4, color=MUTED, ha="right", va="top")
@@ -317,53 +323,30 @@ def fig_nullchoice(d, out: Path):
 
 
 def fig_conjecture(d, out: Path):
-    """single column: the parameter null's width against random-init return sd.
-
-    the points sit on the identity line, which is the explanation: the
-    parameter null does not measure anything about explanations, it measures
-    the spread of random initialisation.
-    """
-    x = np.array(d["random_return_sd"])
-    y = np.array(d["weight_null_sd"])
-    names = [n.split("-")[0] for n in d["env_ids"]]
-
-    fig, ax = plt.subplots(figsize=(COL, 2.2), facecolor="white")
-    hi = max(x.max(), y.max()) * 1.18
-    ax.plot([0, hi], [0, hi], color=REF, lw=0.9, ls="--", zorder=1)
-    # label the line in the empty middle stretch: at the top right it lands on
-    # the cluster the figure is about
-    ax.text(hi * 0.52, hi * 0.46, "$y=x$", fontsize=6.5, color=MUTED,
-            ha="left", va="top")
-    ax.scatter(x, y, s=42, color=C1, zorder=4, edgecolors="white",
-               linewidths=1.1)
-    # three of the four environments land within ~15 units of each other, so
-    # labels placed at a uniform offset overprint each other and the markers.
-    # they are staggered around the cluster and tied back with leader lines.
-    offsets = {0: (-2, -30), 1: (-24, 30), 2: (-34, -12), 3: (34, 15)}
-    order = np.argsort(-x)
-    for rank, i in enumerate(order):
-        ax.annotate(
-            names[i], xy=(x[i], y[i]), xytext=offsets[rank],
-            textcoords="offset points", fontsize=6.6, color=INK,
-            ha="center", va="center",
-            arrowprops=dict(arrowstyle="-", color=REF, lw=0.6,
-                            shrinkA=1, shrinkB=4))
-
-    ax.set_xlim(-hi * 0.06, hi)
-    ax.set_ylim(-hi * 0.06, hi)
-    style(ax, xlabel="sd of random-init return",
-          ylabel="sd of parameter null")
+    """Dimensionless within-task ratios, without a cross-task reward-scale fit."""
+    denominators = np.asarray(d["random_return_sd"], dtype=float)
+    numerators = np.asarray(d["weight_null_sd"], dtype=float)
+    names = [name.split("-")[0] for name in d["env_ids"]]
+    ratios = np.divide(numerators, denominators, out=np.full_like(numerators, np.nan),
+                       where=denominators > 1e-12)
+    y = np.arange(len(names))
+    fig, ax = plt.subplots(figsize=(COL, max(2., .38 * len(names))), facecolor="white")
+    defined = np.isfinite(ratios)
+    ax.barh(y[defined], ratios[defined], height=.55, color=C1, zorder=3)
+    for index in np.flatnonzero(~defined):
+        ax.text(0., index, "undefined: zero return SD", fontsize=6.5, color=MUTED, va="center")
+    ax.set_yticks(y)
+    ax.set_yticklabels(names)
+    ax.set_ylim(len(names) - .5, -.5)
+    upper = max(1., float(ratios[defined].max()) if defined.any() else 1.)
+    ax.set_xlim(0., upper * 1.25)
+    style(ax, xlabel="parameter-span SD / random-return SD")
+    ax.grid(axis="y", visible=False)
     save(fig, out / "fig_conjecture.png")
 
 
 def fig_constructions(perm, matched, out: Path):
-    """full width: three null constructions on the same three cases.
-
-    the figure the null sections build to. each panel is one case; each row is
-    one construction; the vertical line is the observed span, which never moves.
-    what a reader should see is that the middle construction's reference has no
-    width at all on the two synthetic cases, which is why it fires on both.
-    """
+    """Reference draws with each construction's own observed span marker."""
     by_case = {}
     for label, d in (("permuted", perm), ("blinded", matched)):
         for c in d["cases"]:
@@ -376,10 +359,10 @@ def fig_constructions(perm, matched, out: Path):
     for i, (ax, case) in enumerate(zip(np.atleast_1d(axes), cases)):
         rows = (("blinded", by_case[case]["blinded"], C2),
                 ("permuted", by_case[case]["permuted"], C1))
-        obs = by_case[case]["permuted"]["span"]
 
         for y, (label, c, color) in enumerate(rows):
             v = np.array(c["null_spans"])
+            ax.scatter([c["span"]], [y], marker="|", s=170, color=INK, zorder=6)
             lo, hi = v.min(), v.max()
             if hi - lo < 1e-9:          # a point mass would draw as nothing
                 ax.scatter([lo], [y], s=46, color=color, marker="D", zorder=5,
@@ -394,12 +377,11 @@ def fig_constructions(perm, matched, out: Path):
                            edgecolors="white", linewidths=0.3)
             # the permuted artifact stores a three-way verdict, since a
             # rejection BELOW the null is not the same as declining
-            mark = c.get("verdict") or ("fires" if c["fires"] else "declines")
+            mark = reference_label(c)
             ax.annotate(mark, xy=(1.0, y), xycoords=("axes fraction", "data"),
                         xytext=(-2, -10), textcoords="offset points",
                         fontsize=6.2, color=MUTED, ha="right", va="top")
 
-        ax.axvline(obs, color=INK, lw=1.1, zorder=6)
         ax.set_yticks([0, 1])
         ax.set_yticklabels(["blinded", "permuted"] if i == 0 else ["", ""],
                            color=INK, fontsize=7)
@@ -424,7 +406,7 @@ def fig_budget(d, out: Path):
     mean = np.array([r["null_mean"] for r in rows])
     sd = np.array([r["null_std"] for r in rows])
     obs = d["observed_span"]
-    fires = np.array([r["fires"] for r in rows], dtype=bool)
+    verdicts = np.array([r["verdict"] for r in rows])
 
     fig, ax = plt.subplots(figsize=(COL, 2.05), facecolor="white")
     ax.axhline(obs, color=INK, lw=1.2, zorder=4)
@@ -438,7 +420,7 @@ def fig_budget(d, out: Path):
             color=C1, va="bottom")
 
     # mark where the verdict changes rather than colouring every point
-    flip = np.flatnonzero(fires[1:] != fires[:-1])
+    flip = np.flatnonzero(verdicts[1:] != verdicts[:-1])
     for i in flip:
         ax.axvline(i + 0.5, color=C2, lw=0.9, ls=":", zorder=2)
         ax.text(i + 0.55, ax.get_ylim()[1], " verdict flips", fontsize=6.4,
@@ -452,12 +434,7 @@ def fig_budget(d, out: Path):
 
 
 def fig_manifold(d, out: Path):
-    """single column: how far each masking mode strays from the data manifold.
-
-    the shape is the argument. both curves start and end on the manifold, and
-    only the interior is off it, which is exactly the claim that the span
-    (built from the two endpoints) cannot be an off-manifold artefact.
-    """
+    """Empirical row distances, without a claim about sequential support."""
     rows = sorted(d["offmanifold_distance"], key=lambda r: r["n_kept"],
                   reverse=True)
     n_feat = len(d["feature_names"])
@@ -481,7 +458,7 @@ def fig_manifold(d, out: Path):
                 markeredgecolor="white", markeredgewidth=0.8, label=lab)
 
     style(ax, xlabel="features replaced",
-          ylabel="distance to nearest real state")
+          ylabel="distance to nearest background row")
     ax.legend(frameon=False, fontsize=6.5, labelcolor=MUTED, loc="lower left",
               handletextpad=0.4, borderpad=0.2)
     save(fig, out / "fig_manifold.png")
@@ -509,7 +486,7 @@ def fig_decoy(d, out: Path):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reports", default="../../reports")
+    ap.add_argument("--reports", required=True)
     ap.add_argument("--out", default="../../docs/paper/figures")
     args = ap.parse_args()
 

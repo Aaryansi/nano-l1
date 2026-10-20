@@ -582,8 +582,9 @@ def power_curve(
     detected: list[bool],
     path: Path,
     real_edge: float | None = None,
-    title: str = "how much edge before an explanation is detectably informative?",
+    title: str = "reference distance over a signal-strength sweep",
     subtitle: str = "",
+    verdicts: list[str] | None = None,
 ) -> None:
     """detection z-score against the agent's measured edge.
 
@@ -598,16 +599,21 @@ def power_curve(
     det = np.asarray(detected, dtype=bool)
 
     ax.axhspan(-1.96, 1.96, color=REFERENCE, alpha=0.16, zorder=1)
-    ax.annotate("not distinguishable from an explanation of nothing",
+    ax.annotate("normal criterion only; rank criterion also required",
                 xy=(e.min(), 0), xytext=(4, 4), textcoords="offset points",
                 color=INK_MUTED, fontsize=8.5, va="bottom")
 
     ax.plot(e, z, color=C1, linewidth=2.0, zorder=3)
-    ax.scatter(e[~det], z[~det], s=90, color=C2, zorder=4,
-               edgecolors=SURFACE, linewidths=2.0, label="not detected")
+    unresolved = (np.array(["unresolved" in item.lower() for item in verdicts])
+                  if verdicts is not None else np.zeros(len(e), dtype=bool))
+    ax.scatter(e[~det & ~unresolved], z[~det & ~unresolved], s=90, color=C2, zorder=4,
+               edgecolors=SURFACE, linewidths=2.0, label="not rejected")
     if det.any():
         ax.scatter(e[det], z[det], s=90, color=C1, zorder=4,
-                   edgecolors=SURFACE, linewidths=2.0, label="detected")
+                   edgecolors=SURFACE, linewidths=2.0, label="outside reference")
+    if unresolved.any():
+        ax.scatter(e[unresolved], z[unresolved], s=90, color=REFERENCE,
+                   marker="x", zorder=4, label="unresolved")
 
     if real_edge is not None:
         ax.axvline(real_edge, color=C2, linewidth=1.6, linestyle=":", zorder=2)
@@ -616,7 +622,7 @@ def power_curve(
                     textcoords="offset points", color=INK, fontsize=8.5)
 
     _style_axes(ax, title, "agent's measured edge (dollars per episode)",
-                "detection z-score", pad=26 if subtitle else 10)
+                "reference distance z", pad=26 if subtitle else 10)
     if subtitle:
         ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
                     color=INK_MUTED, fontsize=9, va="bottom")

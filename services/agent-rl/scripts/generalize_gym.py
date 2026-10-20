@@ -160,8 +160,9 @@ def run_env(env_id: str, args) -> dict:
           f"+/- {weight_spans.std(ddof=1):>8.3f}")
     print(f"  environment null : {env_spans.mean():>+9.3f} "
           f"+/- {env_spans.std(ddof=1):>8.3f}")
-    ratio = weight_spans.std(ddof=1) / max(env_spans.std(ddof=1), 1e-9)
-    print(f"  the weight null is {ratio:.0f}x wider\n")
+    ratio = (float(weight_spans.std(ddof=1) / env_spans.std(ddof=1))
+             if env_spans.std(ddof=1) > 1e-12 else None)
+    print(f"  weight/environment reference width ratio: {ratio}\n")
 
     # ---- the trained agent
     #
@@ -260,7 +261,7 @@ def run_env(env_id: str, args) -> dict:
         "env_null": {"mean": float(env_spans.mean()),
                      "std": float(env_spans.std(ddof=1)),
                      "spans": env_spans.tolist()},
-        "width_ratio": float(ratio),
+        "width_ratio": ratio,
         "checkpoints": rows,
         "exact_shapley_final": exact_vals.tolist(),
         "nulls_agree": agree,
@@ -317,7 +318,7 @@ def main() -> None:
         ratio = r["width_ratio"]
         # a degenerate null has zero variance, so the ratio is meaningless
         # rather than merely large; say so instead of printing 1e11.
-        ratio_s = "degenerate" if ratio > 1e6 else f"{ratio:.0f}x"
+        ratio_s = "undefined" if ratio is None else f"{ratio:.0f}x"
         print(f"  {r['env_id']:<16}{r['weight_null']['std']:>16.2f}"
               f"{r['env_null']['std']:>14.4f}{ratio_s:>14}"
               f"{r['nulls_agree']:>10}/{r['n_checkpoints']}")
