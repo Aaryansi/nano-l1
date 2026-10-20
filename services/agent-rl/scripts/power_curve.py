@@ -1,26 +1,8 @@
-"""how much edge must an agent have before its explanation is trustworthy?
+"""Single-seed signal-strength sweep and a separate ranking-gap diagnostic.
 
-the null test in scripts/sanity_check_explanations.py is binary: it rejected a
-planted signal at z = +12.27 and failed to reject the real agent at z = -0.15.
-that demonstrates the test works, but it does not tell a practitioner anything
-actionable. this script calibrates it.
-
-PART A, the power curve. sweep the strength of a planted signal from zero
-upward, train an agent at each level, and ask at what point the null test
-starts detecting its explanation. the x axis is the agent's MEASURED edge in
-dollars per episode, not the latent signal strength, because measured edge is
-what a practitioner actually has.
-
-PART B, estimation certainty is not validity. the RankSHAP line of work
-certifies that a top-k shapley ranking is stable given monte-carlo noise. that
-is a real and useful guarantee about the ESTIMATOR. it says nothing about
-whether the explained model learned anything. this part produces a top-k
-ranking of the real agent whose adjacent gaps exceed their own standard
-errors, and shows that same explanation failing the null test. a precisely
-estimated description of nothing.
-
-usage:
-    python scripts/power_curve.py --corpus data/corpus/corpus_candles_60s_spot.npz
+The filename is retained for existing pipeline calls. Rejection rates over
+independent trials are measured by calibrate_detection.py. This sweep neither
+estimates statistical power nor identifies a population detection threshold.
 """
 
 from __future__ import annotations
@@ -89,7 +71,10 @@ def main() -> None:
     if not sj.exists():
         print(f"need {sj}; run scripts/sanity_check_explanations.py first")
         raise SystemExit(1)
-    null_spans = np.array(json.loads(sj.read_text())["null_spans"], dtype=float)
+    reference = json.loads(sj.read_text())
+    if reference.get("training_updates") != args.updates:
+        raise SystemExit("reference training budget differs; generate a matching reference first")
+    null_spans = np.array(reference["null_spans"], dtype=float)
     print(f"null distribution: {len(null_spans)} samples, "
           f"{null_spans.mean():+.3f} +/- {null_spans.std(ddof=1):.3f}")
     # this budget is inherited from whatever wrote sanity_test.json rather than
@@ -98,7 +83,7 @@ def main() -> None:
     check_resolving_power(len(null_spans), what="the power-curve null")
 
     # ------------------------------------------------------------- part A
-    banner("A. POWER CURVE: at what edge does the test start detecting?")
+    banner("A. SIGNAL-STRENGTH SWEEP: one training seed per strength")
     strengths = [0.0, 0.05, 0.10, 0.20, 0.35, 0.50, 0.75, 1.00]
     rows = []
 
@@ -126,6 +111,7 @@ def main() -> None:
                 "z": res.z_score,
                 "p_rank": res.p_rank,
                 "detected": bool(res.passes),
+                "verdict": short_verdict(res),
             }
         )
         print(
@@ -137,12 +123,11 @@ def main() -> None:
     detected = [r for r in rows if r["detected"]]
     if detected:
         thresh = min(r["agent_edge"] for r in detected)
-        print(f"\n  detection threshold: the test flags explanations as informative")
-        print(f"  once the agent's measured edge reaches about "
-              f"{thresh:+.2f} per episode.")
+        print(f"\n  Smallest measured edge with a rejection in this single-seed sweep: {thresh:+.2f}")
+        print("  This does not estimate a population detection threshold or power.")
     else:
         thresh = float("nan")
-        print("\n  nothing detected across the sweep")
+        print("\n  No rejection in this sweep; unresolved outcomes remain distinct.")
 
     plots.power_curve(
         [r["agent_edge"] for r in rows],
@@ -150,12 +135,13 @@ def main() -> None:
         [r["detected"] for r in rows],
         out / "power_curve.png",
         real_edge=None,
-        subtitle=f"null from {len(null_spans)} agents with nothing to learn; "
-                 f"detection at |z| > 1.96",
+        subtitle=f"reference from {len(null_spans)} independently trained null agents; "
+                 f"rank and normal criteria both required",
+        verdicts=[r["verdict"] for r in rows],
     )
 
     # ------------------------------------------------------------- part B
-    banner("B. A PRECISELY ESTIMATED DESCRIPTION OF NOTHING")
+    banner("B. RANKING ESTIMATION AND A SEPARATE REFERENCE COMPARISON")
     print("  the RankSHAP line of work certifies that a top-k shapley ranking")
     print("  is stable given monte-carlo noise. that is a guarantee about the")
     print("  ESTIMATOR. here is what it does not cover.\n")
@@ -177,7 +163,7 @@ def main() -> None:
     obs, _ = env.reset(options={"episode": 0})
 
     # permutation shapley reports a standard error per feature, which is what
-    # the certification needs.
+    # the adjacent-gap diagnostic uses.
     beh, action = explain_behaviour(
         agent, obs, bg, n_permutations=600, seed=args.seed
     )
@@ -203,19 +189,20 @@ def main() -> None:
     print(f"\n  and the same agent's explanation against the null:")
     print(f"    {res_real.summary()}")
 
-    if cert["all_gaps_separated"] and not res_real.passes:
-        print("\n  so the inspected gaps are separated and the explanation is")
-        print("  not distinguishable from an explanation of nothing. the two")
-        print("  diagnostics answer different questions; this gap check does")
-        print("  not provide the formal guarantee of a rank-certification method.")
+    print("  The gap diagnostic and reference comparison measure different properties.")
+    print("  Neither establishes attribution accuracy or absence of policy information.")
 
     payload = {
         "null_spans": null_spans.tolist(),
+        "training_updates": args.updates,
         "power_curve": rows,
         "detection_threshold_edge": thresh,
         "design": "one training seed per strength; an effect-size sweep, not a power estimate",
         "ranking_gap_diagnostic": cert,
         "real_agent_null_test": res_real.as_dict(),
+        "real_agent_null_test_scope": {"checkpoint": ckpts[0].name,
+                                       "test_episodes": min(args.episodes, len(split.test)),
+                                       "role": "subset diagnostic, not the primary full-test endpoint"},
     }
     (out / "power_curve.json").write_text(json.dumps(payload, indent=2))
     print(f"\nwrote {out}/power_curve.json")
