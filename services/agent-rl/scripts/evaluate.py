@@ -1,12 +1,9 @@
 """evaluate ppo and all baselines on the held-out test split.
 
-this script touches test. nothing else in the project does, and it should be
-run once, after training and every hyperparameter choice are frozen.
-
-hyperparameters were fixed a priori from the SYNTHETIC sweeps in phase 3
-(entropy 0.01, batch 64, 100 updates), where the correct answer is known
-analytically. they were not selected on real val performance, which avoids
-val-overfitting bleeding into the test claim. val is used for monitoring only.
+Evaluate frozen policies. Test results are descriptive for the chosen training
+configuration. Repeated analysis of this historical test split does not create
+a new prospective holdout. Optional comparison checkpoints and serialized
+baselines must be supplied explicitly; no local legacy files are discovered.
 
 outputs to reports/: equity curves, policy comparison, learning curves,
 critic calibration, cost ablation, and results.json.
@@ -21,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 import pickle
 import sys
 from pathlib import Path
@@ -118,16 +116,26 @@ def load_agents(run_dir: Path, tag: str = "") -> list[PPOAgent]:
     return agents
 
 
-def main() -> None:
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True)
-    ap.add_argument("--runs", default="runs/ppo")
-    ap.add_argument("--runs-nofric", default="runs/ppo_nofric")
+    ap.add_argument("--runs", required=True)
+    ap.add_argument("--runs-nofric", help="explicit zero-cost checkpoint directory")
     ap.add_argument("--out", default="reports")
-    ap.add_argument("--logistic-model", default="../agent-py/models/binance_BTCUSDT_trades_lr.pkl")
+    ap.add_argument("--logistic-model", help="explicit optional serialized baseline")
     ap.add_argument("--max-position", type=float, default=100.0)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+    for name in ("runs", "runs_nofric"):
+        raw = getattr(args, name)
+        if raw is not None and not list(Path(raw).glob("seed*.pt")):
+            ap.error(f"{name}: no checkpoints in {raw}")
+    if args.logistic_model is not None and not Path(args.logistic_model).is_file():
+        ap.error(f"logistic model missing: {args.logistic_model}")
+    return args
 
+
+def main() -> None:
+    args = parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -138,20 +146,16 @@ def main() -> None:
     print("EVALUATION ON HELD-OUT TEST SPLIT")
     print("=" * 74)
     print(split.summary())
-    print(f"\n  test episodes: {len(split.test)}  (touched exactly once)")
+    print(f"\n  test episodes: {len(split.test)}  (historical held-out partition)")
 
     # the existing logistic model from services/agent-py, if present
     lr_model = None
-    lr_path = Path(args.logistic_model)
-    if lr_path.exists():
-        try:
-            with lr_path.open("rb") as f:
-                lr_model = pickle.load(f)
-            print(f"  loaded logistic baseline from {lr_path}")
-        except Exception as exc:
-            print(f"  could not load logistic model ({exc}); using momentum fallback")
+    if args.logistic_model is not None:
+        with Path(args.logistic_model).open("rb") as f:
+            lr_model = pickle.load(f)
+        print(f"  loaded explicit logistic baseline from {args.logistic_model}")
     else:
-        print(f"  no logistic model at {lr_path}; using momentum fallback")
+        print("  no serialized baseline supplied; momentum fallback is labeled separately")
 
     # refit the same logistic method on THIS corpus's train split. the shipped
     # pickle keys on window_len, a constant in its training set, and was fit on
@@ -232,7 +236,7 @@ def main() -> None:
         print(f"  {name:<16} diff {pnl.mean() - flat.mean():+8.4f}  p = {p:.4f}  {verdict}")
 
     # --------------------------------------------------------- ablation
-    nofric_agents = load_agents(Path(args.runs_nofric))
+    nofric_agents = load_agents(Path(args.runs_nofric)) if args.runs_nofric else []
     ablation = {}
     if nofric_agents:
         free_env = BinaryMarketEnv(
@@ -319,7 +323,15 @@ def main() -> None:
     block_test = cluster_bootstrap_p_value(ppo_pnls, flat_groups, block_ids=blocks)
 
     # -------------------------------------------------------------- results
+    checkpoint_files = sorted(Path(args.runs).glob("seed*.pt"))
+    if args.runs_nofric:
+        checkpoint_files += sorted(Path(args.runs_nofric).glob("seed*.pt"))
+    if args.logistic_model:
+        checkpoint_files.append(Path(args.logistic_model))
+    inputs = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in checkpoint_files}
     payload = {
+        "model_input_sha256": inputs,
         "test_episodes": len(split.test),
         "split": {
             "train": len(split.train),

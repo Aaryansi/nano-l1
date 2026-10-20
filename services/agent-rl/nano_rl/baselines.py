@@ -293,7 +293,7 @@ def default_baselines(logistic_model=None, logistic_refit=None) -> list[Policy]:
         BuyAndHold(),
         RandomPolicy(),
         MeanReversion(),
-        LogisticBaseline(model=logistic_model, name="logistic-shipped"),
+        LogisticBaseline(model=logistic_model, name="logistic-shipped" if logistic_model is not None else "momentum-fallback"),
     ]
     if logistic_refit is not None:
         out.append(LogisticBaseline(model=logistic_refit, name="logistic-refit"))
