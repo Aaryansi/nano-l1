@@ -174,95 +174,75 @@ def paired_bootstrap_p_value(
     return float((np.abs(boot_means) >= abs(observed)).mean())
 
 
-def cluster_bootstrap_p_value(
-    groups_a: list, groups_b: list, n_boot: int = 10_000, seed: int = 0
-) -> float:
-    """two-sided p-value for a paired difference when the replicate is the SEED.
+def _paired_seed_block_draws(groups_a, groups_b, n_boot, seed, block_ids=None, center=False):
+    """Cross seeds with COMMON resampled evaluation blocks, in bounded memory."""
+    if len(groups_a) != len(groups_b):
+        raise ValueError("paired seed groups must have equal counts")
+    if n_boot < 1:
+        raise ValueError("n_boot must be positive")
+    differences = []
+    for a, b in zip(groups_a, groups_b, strict=True):
+        a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+        if a.shape != b.shape:
+            raise ValueError("paired episode vectors must have identical shapes")
+        differences.append(a - b)
+    if not differences or any(d.ndim != 1 or not len(d) for d in differences):
+        raise ValueError("paired returns must be nonempty episode vectors")
+    lengths = {len(d) for d in differences}
+    if len(lengths) != 1:
+        raise ValueError("all seeds must share the same ordered evaluation episodes")
+    diff = np.stack(differences)
+    if not np.isfinite(diff).all():
+        raise ValueError("returns must be finite")
+    observed = float(diff.mean())
+    if center:
+        diff = diff - observed
+    # Within a draw, every seed receives the same episode/time blocks.
+    ids = np.arange(diff.shape[1]) if block_ids is None else np.asarray(block_ids)
+    if ids.shape != (diff.shape[1],):
+        raise ValueError("block IDs must align with evaluation episodes")
+    _, inverse, counts = np.unique(ids, return_inverse=True, return_counts=True)
+    n_blocks = len(counts)
+    sums = np.zeros((len(diff), n_blocks))
+    for j, row in enumerate(diff):
+        np.add.at(sums[j], inverse, row)
+    rng = np.random.default_rng(seed)
+    boot = np.empty(n_boot)
+    for start in range(0, n_boot, 256):
+        size = min(256, n_boot - start)
+        weights = rng.multinomial(n_blocks, np.full(n_blocks, 1 / n_blocks), size=size)
+        by_seed = (weights @ sums.T) / (weights @ counts)[:, None]
+        picked_seeds = rng.integers(0, len(diff), size=(size, len(diff)))
+        boot[start:start + size] = np.take_along_axis(by_seed, picked_seeds, axis=1).mean(axis=1)
+    return observed, boot
 
-    pooling every episode from every seed into one paired bootstrap treats
-    episodes drawn from the same agent as independent replicates. they are not.
-    one trained policy generates all of them, so the pooled test measures how
-    precisely we know that agent's mean, not whether the effect reproduces
-    across training runs. when the seeds disagree the two answers come apart:
-    the steering experiment has per-seed p-values of 0.40, 0.38 and 0.001, so
-    one seed of three carries a pooled result that reads as significant.
 
-    this resamples seeds with replacement and then episodes within each drawn
-    seed, so seed-to-seed variance enters the interval. the estimand is the
-    mean of the per-seed mean differences, which weights seeds equally rather
-    than by episode count. with a handful of seeds it has very little power.
-    that is the honest situation for a three-seed design rather than a defect
-    of the estimator, and it is the reason the claim this supports is stated as
-    a contrast in magnitude rather than as a detection.
+def cluster_bootstrap_p_value(groups_a: list, groups_b: list, n_boot: int = 10_000,
+                              seed: int = 0, block_ids=None) -> float:
+    """Approximate centered-bootstrap tail probability across seeds and shared blocks.
+
+    This preserves common evaluation noise across policies. Small seed/block
+    counts still limit inference; the calculation does not establish equivalence.
     """
-    diffs = [
-        np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
-        for a, b in zip(groups_a, groups_b)
-    ]
-    diffs = [d for d in diffs if len(d) > 0]
-    k = len(diffs)
-    if k < 2:
+    if len(groups_a) != len(groups_b):
+        raise ValueError("paired seed groups must have equal counts")
+    if len(groups_a) < 2:
         return float("nan")
-
-    observed = float(np.mean([d.mean() for d in diffs]))
-    if all(np.allclose(d, 0.0) for d in diffs):
-        return 1.0
-
-    rng = np.random.default_rng(seed)
-    centred = [d - observed for d in diffs]
-
-    # within-seed bootstrap means, one independent draw per (iteration, slot),
-    # so a seed drawn twice in one iteration contributes two different draws
-    # rather than the same number counted twice.
-    within = np.empty((k, n_boot, k), dtype=float)
-    for j, d in enumerate(centred):
-        idx = rng.integers(0, len(d), size=(n_boot, k, len(d)))
-        within[j] = d[idx].mean(axis=2)
-
-    picks = rng.integers(0, k, size=(n_boot, k))
-    rows = np.arange(n_boot)[:, None]
-    slots = np.arange(k)[None, :]
-    boot = within[picks, rows, slots].mean(axis=1)
-    return float((np.abs(boot) >= abs(observed)).mean())
+    observed, boot = _paired_seed_block_draws(groups_a, groups_b, n_boot, seed,
+                                            block_ids, center=True)
+    return float((1 + np.count_nonzero(np.abs(boot) >= abs(observed))) / (n_boot + 1))
 
 
-def cluster_bootstrap_ci(
-    groups_a: list,
-    groups_b: list,
-    n_boot: int = 10_000,
-    seed: int = 0,
-    alpha: float = 0.05,
-) -> tuple[float, float]:
-    """percentile interval for the mean per-seed paired difference.
-
-    the companion to cluster_bootstrap_p_value, and the thing a
-    non-significant result actually needs. a p-value above alpha says the data
-    do not rule out zero; it says nothing about what else they do not rule out.
-    the interval does, which is what lets a reader see whether "no detected
-    cost" means "the cost is small" or "the experiment could not tell".
-
-    resamples seeds and then episodes within seeds, as the p-value does, but
-    does NOT centre the differences: the null is not being imposed here, the
-    observed distribution is being propagated.
-    """
-    diffs = [
-        np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
-        for a, b in zip(groups_a, groups_b)
-    ]
-    diffs = [d for d in diffs if len(d) > 0]
-    k = len(diffs)
-    if k < 2:
-        return (float("nan"), float("nan"))
-
-    rng = np.random.default_rng(seed)
-    within = np.empty((k, n_boot, k), dtype=float)
-    for j, d in enumerate(diffs):
-        idx = rng.integers(0, len(d), size=(n_boot, k, len(d)))
-        within[j] = d[idx].mean(axis=2)
-
-    picks = rng.integers(0, k, size=(n_boot, k))
-    rows = np.arange(n_boot)[:, None]
-    slots = np.arange(k)[None, :]
-    boot = within[picks, rows, slots].mean(axis=1)
+def cluster_bootstrap_ci(groups_a: list, groups_b: list, n_boot: int = 10_000,
+                         seed: int = 0, alpha: float = 0.05,
+                         block_ids=None) -> tuple[float, float]:
+    """Percentile interval with independent seed draws and common episode blocks."""
+    if len(groups_a) != len(groups_b):
+        raise ValueError("paired seed groups must have equal counts")
+    if not 0 < alpha < 1:
+        raise ValueError("alpha must be between zero and one")
+    if len(groups_a) < 2:
+        return float("nan"), float("nan")
+    _, boot = _paired_seed_block_draws(groups_a, groups_b, n_boot, seed, block_ids)
     lo, hi = np.percentile(boot, [100 * alpha / 2, 100 * (1 - alpha / 2)])
-    return (float(lo), float(hi))
+    return float(lo), float(hi)
