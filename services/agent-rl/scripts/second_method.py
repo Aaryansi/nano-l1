@@ -29,6 +29,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from nano_rl.explain.diagnostics import magnitude_rank_correlation
 from nano_rl import plots  # noqa: E402
 from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
@@ -209,9 +210,7 @@ def main() -> None:
     print(f"\n  cross-seed rank correlation: shapley {c_shap:+.3f}, IG {c_ig:+.3f}")
 
     # do the two families agree with each other on the ranking?
-    agree = float(np.corrcoef(
-        np.argsort(np.argsort(-sn.mean(0))), np.argsort(np.argsort(-ig_n.mean(0)))
-    )[0, 1])
+    agree = magnitude_rank_correlation(sn.mean(0), ig_n.mean(0))
     print(f"  shapley vs IG rank correlation: {agree:+.3f}")
 
     plots.method_comparison(

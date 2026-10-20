@@ -42,6 +42,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from nano_rl.explain.shapley import Attribution
+from nano_rl.explain.diagnostics import magnitude_rank_correlation
 
 # the three outcomes a comparison against a reference can have. UNRESOLVED is
 # not a failure to reject: it records that the reference cannot support a
@@ -259,23 +260,17 @@ def test_against_null(
     )
 
 
-def certified_top_k(
+def ranking_gap_diagnostic(
     att: Attribution, k: int = 5, z_crit: float = 1.96
 ) -> dict:
-    """is the top-k ranking separated beyond its own estimation error?
+    """Descriptive normal-error gaps, not a simultaneous rank certificate.
 
-    this is the question RankSHAP and its relatives answer: given monte-carlo
-    noise in the shapley estimates, can the top-k ordering be trusted? here it
-    is checked by whether consecutive attributions are separated by more than
-    the combined standard error of the pair.
-
-    it is included to make a specific point, not as a contribution: this check
-    can PASS on an explanation that the null test rejects. estimation
-    certainty and explanatory validity are different properties, and
-    controlling the first says nothing about the second. an explanation can be
-    a precisely estimated description of nothing.
+    Includes the kth-versus-(k+1)th boundary. Shared-estimator covariance,
+    selection effects, and a formal sequential test are not modeled here.
     """
-    order = np.argsort(-np.abs(att.values))[:k]
+    if not 1 <= k <= len(att.values):
+        raise ValueError("k must be between one and the number of features")
+    order = np.argsort(-np.abs(att.values), kind="stable")[:min(k + 1, len(att.values))]
     vals = np.abs(att.values)[order]
     errs = att.stderr[order]
 
@@ -283,14 +278,16 @@ def certified_top_k(
     for i in range(len(order) - 1):
         gap = vals[i] - vals[i + 1]
         pooled = float(np.sqrt(errs[i] ** 2 + errs[i + 1] ** 2))
-        separated.append(bool(gap > z_crit * pooled) if pooled > 0 else True)
+        separated.append(bool(gap > z_crit * pooled))
 
     return {
         "features": [att.feature_names[i] for i in order],
         "values": [float(v) for v in vals],
         "stderr": [float(e) for e in errs],
         "adjacent_pairs_separated": separated,
-        "fully_certified": all(separated) if separated else True,
+        "all_gaps_separated": bool(separated) and all(separated),
+        "includes_boundary": k < len(att.values),
+        "is_formal_certificate": False,
     }
 
 
@@ -304,14 +301,11 @@ def consistency_across_runs(attributions: list[np.ndarray]) -> float:
     """
     import itertools
 
-    def ranks(x: np.ndarray) -> np.ndarray:
-        return np.argsort(np.argsort(-np.abs(x))).astype(float)
-
     rhos = []
     for i, j in itertools.combinations(range(len(attributions)), 2):
-        ra, rb = ranks(attributions[i]), ranks(attributions[j])
-        if ra.std() > 1e-12 and rb.std() > 1e-12:
-            rhos.append(float(np.corrcoef(ra, rb)[0, 1]))
+        rho = magnitude_rank_correlation(attributions[i], attributions[j])
+        if np.isfinite(rho):
+            rhos.append(rho)
     return float(np.mean(rhos)) if rhos else float("nan")
 
 

@@ -54,6 +54,7 @@ from nano_rl.explain.manifold import (  # noqa: E402
     offmanifold_distance,
 )
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
+from nano_rl.explain.diagnostics import magnitude_rank_correlation  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     check_resolving_power,
     short_verdict,
@@ -164,9 +165,7 @@ def main() -> None:
 
     # ------------------------------------------------------------- part 3
     banner("3. DOES THE PER-FEATURE RANKING MOVE?")
-    rank_m = np.argsort(np.argsort(-np.abs(loo_marg)))
-    rank_c = np.argsort(np.argsort(-np.abs(loo_cond)))
-    corr = float(np.corrcoef(rank_m, rank_c)[0, 1])
+    corr = magnitude_rank_correlation(loo_marg, loo_cond)
     top1 = bool(np.argmax(np.abs(loo_marg)) == np.argmax(np.abs(loo_cond)))
     print(f"  leave-one-out rank correlation, marginal vs conditional: {corr:+.3f}")
     print(f"  same top feature under both modes                      : {top1}")

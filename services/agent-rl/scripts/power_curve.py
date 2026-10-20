@@ -43,7 +43,7 @@ from nano_rl.env.synthetic import make_learnable_corpus  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     attribution_span,
-    certified_top_k,
+    ranking_gap_diagnostic,
     check_resolving_power,
     short_verdict,
     test_span_against_null,
@@ -188,9 +188,9 @@ def main() -> None:
     beh, action = explain_behaviour(
         agent, obs, bg, n_permutations=600, seed=args.seed
     )
-    cert = certified_top_k(beh, k=5)
+    cert = ranking_gap_diagnostic(beh, k=5)
 
-    print("  top-5 ranking of the real agent's policy, with estimation error:")
+    print("  top-5 ranking and its next-feature boundary, with estimation error:")
     for i, (f, v, e) in enumerate(
         zip(cert["features"], cert["values"], cert["stderr"])
     ):
@@ -198,7 +198,7 @@ def main() -> None:
     sep = cert["adjacent_pairs_separated"]
     print(f"\n  adjacent pairs separated beyond their combined error: "
           f"{sum(sep)}/{len(sep)}")
-    print(f"  ranking fully certified: {cert['fully_certified']}")
+    print(f"  all inspected gaps separated (not a formal certificate): {cert['all_gaps_separated']}")
 
     outc = explain_outcomes(
         agent, split.test, bg, normalizer=split.normalizer,
@@ -210,17 +210,17 @@ def main() -> None:
     print(f"\n  and the same agent's explanation against the null:")
     print(f"    {res_real.summary()}")
 
-    if cert["fully_certified"] and not res_real.passes:
-        print("\n  so the ranking is certified stable and the explanation is")
+    if cert["all_gaps_separated"] and not res_real.passes:
+        print("\n  so the inspected gaps are separated and the explanation is")
         print("  not distinguishable from an explanation of nothing. the two")
-        print("  guarantees are orthogonal, and only one of them is commonly")
-        print("  reported.")
+        print("  diagnostics answer different questions; this gap check does")
+        print("  not provide the formal guarantee of a rank-certification method.")
 
     payload = {
         "null_spans": null_spans.tolist(),
         "power_curve": rows,
         "detection_threshold_edge": thresh,
-        "certification": cert,
+        "ranking_gap_diagnostic": cert,
         "real_agent_null_test": res_real.as_dict(),
     }
     (out / "power_curve.json").write_text(json.dumps(payload, indent=2))

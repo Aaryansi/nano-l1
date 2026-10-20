@@ -45,7 +45,7 @@ from nano_rl.data.splits import walk_forward_split  # noqa: E402
 from nano_rl.env.binary_market import BinaryMarketEnv, EpisodeBatch  # noqa: E402
 from nano_rl.env.features import FEATURE_NAMES, N_FEATURES  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
-from nano_rl.explain.shapley import Attribution  # noqa: E402
+from nano_rl.explain.diagnostics import magnitude_rank_correlation  # noqa: E402
 from nano_rl.explain.trajectory import (  # noqa: E402
     OutcomeAttributionConfig,
     explain_behaviour,
@@ -61,7 +61,7 @@ def banner(text: str) -> None:
 def global_behaviour_attribution(
     agent: PPOAgent, env: BinaryMarketEnv, background: np.ndarray,
     n_states: int = 30, n_permutations: int = 60, seed: int = 0,
-) -> Attribution:
+) -> tuple[np.ndarray, np.ndarray]:
     """mean absolute per-decision attribution over sampled states.
 
     a single-state attribution is dominated by where that state happens to sit
@@ -69,6 +69,7 @@ def global_behaviour_attribution(
     """
     rng = np.random.default_rng(seed)
     acc = np.zeros(N_FEATURES)
+    signed = np.zeros(N_FEATURES)
 
     for i in range(n_states):
         ep = int(rng.integers(0, len(env.batch)))
@@ -86,45 +87,47 @@ def global_behaviour_attribution(
             agent, obs, background, n_permutations=n_permutations, seed=seed + i
         )
         acc += np.abs(att.values)
+        signed += att.values
 
-    acc /= n_states
-    return Attribution(
-        values=acc, stderr=np.zeros(N_FEATURES), base_value=0.0,
-        full_value=float(acc.sum()), feature_names=FEATURE_NAMES,
-    )
+    return acc / n_states, signed / n_states
 
 
-def rank_correlation(a: np.ndarray, b: np.ndarray) -> float:
-    ra = np.argsort(np.argsort(-np.abs(a))).astype(float)
-    rb = np.argsort(np.argsort(-np.abs(b))).astype(float)
-    return float(np.corrcoef(ra, rb)[0, 1])
+rank_correlation = magnitude_rank_correlation
 
 
-def summarise(name: str, atts: list[np.ndarray]) -> dict:
+def summarise(name: str, atts: list[np.ndarray], signed_atts=None) -> dict:
     """pairwise agreement statistics across seeds."""
     pairs = list(itertools.combinations(range(len(atts)), 2))
     rhos, top1, signs = [], [], []
 
     for i, j in pairs:
         a, b = atts[i], atts[j]
-        rhos.append(rank_correlation(a, b))
-        top1.append(int(np.argmax(np.abs(a))) == int(np.argmax(np.abs(b))))
+        rho = rank_correlation(a, b)
+        if np.isfinite(rho):
+            rhos.append(rho)
+        if (np.abs(a).max() > 1e-12 and np.abs(b).max() > 1e-12
+                and np.count_nonzero(np.abs(a) == np.abs(a).max()) == 1
+                and np.count_nonzero(np.abs(b) == np.abs(b).max()) == 1):
+            top1.append(int(np.argmax(np.abs(a))) == int(np.argmax(np.abs(b))))
 
+        sa, sb = (a, b) if signed_atts is None else (signed_atts[i], signed_atts[j])
         # sign agreement only where BOTH assign meaningful mass, since the sign
         # of a negligible attribution is noise
-        thresh_a = 0.1 * np.abs(a).max()
-        thresh_b = 0.1 * np.abs(b).max()
-        both = (np.abs(a) > thresh_a) & (np.abs(b) > thresh_b)
+        thresh_a = 0.1 * np.abs(sa).max()
+        thresh_b = 0.1 * np.abs(sb).max()
+        both = (np.abs(sa) > max(thresh_a, 1e-12)) & (np.abs(sb) > max(thresh_b, 1e-12))
         if both.sum() > 0:
-            signs.append(float((np.sign(a[both]) == np.sign(b[both])).mean()))
+            signs.append(float((np.sign(sa[both]) == np.sign(sb[both])).mean()))
 
     return {
         "target": name,
         "n_pairs": len(pairs),
-        "rank_corr_mean": float(np.mean(rhos)),
-        "rank_corr_min": float(np.min(rhos)),
-        "rank_corr_std": float(np.std(rhos)),
-        "top1_agreement": float(np.mean(top1)),
+        "n_defined_rank_pairs": len(rhos),
+        "n_unique_top_pairs": len(top1),
+        "rank_corr_mean": float(np.mean(rhos)) if rhos else float("nan"),
+        "rank_corr_min": float(np.min(rhos)) if rhos else float("nan"),
+        "rank_corr_std": float(np.std(rhos)) if rhos else float("nan"),
+        "top1_agreement": float(np.mean(top1)) if top1 else float("nan"),
         "sign_agreement": float(np.mean(signs)) if signs else float("nan"),
         "per_pair_rho": [round(r, 3) for r in rhos],
     }
@@ -189,14 +192,14 @@ def main() -> None:
     )
     background = build_background(roll, n_samples=256, seed=args.seed)
 
-    behaviour, outcomes = [], []
+    behaviour, outcomes, signed_behaviour = [], [], []
     for i, agent in enumerate(agents):
         print(f"  seed {i}: attributing...", flush=True)
-        behaviour.append(
-            global_behaviour_attribution(
-                agent, env, background, n_states=args.n_states, seed=args.seed
-            ).values
+        magnitude, signed = global_behaviour_attribution(
+            agent, env, background, n_states=args.n_states, seed=args.seed
         )
+        behaviour.append(magnitude)
+        signed_behaviour.append(signed)
         outcomes.append(
             explain_outcomes(
                 agent, split.test, background, normalizer=split.normalizer,
@@ -207,7 +210,7 @@ def main() -> None:
         )
 
     rows = [
-        summarise("behaviour, pi(a|s)", behaviour),
+        summarise("behaviour, pi(a|s)", behaviour, signed_behaviour),
         summarise("outcomes, episode return", outcomes),
     ]
 
@@ -250,6 +253,10 @@ def main() -> None:
         "n_indistinguishable_pairs": n_indist,
         "n_pairs": len(pairs),
         "stability": rows,
+        "behaviour_magnitudes": [x.tolist() for x in behaviour],
+        "behaviour_signed_means": [x.tolist() for x in signed_behaviour],
+        "outcome_values": [x.tolist() for x in outcomes],
+        "sign_agreement_estimand": "sign of mean signed attribution on features above 10% of each run maximum",
         "verdict": verdict,
     }
     (out / "stability.json").write_text(json.dumps(payload, indent=2))
