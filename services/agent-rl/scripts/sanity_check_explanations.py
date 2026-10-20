@@ -215,6 +215,8 @@ def main() -> None:
 
     payload = {
         "null_spans": null_spans.tolist(),
+        "training_updates": args.updates,
+        "synthetic_episodes": 1200,
         "results": results,
         "real_consistency_rank_corr": consistency,
         "real_spans_per_seed": spans,

@@ -37,6 +37,7 @@ SEEDS=5
 UPDATES=100
 EXPLAIN_UPDATES=60
 N_NULL=24
+NULL_UPDATES=40
 STEER_SEEDS=3
 GYM_STEPS=400000
 QUICK=0
@@ -49,7 +50,7 @@ for arg in "$@"; do
   case "$arg" in
     --quick)
       QUICK=1; SEEDS=2; UPDATES=30; EXPLAIN_UPDATES=20
-      N_NULL=8; STEER_SEEDS=2; GYM_STEPS=60000 ;;
+      N_NULL=8; NULL_UPDATES=10; STEER_SEEDS=2; GYM_STEPS=60000 ;;
     --print-config) PRINT_CONFIG=1 ;;
     --verify-paper) VERIFY_PAPER=1 ;;
     --tests-only)   TESTS_ONLY=1 ;;
@@ -182,7 +183,7 @@ step "attribution stability across seeds"
 # ---------------------------------------------------------- the null-model test
 step "null-model test: is the explanation distinguishable from nothing?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
-    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" )
+    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" --updates "$NULL_UPDATES" )
 
 # the same test with every null matched to its own corpus, which is what
 # section 3 actually defines. the step above is kept because the paper reports
@@ -228,13 +229,18 @@ step "is the matched null's width a property of the task or of the budget?"
 # written to a separate artifact so the paper's budgeted numbers stay put.
 step "does the headline survive a four-times larger null?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
-    --runs "$RUNS" --out "$REPORTS/n99" \
+    --runs "$RUNS" --out "$REPORTS/n99" --updates "$NULL_UPDATES" \
     --n-null $([ "$QUICK" = 1 ] && echo 12 || echo 99) )
 cp "$REPORTS/n99/sanity_test.json" "$REPORTS/sanity_test_n99.json"
 
+step "conditional detection rates on independent synthetic trials"
+( cd "$RL" && "$PY" scripts/calibrate_detection.py --out "$REPORTS" \
+    --reference-json "$REPORTS/sanity_test.json" --n-null "$N_NULL" \
+    --updates "$NULL_UPDATES" --trials $([ "$QUICK" = 1 ] && echo 2 || echo 30) )
+
 step "power curve, and estimation certainty vs validity"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
-    --runs "$RUNS" --out "$REPORTS" )
+    --runs "$RUNS" --out "$REPORTS" --updates "$NULL_UPDATES" )
 
 step "can an explanation be steered at fixed performance?"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
