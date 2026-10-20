@@ -108,3 +108,6 @@ docs/paper/Singh_*.pdf
 
 # working notes, not part of the paper or the pipeline
 docs/EXPLAINER.md
+
+# Isolated reproduction runs; publication artifacts are promoted explicitly.
+/runs/reproductions/

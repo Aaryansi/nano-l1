@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# regenerate every figure and number in docs/paper/ and docs/REPORT.md from a
-# clean checkout.
+# run the research pipeline in isolated output directories.
+# compare a selected full run with the manuscript using --verify-paper.
 #
 # no api keys and no accounts. every data source is public:
 #   kalshi     api.elections.kalshi.com   read-only, unauthenticated
@@ -21,7 +21,9 @@
 #   ./reproduce.sh              full pipeline
 #   ./reproduce.sh --quick      reduced seeds and budgets, for a smoke test
 #   ./reproduce.sh --tests-only just the test suite
-#   ./reproduce.sh --explain-only  skip data and training, reuse checkpoints
+#   CHECKPOINTS=/path/to/checkpoints ./reproduce.sh --explain-only
+#   ./reproduce.sh --print-config  inspect paths without running
+#   ./reproduce.sh --verify-paper  compare this full run with manuscript claims
 
 set -euo pipefail
 
@@ -30,17 +32,6 @@ ROOT="$(pwd)"
 PIPELINE_START=$(date +%s)
 RL="$ROOT/services/agent-rl"
 PY="$RL/.venv/bin/python"
-# overridable so a smoke run can be pointed at a scratch directory instead of
-# overwriting the artifacts every number in the paper is checked against.
-REPORTS="${REPORTS:-$ROOT/reports}"
-# figures follow the reports they are drawn from. the figures step used to write
-# to docs/paper/figures unconditionally, so a smoke run pointed at a scratch
-# REPORTS still overwrote the publication figures with reduced-budget ones.
-if [ "$REPORTS" = "$ROOT/reports" ]; then
-  FIGURES="${FIGURES:-$ROOT/docs/paper/figures}"
-else
-  FIGURES="${FIGURES:-$REPORTS/figures}"
-fi
 
 SEEDS=5
 UPDATES=100
@@ -51,17 +42,56 @@ GYM_STEPS=400000
 QUICK=0
 TESTS_ONLY=0
 EXPLAIN_ONLY=0
+PRINT_CONFIG=0
+VERIFY_PAPER=0
 
 for arg in "$@"; do
   case "$arg" in
     --quick)
       QUICK=1; SEEDS=2; UPDATES=30; EXPLAIN_UPDATES=20
       N_NULL=8; STEER_SEEDS=2; GYM_STEPS=60000 ;;
+    --print-config) PRINT_CONFIG=1 ;;
+    --verify-paper) VERIFY_PAPER=1 ;;
     --tests-only)   TESTS_ONLY=1 ;;
     --explain-only) EXPLAIN_ONLY=1 ;;
     *) echo "unknown option: $arg"; exit 1 ;;
   esac
 done
+
+
+# Every invocation has its own reports, figures, and checkpoint directories.
+# Reusing checkpoints requires an explicit path; smoke runs never alter a release.
+RUN_ROOT="${RUN_ROOT:-$ROOT/runs/reproductions/$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+REPORTS="${REPORTS:-$RUN_ROOT/reports}"
+FIGURES="${FIGURES:-$RUN_ROOT/figures}"
+CHECKPOINTS="${CHECKPOINTS:-$RUN_ROOT/checkpoints}"
+RUNS="$CHECKPOINTS/ppo"
+RUNS_NOFRIC="$CHECKPOINTS/ppo_nofric"
+CORPUS="${CORPUS:-$ROOT/data/corpus/corpus_candles_60s_spot.npz}"
+if [ "$QUICK" = 1 ] && [ "$VERIFY_PAPER" = 1 ]; then
+  echo "quick mode cannot verify publication claims"; exit 1
+fi
+if [ "$EXPLAIN_ONLY" = 1 ] && [ ! -d "$RUNS" ]; then
+  echo "explain-only requires CHECKPOINTS pointing to an existing run"; exit 1
+fi
+if [ "$PRINT_CONFIG" = 1 ]; then
+  python3 - "$RUN_ROOT" "$REPORTS" "$FIGURES" "$RUNS" "$RUNS_NOFRIC" <<'PYCONFIG'
+import json, sys
+print(json.dumps(dict(zip(("run_root", "reports", "figures", "runs", "runs_nofric"), sys.argv[1:])), indent=2))
+PYCONFIG
+  exit 0
+fi
+# Refuse accidental reuse, including reduced seed counts leaving old files behind.
+if [ "$TESTS_ONLY" = 0 ]; then
+  python3 - "$REPORTS" "$FIGURES" "$CHECKPOINTS" "$EXPLAIN_ONLY" <<'PYGUARD'
+from pathlib import Path
+import sys
+for raw in sys.argv[1:4]:
+    p = Path(raw).resolve()
+    if p.exists() and any(p.iterdir()) and not (raw == sys.argv[3] and sys.argv[4] == "1"):
+        raise SystemExit(f"refusing nonempty output directory: {p}; choose a new run")
+PYGUARD
+fi
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
@@ -91,7 +121,8 @@ if [ "$QUICK" = "1" ]; then
   echo "quick mode: null budgets are below the rank floor, verdicts are UNRESOLVED"
 fi
 
-CORPUS="$ROOT/data/corpus/corpus_candles_60s_spot.npz"
+
+mkdir -p "$REPORTS" "$FIGURES"
 
 if [ "$EXPLAIN_ONLY" = "0" ]; then
   # ------------------------------------------------------------------- data
@@ -110,6 +141,9 @@ if [ "$EXPLAIN_ONLY" = "0" ]; then
   step "validating the corpus end to end"
   ( cd "$RL" && "$PY" scripts/validate_corpus.py --corpus "$CORPUS" )
 
+  ( cd "$RL" && "$PY" scripts/run_manifest.py --corpus "$CORPUS" \
+      --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase started --quick "$QUICK" )
+
   # ---------------------------------------------------------- sanity checks
   step "sanity: does the learning loop work where the answer is known?"
   ( cd "$RL" && "$PY" scripts/sanity_tabular.py \
@@ -120,21 +154,21 @@ if [ "$EXPLAIN_ONLY" = "0" ]; then
   # ---------------------------------------------------------------- training
   step "training ppo, $SEEDS seeds"
   ( cd "$RL" && "$PY" scripts/train_ppo.py --corpus "$CORPUS" \
-      --seeds "$SEEDS" --updates "$UPDATES" --entropy-coef 0.01 --out runs/ppo )
+      --seeds "$SEEDS" --updates "$UPDATES" --entropy-coef 0.01 --out "$RUNS" )
   step "training the zero-cost ablation"
   ( cd "$RL" && "$PY" scripts/train_ppo.py --corpus "$CORPUS" \
       --seeds "$SEEDS" --updates "$UPDATES" --entropy-coef 0.01 \
-      --frictionless --out runs/ppo_nofric )
+      --frictionless --out "$RUNS_NOFRIC" )
 
   # -------------------------------------------------------------- evaluation
   step "evaluating on the held-out test split (touched once)"
   ( cd "$RL" && "$PY" scripts/evaluate.py --corpus "$CORPUS" \
-      --runs runs/ppo --runs-nofric runs/ppo_nofric --out "$REPORTS" )
+      --runs "$RUNS" --runs-nofric "$RUNS_NOFRIC" --out "$REPORTS" )
 fi
 
 # ------------------------------------------------------------ explainability
 step "shapley explanations, with the ground-truth validation"
-( cd "$RL" && "$PY" scripts/explain.py --corpus "$CORPUS" --runs runs/ppo \
+( cd "$RL" && "$PY" scripts/explain.py --corpus "$CORPUS" --runs "$RUNS" \
     --out "$REPORTS" --updates "$EXPLAIN_UPDATES" )
 
 step "faithfulness: the decoy experiment and deletion curves"
@@ -143,19 +177,19 @@ step "faithfulness: the decoy experiment and deletion curves"
 
 step "attribution stability across seeds"
 ( cd "$RL" && "$PY" scripts/stability.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" )
+    --runs "$RUNS" --out "$REPORTS" )
 
 # ---------------------------------------------------------- the null-model test
 step "null-model test: is the explanation distinguishable from nothing?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
+    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" )
 
 # the same test with every null matched to its own corpus, which is what
 # section 3 actually defines. the step above is kept because the paper reports
 # what was tried before as well as what it settled on.
 step "the null-model test again, with every null matched to its own corpus"
 ( cd "$RL" && "$PY" scripts/matched_null_test.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
+    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" )
 
 # the third construction: permute the outcomes and leave everything else, so
 # the null agents stay sighted and the corpus stays fixed. this is the one the
@@ -167,7 +201,7 @@ step "the null-model test again, with every null matched to its own corpus"
 # targets, or only for the outcome-level statistic the rest of the paper uses?
 step "the three SVERL targets against both null constructions"
 ( cd "$RL" && "$PY" scripts/sverl_targets.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 step "is there a stratified permutation that works?"
@@ -180,13 +214,13 @@ step "what the outcome permutation actually removes"
 
 step "the outcome-permutation null: sighted agents, fixed corpus"
 ( cd "$RL" && "$PY" scripts/permuted_null_test.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" )
+    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" )
 
 # the matched null's width depends on how converged its blind agents are, so
 # the margin is measured against the budget rather than assumed independent.
 step "is the matched null's width a property of the task or of the budget?"
 ( cd "$RL" && "$PY" scripts/null_budget_check.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) \
     --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "20 40 80 160") )
 
@@ -194,13 +228,13 @@ step "is the matched null's width a property of the task or of the budget?"
 # written to a separate artifact so the paper's budgeted numbers stay put.
 step "does the headline survive a four-times larger null?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS/n99" \
+    --runs "$RUNS" --out "$REPORTS/n99" \
     --n-null $([ "$QUICK" = 1 ] && echo 12 || echo 99) )
 cp "$REPORTS/n99/sanity_test.json" "$REPORTS/sanity_test_n99.json"
 
 step "power curve, and estimation certainty vs validity"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" )
+    --runs "$RUNS" --out "$REPORTS" )
 
 step "can an explanation be steered at fixed performance?"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
@@ -225,7 +259,7 @@ step "the canonical parameter-randomization sanity check"
 # 60 here and silently produced different planted-arm numbers from the ones the
 # paper quotes.
 ( cd "$RL" && "$PY" scripts/parameter_randomization.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --updates $([ "$QUICK" = 1 ] && echo 20 || echo 150) \
     --seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) \
     --n-states $([ "$QUICK" = 1 ] && echo 8 || echo 25) \
@@ -235,12 +269,12 @@ step "the canonical parameter-randomization sanity check"
 
 step "a second attribution family, and per-feature values across all seeds"
 ( cd "$RL" && "$PY" scripts/second_method.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" --n-null "$N_NULL" \
+    --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" \
     --updates "$EXPLAIN_UPDATES" )
 
 step "does the verdict depend on the credit-assignment scheme?"
 ( cd "$RL" && "$PY" scripts/scheme_robustness.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 step "horizon scaling: why does the weight null fail?"
@@ -249,19 +283,19 @@ step "horizon scaling: why does the weight null fail?"
 
 step "positive control: does the test fire on a learnable REAL task?"
 ( cd "$RL" && "$PY" scripts/positive_control.py --corpus "$CORPUS" \
-    --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
+    --out "$REPORTS" --runs "$RUNS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 # the paper's headline verdict turned out to depend on this, so it is measured
 # rather than assumed. same agent, same measurement corpus, two null
 # constructions.
 step "which null construction does the market verdict depend on?"
 ( cd "$RL" && "$PY" scripts/null_corpus_check.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 32) )
 
 step "is the span an artefact of off-manifold masking?"
 ( cd "$RL" && "$PY" scripts/manifold_masking.py --corpus "$CORPUS" \
-    --runs runs/ppo --out "$REPORTS" \
+    --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
 # four classic-control tasks, not two. box2d environments are deliberately not
@@ -304,8 +338,13 @@ step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$FIGURES" )
 
-step "verifying every number in docs/paper/main.tex against the artifacts"
-( cd "$RL" && "$PY" scripts/verify_paper_numbers.py )
+step "recording and validating the generated run"
+( cd "$RL" && "$PY" scripts/run_manifest.py --corpus "$CORPUS" \
+    --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase complete --quick "$QUICK" )
+if [ "$VERIFY_PAPER" = 1 ]; then
+  step "verifying manuscript claims against this run"
+  ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py --reports "$REPORTS" )
+fi
 
 # the paper states a wall-clock figure. record the real one rather than leaving
 # it to memory of an earlier run.
@@ -325,5 +364,5 @@ step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"
 echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
 echo
-echo "docs/paper/main.pdf   the paper"
+echo "publication verification is opt-in with --verify-paper"
 echo "docs/REPORT.md  the trading project"
