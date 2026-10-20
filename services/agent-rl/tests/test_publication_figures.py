@@ -56,3 +56,15 @@ def test_constructions_use_each_observation_and_preserve_unresolved(monkeypatch,
         assert observations == [20., 10.]
         assert [text.get_text() for text in ax.texts] == ["unresolved", "unresolved"]
     plt.close(saved[0])
+
+
+def test_zero_width_reference_is_labeled_undefined_not_infinite_evidence(monkeypatch, tmp_path):
+    saved = capture(monkeypatch)
+    block = {"spans": [0., 0.], "result": {"z_score": float("inf"),
+             "verdict": "UNRESOLVED", "passes": False}}
+    figures.fig_nullchoice({"observed_span": 4., "null_synthetic": block,
+                            "null_blinded_real": block}, tmp_path)
+    labels = [text.get_text() for text in saved[0].axes[0].texts]
+    assert labels.count("z undefined   unresolved") == 2
+    assert not any("inf" in label for label in labels)
+    plt.close(saved[0])
