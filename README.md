@@ -103,6 +103,10 @@ the artifact that produced it and fails the build on a mismatch.
 ./reproduce.sh --print-config  # inspect output paths without running experiments
 ```
 
+The default input is the tracked [fixed corpus snapshot](data/releases/market_snapshot_v1/).
+Its content hashes and exact split membership are checked before training.
+`CORPUS=/path/to/corpus.npz` selects another existing dataset for a new experiment.
+
 Every invocation writes checkpoints, reports, figures, and an input manifest
 under a new `runs/reproductions/` directory. `RUN_ROOT` chooses a named output
 location; existing nonempty output directories are refused. Evaluation retains

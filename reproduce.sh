@@ -3,19 +3,10 @@
 # run the research pipeline in isolated output directories.
 # compare a selected full run with the manuscript using --verify-paper.
 #
-# no api keys and no accounts. every data source is public:
-#   kalshi     api.elections.kalshi.com   read-only, unauthenticated
-#   binance    data.binance.vision        static daily files
-#   gymnasium  four classic-control tasks  installed with the deps
-#
-# note: kalshi serves a moving window, so a rebuild on a different day returns
-# a slightly different set of markets. verified: overlapping episodes are
-# byte-identical, only membership changes. expect figures close to the
-# published ones rather than identical.
-#
-# runtime is dominated by the kalshi ingest, which is rate limited to about 27
-# minutes on a cold cache. everything is cached, so a second run skips to
-# training. the full pipeline is roughly 2 hours cold, 1 hour warm.
+# The fixed public-data snapshot is tracked under data/releases/market_snapshot_v1.
+# Every default run verifies its hashes and chronological split before training.
+# Set CORPUS to use a different, already-built dataset as a new experiment.
+# The ingestion scripts remain available for collecting a fresh API window.
 #
 # usage:
 #   ./reproduce.sh              full pipeline
@@ -68,7 +59,8 @@ FIGURES="${FIGURES:-$RUN_ROOT/figures}"
 CHECKPOINTS="${CHECKPOINTS:-$RUN_ROOT/checkpoints}"
 RUNS="$CHECKPOINTS/ppo"
 RUNS_NOFRIC="$CHECKPOINTS/ppo_nofric"
-CORPUS="${CORPUS:-$ROOT/data/corpus/corpus_candles_60s_spot.npz}"
+SNAPSHOT="$ROOT/data/releases/market_snapshot_v1"
+CORPUS="${CORPUS:-$SNAPSHOT/corpus.npz}"
 if [ "$QUICK" = 1 ] && [ "$VERIFY_PAPER" = 1 ]; then
   echo "quick mode cannot verify publication claims"; exit 1
 fi
@@ -76,9 +68,9 @@ if [ "$EXPLAIN_ONLY" = 1 ] && [ ! -d "$RUNS" ]; then
   echo "explain-only requires CHECKPOINTS pointing to an existing run"; exit 1
 fi
 if [ "$PRINT_CONFIG" = 1 ]; then
-  python3 - "$RUN_ROOT" "$REPORTS" "$FIGURES" "$RUNS" "$RUNS_NOFRIC" <<'PYCONFIG'
+  python3 - "$RUN_ROOT" "$REPORTS" "$FIGURES" "$RUNS" "$RUNS_NOFRIC" "$CORPUS" <<'PYCONFIG'
 import json, sys
-print(json.dumps(dict(zip(("run_root", "reports", "figures", "runs", "runs_nofric"), sys.argv[1:])), indent=2))
+print(json.dumps(dict(zip(("run_root", "reports", "figures", "runs", "runs_nofric", "corpus"), sys.argv[1:])), indent=2))
 PYCONFIG
   exit 0
 fi
@@ -127,16 +119,13 @@ mkdir -p "$REPORTS" "$FIGURES"
 
 if [ "$EXPLAIN_ONLY" = "0" ]; then
   # ------------------------------------------------------------------- data
-  if [ -f "$CORPUS" ]; then
-    step "corpus already built, skipping ingest"
-  else
-    step "building the kalshi corpus (rate limited, ~27 min cold)"
-    ( cd "$RL" && "$PY" scripts/build_corpus.py --mode candles --step 60 \
-        --cache "$ROOT/data/kalshi" --out "$ROOT/data/corpus" )
-    step "joining binance spot (~170 MB of 1s klines)"
-    ( cd "$RL" && "$PY" scripts/add_spot.py \
-        --corpus "$ROOT/data/corpus/corpus_candles_60s.npz" \
-        --cache "$ROOT/data/binance_klines" )
+  if [ ! -f "$CORPUS" ]; then
+    echo "corpus missing: $CORPUS; restore the snapshot or set CORPUS to an existing dataset"
+    exit 1
+  fi
+  if [ "$CORPUS" = "$SNAPSHOT/corpus.npz" ]; then
+    step "verifying the fixed corpus snapshot"
+    "$PY" "$RL/scripts/verify_snapshot.py" "$SNAPSHOT"
   fi
 
   step "validating the corpus end to end"

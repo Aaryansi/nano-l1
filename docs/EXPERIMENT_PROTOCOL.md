@@ -20,6 +20,7 @@ Market comparisons between synthetic and real corpora are descriptive because ex
 **Data and evaluation**
 
 - Keep the chronological market split and train-only normalizer. Save corpus hashes and split membership with the run.
+- Use the tracked `data/releases/market_snapshot_v1` snapshot by default, verifying its content and membership before training. A newly downloaded API window is a new dataset, not an exact reproduction of the fixed snapshot.
 - Generate synthetic training and evaluation corpora independently, using separate recorded corpus seeds. Fit normalizers on training only. A corpus held out from the reference bank is not automatically held out from the observed policy's training.
 - Use all held-out market episodes for the primary endpoint comparison. If computational limits require a subset for feature attribution, record its membership and report that result as a subset estimate.
 - Use the same evaluation episodes and masking randomness within a paired policy comparison. Keep episode/time-block identity when comparing training seeds.

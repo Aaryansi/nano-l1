@@ -16,7 +16,7 @@ SPEC.loader.exec_module(manifest)
 
 def config(*args, **overrides):
     env = {k: v for k, v in os.environ.items()
-           if k not in {"RUN_ROOT", "REPORTS", "FIGURES", "CHECKPOINTS"}}
+           if k not in {"RUN_ROOT", "REPORTS", "FIGURES", "CHECKPOINTS", "CORPUS"}}
     env.update({k: str(v) for k, v in overrides.items()})
     return subprocess.run(["bash", str(ROOT / "reproduce.sh"), *args, "--print-config"],
                           env=env, capture_output=True, text=True)
@@ -80,3 +80,23 @@ def test_hash_identifies_content_not_path(tmp_path):
     assert manifest.digest(a) == manifest.digest(b)
     b.write_bytes(b"changed")
     assert manifest.digest(a) != manifest.digest(b)
+
+
+def test_default_reproduction_selects_pinned_corpus():
+    paths = json.loads(config().stdout)
+    assert paths["corpus"] == str(ROOT / "data/releases/market_snapshot_v1/corpus.npz")
+
+
+def test_pinned_snapshot_and_tamper_detection(tmp_path):
+    import shutil
+    spec = importlib.util.spec_from_file_location("verify_snapshot", ROOT / "services/agent-rl/scripts/verify_snapshot.py")
+    verifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verifier)
+    source = ROOT / "data/releases/market_snapshot_v1"
+    assert verifier.verify_snapshot(source)["episodes"] == 6425
+    target = tmp_path / "snapshot"
+    shutil.copytree(source, target)
+    with (target / "corpus.npz").open("ab") as stream:
+        stream.write(b"modified")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        verifier.verify_snapshot(target)
