@@ -32,6 +32,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from nano_rl.explain.diagnostics import magnitude_rank_correlation
 from nano_rl import plots  # noqa: E402
 from nano_rl.agents.ppo import PPOAgent, PPOConfig  # noqa: E402
 from nano_rl.data.splits import walk_forward_split  # noqa: E402
@@ -170,10 +171,7 @@ def main() -> None:
         print("  and the paper must say so.")
 
     # per-feature agreement between the two non-efficient schemes
-    corr = float(np.corrcoef(
-        np.argsort(np.argsort(-np.abs(rr["loo_values"]))),
-        np.argsort(np.argsort(-np.abs(rr["ooi_values"]))),
-    )[0, 1])
+    corr = magnitude_rank_correlation(rr["loo_values"], rr["ooi_values"])
     print(f"\n  leave-one-out vs only-one-in, per-feature rank correlation: "
           f"{corr:+.3f}")
 

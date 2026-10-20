@@ -46,6 +46,7 @@ import torch
 from nano_rl.agents.ppo import PPOAgent
 from nano_rl.env.binary_market import EpisodeBatch
 from nano_rl.env.features import FEATURE_NAMES, N_FEATURES, FeatureNormalizer
+from nano_rl.explain.diagnostics import magnitude_rank_correlation
 from nano_rl.explain.shapley import (
     Attribution,
     kernel_shap,
@@ -208,19 +209,7 @@ def compare_naive_and_trajectory(
     a = np.abs(naive.values)
     b = np.abs(trajectory.values)
 
-    def ranks(x: np.ndarray) -> np.ndarray:
-        order = np.argsort(np.argsort(-x))
-        return order.astype(float)
-
-    # the degeneracy to guard is in the VALUES, not the ranks. ranks of n
-    # distinct positions always have positive variance, so testing them would
-    # report a perfect correlation between two attributions that are both
-    # identically zero, i.e. claim two vacuous explanations agree.
-    if a.max() < 1e-12 or b.max() < 1e-12:
-        rho = float("nan")
-    else:
-        ra, rb = ranks(a), ranks(b)
-        rho = float(np.corrcoef(ra, rb)[0, 1])
+    rho = magnitude_rank_correlation(a, b)
 
     top_a = {n for n, _ in naive.top(top_k)}
     top_b = {n for n, _ in trajectory.top(top_k)}
