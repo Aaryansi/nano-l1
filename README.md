@@ -98,9 +98,23 @@ the artifact that produced it and fails the build on a mismatch.
 ### running it
 
 ```sh
-./reproduce.sh          # every figure and number, from public data, no API keys
-./reproduce.sh --quick  # reduced budgets, for a smoke test
+./reproduce.sh          # full experiment run in a new isolated directory
+./reproduce.sh --quick  # isolated smoke run with reduced budgets
+./reproduce.sh --print-config  # inspect output paths without running experiments
 ```
+
+Every invocation writes checkpoints, reports, figures, and an input manifest
+under a new `runs/reproductions/` directory. `RUN_ROOT` chooses a named output
+location; existing nonempty output directories are refused. Evaluation retains
+per-episode returns alongside the summaries. Source files, corpus contents,
+split membership, dependencies, checkpoints, and artifacts are identified in
+`run_manifest.json`.
+
+Use `CHECKPOINTS=/path/to/run/checkpoints ./reproduce.sh --explain-only` to
+explain an existing run into fresh output directories. Publication comparison
+is explicit: `--verify-paper` compares the selected run with the manuscript.
+Smoke runs cannot verify publication claims. Promoting a run into the paper's
+tracked artifacts is a separate, reviewed operation.
 
 ### what is where
 

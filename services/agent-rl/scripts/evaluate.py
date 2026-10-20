@@ -180,6 +180,7 @@ def main() -> None:
     # ------------------------------------------------------------ baselines
     results: dict[str, Metrics] = {}
     raw: dict[str, np.ndarray] = {}
+    episode_data = {"open_epoch": split.test.open_epoch}
 
     print("\nbaselines")
     for pol in default_baselines(logistic_model=lr_model, logistic_refit=lr_refit):
@@ -188,6 +189,8 @@ def main() -> None:
             r["pnl"], r["trades"], r["fees"], args.max_position
         )
         raw[pol.name] = r["pnl"]
+        for key, values in r.items():
+            episode_data[f"baseline_{pol.name}_{key}"] = values
         m = results[pol.name]
         print(f"  {pol.name:<16} pnl {m.mean_pnl:+8.4f}  sharpe {m.sharpe:+7.4f}  "
               f"trades {m.mean_trades:5.2f}  fees {m.mean_fees:6.3f}")
@@ -200,15 +203,20 @@ def main() -> None:
 
     print(f"\nppo across {len(agents)} seeds")
     ppo_rows, ppo_pnls = [], []
+    ppo_trades, ppo_fees = [], []
     for i, agent in enumerate(agents):
         r = run_agent(test_env, agent)
         mm = compute_metrics(r["pnl"], r["trades"], r["fees"], args.max_position)
         ppo_rows.append(mm)
         ppo_pnls.append(r["pnl"])
+        ppo_trades.append(r["trades"])
+        ppo_fees.append(r["fees"])
         print(f"  seed {i}: pnl {mm.mean_pnl:+8.4f}  sharpe {mm.sharpe:+7.4f}  "
               f"trades {mm.mean_trades:5.2f}  hit {mm.hit_rate:.3f}")
 
     ppo_stack = np.stack(ppo_pnls)
+    episode_data.update(ppo_pnl=ppo_stack, ppo_trades=np.stack(ppo_trades),
+                        ppo_fees=np.stack(ppo_fees))
     ppo_mean_pnl = ppo_stack.mean(axis=0)
     raw["ppo"] = ppo_mean_pnl
 
@@ -241,7 +249,10 @@ def main() -> None:
             max_position=args.max_position,
             random_episode_order=False,
         )
-        free_means = [run_agent(free_env, a)["pnl"].mean() for a in nofric_agents]
+        free_raw = [run_agent(free_env, a) for a in nofric_agents]
+        free_means = [r["pnl"].mean() for r in free_raw]
+        for key in ("pnl", "trades", "fees"):
+            episode_data[f"ppo_nofric_{key}"] = np.stack([r[key] for r in free_raw])
         ablation["ppo"] = float(np.mean(free_means))
         print(f"\nzero-cost ablation: ppo {np.mean(free_means):+.4f} "
               f"vs {means.mean():+.4f} with costs")
@@ -249,6 +260,8 @@ def main() -> None:
         for pol in default_baselines(logistic_model=lr_model, logistic_refit=lr_refit):
             r = run_policy(free_env, pol, seed=0)
             ablation[pol.name] = float(r["pnl"].mean())
+            for key, values in r.items():
+                episode_data[f"nofric_{pol.name}_{key}"] = values
 
     # ------------------------------------------------------------- figures
     print("\nfigures")
@@ -324,6 +337,7 @@ def main() -> None:
         "zero_cost_ablation": ablation,
         "critic_calibration_error": err,
     }
+    np.savez_compressed(out / "evaluation_returns.npz", **episode_data)
     (out / "results.json").write_text(json.dumps(payload, indent=2))
     print(f"\nwrote {out}/results.json")
 

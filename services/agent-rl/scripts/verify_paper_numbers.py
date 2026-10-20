@@ -11,13 +11,17 @@ usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-REPORTS = ROOT / "reports"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--reports", type=Path, default=ROOT / "reports")
+args = parser.parse_args()
+REPORTS = args.reports.resolve()
 
 failures: list[str] = []
 checks = 0
@@ -72,7 +76,7 @@ def check(label: str, claimed: float, actual: float | None, tol: float = 0.005) 
 
 
 print("=" * 78)
-print("verifying docs/paper/main.tex against reports/")
+print(f"verifying docs/paper/main.tex against {REPORTS}")
 print("=" * 78)
 
 # ---------------------------------------------------------------- table 1
