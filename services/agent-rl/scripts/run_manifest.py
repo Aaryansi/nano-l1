@@ -18,6 +18,7 @@ from nano_rl.data.splits import walk_forward_split
 from nano_rl.env.binary_market import EpisodeBatch
 from nano_rl.explain.sanity import test_span_against_null
 from nano_rl.explain.rank import rank_comparisons
+from nano_rl.metrics import paired_bootstrap_p_value, cluster_bootstrap_ci, cluster_bootstrap_p_value
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -80,6 +81,22 @@ def validate_evaluation(out: Path) -> None:
         for row, episode_pnl in zip(artifact["ppo_per_seed"], pnl, strict=True):
             if not np.isclose(row["mean_pnl"], episode_pnl.mean(), rtol=0, atol=1e-9):
                 raise ValueError("per-seed mean does not match raw episode returns")
+        if "paired_bootstrap_design" in artifact:
+            design = artifact["paired_bootstrap_design"]
+            blocks = np.floor(raw["open_epoch"] / 86400).astype(int)
+            flat = raw["baseline_always-flat_pnl"]
+            for name, recorded in artifact["paired_bootstrap_p_vs_flat"].items():
+                values = pnl.mean(axis=0) if name == "ppo" else raw[f"baseline_{name}_pnl"]
+                actual = paired_bootstrap_p_value(values, flat, design["n_boot"], design["seed"], block_ids=blocks)
+                if not np.isclose(actual, recorded, rtol=0, atol=1e-12):
+                    raise ValueError("market comparison differs from raw UTC-day returns")
+            primary = artifact["ppo_seed_day_bootstrap"]
+            zeros = [np.zeros_like(row) for row in pnl]
+            probability = cluster_bootstrap_p_value(list(pnl), zeros, block_ids=blocks)
+            interval = cluster_bootstrap_ci(list(pnl), zeros, block_ids=blocks)
+            if not np.isclose(primary["p_value"], probability, rtol=0, atol=1e-12, equal_nan=True) or not np.allclose(
+                    primary["ci95"], interval, rtol=0, atol=1e-12):
+                raise ValueError("primary market uncertainty differs from raw seed/day returns")
 
 
 def validate_control_returns(out: Path) -> None:
@@ -212,6 +229,34 @@ def validate_horizon_returns(out: Path) -> None:
                 raise ValueError("horizon fit membership differs from reference widths")
 
 
+def validate_stability_returns(out: Path) -> None:
+    import itertools
+    for path in sorted(out.rglob("stability.json")):
+        payload = json.loads(path.read_text())
+        with np.load(path.parent / payload["performance_returns_file"], allow_pickle=False) as raw:
+            pnl, epochs = raw["returns"], raw["open_epoch"]
+            if (pnl.ndim != 2 or pnl.shape[0] != payload["n_seeds"] or pnl.shape[1:] != epochs.shape
+                    or not np.isfinite(pnl).all() or not np.isfinite(epochs).all()
+                    or len(np.unique(epochs)) != len(epochs)):
+                raise ValueError("invalid raw stability performance returns")
+            blocks = np.floor(epochs / 86400).astype(int)
+            pairs = list(itertools.combinations(range(len(pnl)), 2))
+            ps = [paired_bootstrap_p_value(pnl[i], pnl[j], payload["performance_bootstrap_resamples"],
+                                          payload["performance_bootstrap_seed"], block_ids=blocks) for i, j in pairs]
+            if (not np.allclose(pnl.mean(axis=1), payload["seed_pnl"], rtol=0, atol=1e-12)
+                    or not np.allclose(ps, payload["performance_pvalues"], rtol=0, atol=1e-12)
+                    or payload["performance_pairs"] != [list(pair) for pair in pairs]
+                    or payload["performance_utc_day_blocks"] != len(np.unique(blocks))
+                    or payload["n_pairs_without_detected_difference"] != sum(p >= .05 for p in ps)):
+                raise ValueError("stability comparison differs from raw UTC-day returns")
+            evaluation = path.with_name("evaluation_returns.npz")
+            if evaluation.exists():
+                with np.load(evaluation, allow_pickle=False) as evaluated:
+                    if not np.array_equal(epochs, evaluated["open_epoch"]) or not np.allclose(
+                            pnl, evaluated["ppo_pnl"], rtol=0, atol=1e-9):
+                        raise ValueError("stability and primary evaluations disagree")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", type=Path, required=True)
@@ -233,6 +278,7 @@ def main() -> None:
         validate_control_returns(args.out)
         validate_primary_endpoints(args.out)
         validate_horizon_returns(args.out)
+        validate_stability_returns(args.out)
         manifest["artifacts"] = {
             str(p.relative_to(args.out)): digest(p)
             for p in sorted(args.out.rglob("*"))

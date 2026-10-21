@@ -1,29 +1,10 @@
-"""do agents that perform identically produce the same explanation?
+"""Describe variation in feature attributions across independently trained seeds.
 
-this asks whether an rl feature attribution is a property of the TASK or a
-property of the random seed. it matters practically: if two agents with
-statistically indistinguishable performance disagree about which features
-matter, then a published explanation of a single trained agent may be an
-artifact of initialisation rather than a fact about the problem.
-
-the design controls for the obvious confound. seeds are only compared if their
-test performance is statistically indistinguishable, checked by paired
-bootstrap. otherwise "different explanations" would just mean "different
-agents", which is neither surprising nor interesting.
-
-three quantities per attribution target:
-
-  pairwise rank correlation   do seeds agree on the ORDERING of features?
-  top-1 agreement             do they agree on the single most important one?
-  sign agreement              where both assign meaningful mass, do they agree
-                              on the direction of the effect?
-
-and the comparison that would be a new argument for outcome-based attribution:
-is the OUTCOMES target more stable across seeds than the BEHAVIOUR target?
-
-usage:
-    python scripts/stability.py --corpus data/corpus/corpus_candles_60s_spot.npz \\
-        --runs runs/ppo --out reports
+Report every seed and every pair. Paired UTC-day bootstrap comparisons describe
+mean-return differences; non-rejection does not establish equal performance or
+justify filtering the attribution comparisons. Rank, top-feature and signed
+agreement are distinct diagnostics, conditional on the attribution procedure.
+They do not establish that a ranking is a property of the task.
 """
 
 from __future__ import annotations
@@ -133,14 +114,26 @@ def summarise(name: str, atts: list[np.ndarray], signed_atts=None) -> dict:
     }
 
 
+def compare_stability(behaviour, outcomes):
+    if not np.isfinite(behaviour) or not np.isfinite(outcomes):
+        return "undefined rank comparison"
+    if abs(outcomes - behaviour) < .05:
+        return "mean rank correlations differ by less than 0.05 (descriptive threshold)"
+    return "outcomes have higher mean rank correlation" if outcomes > behaviour else "outcomes have lower mean rank correlation"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True)
     ap.add_argument("--runs", default="runs/ppo")
     ap.add_argument("--out", default="reports")
     ap.add_argument("--n-states", type=int, default=30)
+    ap.add_argument("--outcome-coalitions", type=int, default=160)
+    ap.add_argument("--outcome-episodes", type=int, default=300)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+    if min(args.n_states, args.outcome_coalitions, args.outcome_episodes) < 1:
+        raise SystemExit("attribution budgets must be positive")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -158,10 +151,8 @@ def main() -> None:
         a = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(c))
         agents.append(a)
 
-    banner(f"1. ARE THESE AGENTS EVEN COMPARABLE? ({len(agents)} seeds)")
-    print("  comparing explanations only makes sense between agents whose")
-    print("  performance is statistically indistinguishable. otherwise")
-    print("  'different explanations' just means 'different agents'.\n")
+    banner(f"1. PERFORMANCE DIFFERENCES ACROSS {len(agents)} SEEDS")
+    print("  approximate paired UTC-day bootstrap; no equivalence claim or pair filtering")
 
     env = BinaryMarketEnv(
         split.test, normalizer=split.normalizer, max_position=100.0,
@@ -174,16 +165,13 @@ def main() -> None:
         print(f"  {i:>5} {p.mean():>+10.4f}")
 
     pairs = list(itertools.combinations(range(len(agents)), 2))
-    ps = [paired_bootstrap_p_value(pnls[i], pnls[j]) for i, j in pairs]
-    n_indist = sum(1 for p in ps if p >= 0.05)
-    print(f"\n  pairwise paired-bootstrap p-values: "
+    blocks = np.floor(split.test.open_epoch / 86400).astype(int)
+    ps = [paired_bootstrap_p_value(pnls[i], pnls[j], seed=args.seed, block_ids=blocks) for i, j in pairs]
+    n_not_detected = sum(1 for p in ps if p >= 0.05)
+    print(f"\n  pairwise paired UTC-day bootstrap p-values: "
           f"min {min(ps):.3f}, median {float(np.median(ps)):.3f}")
-    print(f"  {n_indist} of {len(pairs)} pairs are statistically "
-          f"indistinguishable at p >= 0.05")
-
-    if n_indist < len(pairs) // 2:
-        print("\n  WARNING: most seeds differ in performance, so any difference")
-        print("  in explanation is confounded. interpret with care.")
+    print(f"  {n_not_detected} of {len(pairs)} pairs have no detected mean-return difference")
+    print(f"  {len(np.unique(blocks))} UTC-day blocks; small block/seed counts limit inference")
 
     banner("2. DO THEY EXPLAIN THEMSELVES THE SAME WAY?")
 
@@ -204,7 +192,7 @@ def main() -> None:
             explain_outcomes(
                 agent, split.test, background, normalizer=split.normalizer,
                 cfg=OutcomeAttributionConfig(
-                    n_coalitions=160, n_episodes=300, seed=args.seed
+                    n_coalitions=args.outcome_coalitions, n_episodes=args.outcome_episodes, seed=args.seed
                 ),
             ).values
         )
@@ -221,19 +209,13 @@ def main() -> None:
               f"{r['rank_corr_min']:>+8.3f}{r['top1_agreement']:>13.0%}"
               f"{r['sign_agreement']:>12.0%}")
 
-    print("\n  a rank correlation near 1.0 would mean explanations are a property")
-    print("  of the task. near 0 would mean they are a property of the seed.")
+    print("\n  rank agreement describes these agents and this attribution procedure.")
 
     banner("3. IS OUTCOME-BASED ATTRIBUTION MORE STABLE THAN BEHAVIOUR-BASED?")
     b, o = rows[0]["rank_corr_mean"], rows[1]["rank_corr_mean"]
     print(f"  behaviour  {b:+.3f}")
     print(f"  outcomes   {o:+.3f}")
-    if abs(o - b) < 0.05:
-        verdict = "no meaningful difference"
-    elif o > b:
-        verdict = "outcomes MORE stable"
-    else:
-        verdict = "outcomes LESS stable"
+    verdict = compare_stability(b, o)
     print(f"  -> {verdict}")
 
     # one bar per feature per seed would be unreadable; plot the spread instead
@@ -242,24 +224,35 @@ def main() -> None:
         np.array(behaviour),
         np.array(outcomes),
         out / "attribution_stability.png",
-        subtitle=f"{len(agents)} seeds, {n_indist}/{len(pairs)} pairs "
-                 f"statistically indistinguishable in performance",
+        subtitle=f"{len(agents)} seeds, {n_not_detected}/{len(pairs)} pairs "
+                 f"without a detected return difference; no equivalence claim",
     )
 
     payload = {
         "n_seeds": len(agents),
         "seed_pnl": [float(p.mean()) for p in pnls],
-        "performance_pvalues": [round(p, 4) for p in ps],
-        "n_indistinguishable_pairs": n_indist,
+        "performance_pvalues": ps,
+        "performance_pairs": pairs,
+        "performance_returns_file": "stability_returns.npz",
+        "performance_bootstrap_seed": args.seed,
+        "performance_bootstrap_resamples": 10000,
+        "performance_utc_day_blocks": len(np.unique(blocks)),
+        "performance_scope": "paired UTC-day bootstrap conditional on fitted agents; no multiplicity correction or equivalence claim",
+        "n_pairs_without_detected_difference": n_not_detected,
         "n_pairs": len(pairs),
-        "stability": rows,
+        "stability": [{key: (value if not isinstance(value, float) or np.isfinite(value) else None)
+                       for key, value in row.items()} for row in rows],
+        "outcome_attribution_episodes": min(args.outcome_episodes, len(split.test)),
+        "outcome_coalitions": args.outcome_coalitions,
+        "behaviour_states": args.n_states,
         "behaviour_magnitudes": [x.tolist() for x in behaviour],
         "behaviour_signed_means": [x.tolist() for x in signed_behaviour],
         "outcome_values": [x.tolist() for x in outcomes],
         "sign_agreement_estimand": "sign of mean signed attribution on features above 10% of each run maximum",
         "verdict": verdict,
     }
-    (out / "stability.json").write_text(json.dumps(payload, indent=2))
+    np.savez_compressed(out / "stability_returns.npz", returns=np.stack(pnls), open_epoch=split.test.open_epoch)
+    (out / "stability.json").write_text(json.dumps(payload, indent=2, allow_nan=False))
     print(f"\nwrote {out}/stability.json")
 
 

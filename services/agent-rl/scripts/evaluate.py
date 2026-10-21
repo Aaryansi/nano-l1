@@ -224,13 +224,14 @@ def main() -> None:
 
     # ------------------------------------------------- significance vs flat
     print("\nis any policy distinguishable from always-flat?")
-    print("  (paired bootstrap, 10k resamples, on the same episodes)")
+    print("  (paired UTC-day bootstrap, 10k resamples; conditional on fitted policies)")
+    blocks = np.floor(split.test.open_epoch / 86400).astype(int)
     flat = raw["always-flat"]
     sig = {}
     for name, pnl in raw.items():
         if name == "always-flat":
             continue
-        p = paired_bootstrap_p_value(pnl, flat)
+        p = paired_bootstrap_p_value(pnl, flat, block_ids=blocks)
         sig[name] = p
         verdict = "distinguishable" if p < 0.05 else "not distinguishable"
         print(f"  {name:<16} diff {pnl.mean() - flat.mean():+8.4f}  p = {p:.4f}  {verdict}")
@@ -317,7 +318,6 @@ def main() -> None:
             labels=abl_names,
         )
 
-    blocks = np.floor(split.test.open_epoch / 86400).astype(int)
     flat_groups = [np.zeros_like(row) for row in ppo_pnls]
     interval = cluster_bootstrap_ci(ppo_pnls, flat_groups, block_ids=blocks)
     block_test = cluster_bootstrap_p_value(ppo_pnls, flat_groups, block_ids=blocks)
@@ -348,6 +348,8 @@ def main() -> None:
             "sharpe_std": float(sharpes.std()),
         },
         "paired_bootstrap_p_vs_flat": sig,
+        "paired_bootstrap_design": {"blocks": "UTC days", "n_boot": 10000, "seed": 0,
+                                    "scope": "conditional on fitted policies; PPO row averages fixed seeds; primary PPO inference additionally resamples seeds"},
         "zero_cost_ablation": ablation,
         "critic_calibration_error": err,
         "critic_calibration": {"target": "stochastic on-policy return in dollars",

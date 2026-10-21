@@ -146,7 +146,7 @@ def aggregate_across_seeds(rows: list[Metrics]) -> dict[str, tuple[float, float]
 
 
 def paired_bootstrap_p_value(
-    a: np.ndarray, b: np.ndarray, n_boot: int = 10_000, seed: int = 0
+    a: np.ndarray, b: np.ndarray, n_boot: int = 10_000, seed: int = 0, *, block_ids=None
 ) -> float:
     """two-sided p-value for mean(a) - mean(b), by paired bootstrap.
 
@@ -156,9 +156,18 @@ def paired_bootstrap_p_value(
 
     included because with a per-episode std of ~50 and differences of ~1, an
     unpaired eyeball comparison of means is worthless.
+
+    Supply block_ids for dependent episodes. That path resamples common blocks
+    and returns an approximate centered-bootstrap tail probability, conditional
+    on the two fitted policies. Neither path establishes equivalence.
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
+    if block_ids is not None:
+        if len(np.unique(block_ids)) < 2:
+            raise ValueError("paired block inference requires at least two evaluation blocks")
+        observed, boot = _paired_seed_block_draws([a], [b], n_boot, seed, block_ids, center=True)
+        return float((1 + np.count_nonzero(np.abs(boot) >= abs(observed))) / (n_boot + 1))
     if len(a) != len(b) or len(a) == 0:
         return float("nan")
 
