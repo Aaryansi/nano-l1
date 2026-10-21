@@ -79,6 +79,54 @@ def validate_evaluation(out: Path) -> None:
                 raise ValueError("per-seed mean does not match raw episode returns")
 
 
+def validate_control_returns(out: Path) -> None:
+    def endpoint(raw, expected, count):
+        full, masked = (np.asarray(raw[key], dtype=float) for key in ("full", "masked"))
+        if full.shape != masked.shape or full.shape != (count,) or not (
+                np.isfinite(full).all() and np.isfinite(masked).all()):
+            raise ValueError("invalid control endpoint returns")
+        if len(raw["episode_seeds"]) != count:
+            raise ValueError("invalid control episode identities")
+        span = float(full.mean() - masked.mean())
+        if not np.isclose(span, expected, rtol=0, atol=1e-9) or not np.isclose(
+                span, raw["span"], rtol=0, atol=1e-9):
+            raise ValueError("control span differs from raw returns")
+        return float(full.mean())
+
+    for path in sorted(out.rglob("generalize_gym.json")):
+        tasks = json.loads(path.read_text())
+        for task in tasks:
+            count = task["attribution_episodes"]
+            for key in ("weight_null", "env_null"):
+                reference = task[key]
+                spans = reference["spans"]
+                returns = [endpoint(raw, span, count) for raw, span in
+                           zip(reference["rollouts"], spans, strict=True)]
+                if not np.isclose(np.mean(spans), reference["mean"], rtol=0, atol=1e-9) or not np.isclose(
+                        np.std(spans, ddof=1), reference["std"], rtol=0, atol=1e-9):
+                    raise ValueError("control reference summary differs from raw returns")
+                if key == "weight_null":
+                    random = task["random_init_return"]
+                    if not np.allclose(returns, random["returns"], rtol=0, atol=1e-9):
+                        raise ValueError("random-policy returns differ from endpoint records")
+                    if not np.isclose(np.mean(returns), random["mean"], rtol=0, atol=1e-9) or not np.isclose(
+                            np.std(returns, ddof=1), random["std"], rtol=0, atol=1e-9):
+                        raise ValueError("random-policy summary differs from raw returns")
+            for row in task["checkpoints"]:
+                endpoint(row["span_rollouts"], row["span"], count)
+                values = np.asarray(row["return_rollouts"], dtype=float)
+                if values.shape != (task["competence_episodes"],) or not np.isfinite(values).all() or len(values) != len(row["return_episode_seeds"]) or not np.isclose(
+                        values.mean(), row["return"], rtol=0, atol=1e-9):
+                    raise ValueError("control competence return differs from raw returns")
+        derived = path.with_name("null_width_conjecture.json")
+        if derived.exists():
+            payload = json.loads(derived.read_text())
+            if payload["env_ids"] != [task["env_id"] for task in tasks] or not np.allclose(
+                    payload["random_return_sd"], [task["random_init_return"]["std"] for task in tasks], rtol=0, atol=1e-9) or not np.allclose(
+                    payload["weight_null_sd"], [task["weight_null"]["std"] for task in tasks], rtol=0, atol=1e-9):
+                raise ValueError("control width figure inputs differ from raw returns")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", type=Path, required=True)
@@ -97,6 +145,7 @@ def main() -> None:
                 raise ValueError(f"run input changed since start: {key}")
     if args.phase == "complete":
         validate_evaluation(args.out)
+        validate_control_returns(args.out)
         manifest["artifacts"] = {
             str(p.relative_to(args.out)): digest(p)
             for p in sorted(args.out.rglob("*"))

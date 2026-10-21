@@ -339,7 +339,8 @@ def train_gym_ppo(
     return net, checkpoints
 
 
-def evaluate_gym(net: ActorCritic, env_id: str, n_episodes: int = 30, seed: int = 0) -> float:
+def evaluate_gym(net: ActorCritic, env_id: str, n_episodes: int = 30, seed: int = 0,
+                 return_samples: bool = False) -> float | np.ndarray:
     """mean undiscounted return under the greedy policy."""
     env = make_env(env_id)
     total = []
@@ -358,7 +359,7 @@ def evaluate_gym(net: ActorCritic, env_id: str, n_episodes: int = 30, seed: int 
                 break
         total.append(ep)
     env.close()
-    return float(np.mean(total))
+    return np.asarray(total) if return_samples else float(np.mean(total))
 
 
 def masked_return(
@@ -368,7 +369,8 @@ def masked_return(
     background: np.ndarray,
     n_episodes: int = 20,
     seed: int = 0,
-) -> float:
+    return_samples: bool = False,
+) -> float | np.ndarray:
     """mean return when the agent observes only the features in `mask`.
 
     features outside the mask are replaced by a background draw at every step,
@@ -399,7 +401,7 @@ def masked_return(
         total.append(ep)
 
     env.close()
-    return float(np.mean(total))
+    return np.asarray(total) if return_samples else float(np.mean(total))
 
 
 def attribution_span_fast(
@@ -409,7 +411,8 @@ def attribution_span_fast(
     n_features: int,
     n_episodes: int = 20,
     seed: int = 0,
-) -> float:
+    return_samples: bool = False,
+) -> float | dict:
     """v(all) - v(none) in TWO rollouts rather than 2^n.
 
     the efficiency axiom gives sum_i phi_i = v(N) - v(empty), so the span, which
@@ -423,13 +426,18 @@ def attribution_span_fast(
     """
     full = masked_return(
         net, env_id, np.ones(n_features, dtype=bool), background,
-        n_episodes=n_episodes, seed=seed,
+        n_episodes=n_episodes, seed=seed, return_samples=True,
     )
     empty = masked_return(
         net, env_id, np.zeros(n_features, dtype=bool), background,
-        n_episodes=n_episodes, seed=seed,
+        n_episodes=n_episodes, seed=seed, return_samples=True,
     )
-    return float(full - empty)
+    span = float(np.mean(full) - np.mean(empty))
+    if return_samples:
+        return {"span": span, "full": full.tolist(), "masked": empty.tolist(),
+                "episode_seeds": list(range(seed, seed + n_episodes)),
+                "masking_seed": seed}
+    return span
 
 
 def exact_shapley_span(
