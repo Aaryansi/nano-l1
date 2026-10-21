@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nano_rl.env.synthetic import synthetic_train_eval, make_learnable_corpus
 from nano_rl.env.features import fit_normalizer
 from nano_rl.explain.sanity import check_resolving_power, test_span_against_null, UNRESOLVED
-from sanity_check_explanations import build_null_distribution, train, endpoint_span
+from nano_rl.explain.rank import rank_comparisons
+from sanity_check_explanations import build_null_distribution, train, endpoint_span, reference_protocol
 
 
 def wilson_interval(successes: int, trials: int, z=1.959963984540054):
@@ -32,13 +33,26 @@ def summarize(rows):
     resolved = [row for row in rows if row["result"]["verdict"] != UNRESOLVED]
     rejected = sum(row["result"]["passes"] for row in resolved)
     positive = sum(row["result"]["passes"] and row["result"]["z_score"] > 0 for row in resolved)
-    return {"n_trials": len(rows), "n_resolved": len(resolved),
+    summary = {"n_trials": len(rows), "n_resolved": len(resolved),
             "n_unresolved": len(rows) - len(resolved), "n_rejected": rejected,
             "n_positive_rejections": positive,
             "rejection_rate_resolved": rejected / len(resolved) if resolved else None,
             "rejection_rate_ci95": wilson_interval(rejected, len(resolved)),
             "positive_detection_rate_resolved": positive / len(resolved) if resolved else None,
             "positive_detection_ci95": wilson_interval(positive, len(resolved))}
+    if any("rank_comparators" in row for row in rows):
+        if not all("rank_comparators" in row for row in rows):
+            raise ValueError("rank comparisons must cover every trial")
+        summary["rank_comparators"] = {}
+        for alternative in ("greater", "two-sided"):
+            results = [row["rank_comparators"][alternative] for row in rows]
+            count = sum(result["rejected"] for result in results)
+            summary["rank_comparators"][alternative] = {
+                "n_trials": len(rows), "n_rejected": count,
+                "rejection_rate": count / len(rows), "rejection_rate_ci95": wilson_interval(count, len(rows)),
+                "rank_floor": results[0]["rank_floor"],
+                "rank_floor_at_or_below_alpha": results[0]["rank_floor_at_or_below_alpha"]}
+    return summary
 
 
 def main():
@@ -59,8 +73,9 @@ def main():
     raw = {}
     if args.reference_json:
         reference = json.loads(args.reference_json.read_text())
-        if reference.get("training_updates") != args.updates or len(reference["null_spans"]) != args.n_null:
-            raise SystemExit("reference bank must match the requested training and draw budgets")
+        if (reference.get("reference_protocol") != reference_protocol(args.updates)
+                or len(reference["null_spans"]) != args.n_null):
+            raise SystemExit("reference bank must match the complete calibration procedure and draw budget")
         nulls = reference["null_spans"]
         reference_keys = reference["reference_endpoint_keys"]
         with np.load(args.reference_json.parent / reference["endpoint_returns_file"], allow_pickle=False) as bank:
@@ -86,12 +101,16 @@ def main():
             returns = raw[f"{key}_full"]
             rows.append({"trial": trial, "policy_seed": policy_seed, "masking_seed": policy_seed,
                          "endpoint_key": key, "data": pair.metadata(),
+                         "rank_comparators": rank_comparisons(span, nulls),
                          "return": float(returns.mean()), "result": result.as_dict()})
             print(f"strength {strength:g}, trial {trial + 1}/{args.trials}: {result.summary()}", flush=True)
         cases.append({"signal_strength": strength, **summarize(rows), "trials": rows})
     payload = {"design": "independent observed trials conditional on one independently trained reference bank",
                "interval_scope": "pointwise conditional binomial uncertainty; excludes variation across reference banks",
                "schema_version": 2, "synthetic_episodes": 1200,
+               "reference_protocol": reference_protocol(args.updates),
+               "rank_validity_scope": "requires jointly exchangeable observed/reference statistics; applicable only to the matched zero-strength synthetic DGP, not established for market comparisons",
+               "rank_rate_scope": "rates and intervals are conditional on this bank; finite-rank validity is marginal over both bank and observed draw",
                "endpoint_returns_file": "detection_calibration_returns.npz",
                "reference_endpoint_keys": reference_keys,
                "updates": args.updates, "reference_json": args.reference_json.name if args.reference_json else None,

@@ -28,11 +28,14 @@ usage:
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 import numpy as np
+import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -94,6 +97,26 @@ def endpoint_span(agent, batch, norm, seed, *, raw=None, key=None):
     raw[f"{key}_masked"] = result["masked"]
     raw[f"{key}_open_epoch"] = batch.open_epoch
     return result["span"]
+
+
+def reference_protocol(updates):
+    """Procedure shared by the reference bank and zero-strength calibration trials."""
+    ppo = asdict(PPOConfig())
+    ppo.pop("seed")
+    root = Path(__file__).resolve().parents[1]
+    sources = sorted((root / "nano_rl").rglob("*.py")) + [
+        Path(__file__).resolve(), root / "scripts/calibrate_detection.py"]
+    return {"generator": "make_learnable_corpus(signal_strength=0)",
+            "implementation_sha256": {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
+                                      for p in sources},
+            "runtime": {"numpy": np.__version__, "torch": torch.__version__,
+                        "torch_threads": torch.get_num_threads()},
+            "episodes_per_corpus": 1200, "steps": 14, "noise": .3, "price": .5, "spread": .02,
+            "independent_training_evaluation": True, "training_updates": updates,
+            "ppo": ppo, "max_position": 100., "normalizer": "training market features only",
+            "evaluation": "greedy, all evaluation episodes", "background_samples": 256,
+            "intervention": "fresh whole background row per episode per decision",
+            "masking_seed_equals_policy_seed": True}
 
 
 def build_null_distribution(
@@ -230,6 +253,7 @@ def main() -> None:
 
     payload = {
         "schema_version": 2,
+        "reference_protocol": reference_protocol(args.updates),
         "endpoint_returns_file": "sanity_endpoint_returns.npz",
         "reference_endpoint_keys": [f"reference_{k}" for k in range(args.n_null)],
         "observed_endpoint_keys": {"planted_signal": "planted_signal", "held_out_null": "held_out_null",

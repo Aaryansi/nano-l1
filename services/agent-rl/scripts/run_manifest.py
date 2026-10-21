@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nano_rl.data.splits import walk_forward_split
 from nano_rl.env.binary_market import EpisodeBatch
 from nano_rl.explain.sanity import test_span_against_null
+from nano_rl.explain.rank import rank_comparisons
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -173,6 +174,8 @@ def validate_primary_endpoints(out: Path) -> None:
                     mean = comparison(raw, row["endpoint_key"], row["data"]["evaluation_episodes"], nulls, row["result"])
                     if mean != row["return"]:
                         raise ValueError("calibration return differs from raw endpoint returns")
+                    if "rank_comparators" in row and row["rank_comparators"] != rank_comparisons(row["result"]["statistic"], nulls):
+                        raise ValueError("calibration rank comparison differs from raw endpoint returns")
                 if any(case[key] != value for key, value in summarize(case["trials"]).items()):
                     raise ValueError("calibration rate differs from raw endpoint decisions")
 
