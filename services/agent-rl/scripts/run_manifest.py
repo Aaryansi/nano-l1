@@ -5,12 +5,14 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
 import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
+import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -53,6 +55,9 @@ def build_manifest(corpus: Path, checkpoints: Path, phase: str, quick: bool) -> 
         "commit": git.stdout.strip(), "tracked_source_dirty": dirty.returncode != 0,
         "python": platform.python_version(), "platform": platform.platform(),
         "packages": packages, "corpus_sha256": digest(corpus),
+        "runtime": {"torch_threads": torch.get_num_threads(),
+                    "environment": {key: os.environ.get(key) for key in
+                                    ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "PYTHONHASHSEED")}},
         "source_sha256": sources,
         "corpus_file": corpus.name, "episodes": len(batch), "steps": batch.n_steps,
         "splits": {name: {"episodes": len(part), "open_epoch": part.open_epoch.tolist()}
@@ -270,7 +275,7 @@ def main() -> None:
     path = args.out / "run_manifest.json"
     if path.exists():
         previous = json.loads(path.read_text())
-        for key in ("corpus_sha256", "commit", "quick", "source_sha256"):
+        for key in ("corpus_sha256", "commit", "quick", "source_sha256", "packages", "runtime"):
             if previous[key] != manifest[key]:
                 raise ValueError(f"run input changed since start: {key}")
     if args.phase == "complete":

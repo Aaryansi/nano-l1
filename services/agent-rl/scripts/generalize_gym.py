@@ -22,8 +22,10 @@ usage:
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 import json
+import multiprocessing
 import sys
 from pathlib import Path
 
@@ -248,6 +250,9 @@ def run_env(env_id: str, args) -> dict:
 
     return {
         "env_id": env_id,
+        "execution": {"workers": getattr(args, "worker_count", 1),
+                      "start_method": "spawn" if getattr(args, "worker_count", 1) > 1 else "single process",
+                      "torch_threads": torch.get_num_threads()},
         "background_seed": args.seed,
         "attribution_episodes": args.attr_episodes,
         "competence_episodes": 25,
@@ -281,10 +286,23 @@ def run_env(env_id: str, args) -> dict:
     }
 
 
+def run_environments(args):
+    """Isolate global training RNG state; preserve the requested task order."""
+    args.worker_count = min(args.jobs, len(args.envs))
+    if args.worker_count == 1:
+        return [run_env(env_id, args) for env_id in args.envs]
+    with ProcessPoolExecutor(max_workers=args.worker_count,
+                             mp_context=multiprocessing.get_context("spawn")) as pool:
+        futures = [pool.submit(run_env, env_id, args) for env_id in args.envs]
+        return [future.result() for future in futures]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--envs", nargs="+", default=["CartPole-v1", "Acrobot-v1"])
     ap.add_argument("--out", default="reports")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="number of isolated worker processes for independent environments")
     ap.add_argument("--steps", type=int, default=400_000)
     ap.add_argument("--null-steps", type=int, default=30_000)
     ap.add_argument("--n-null", type=int, default=12)
@@ -308,12 +326,14 @@ def main() -> None:
                          "pipeline stop reproducing the paper's table; the "
                          "resample comparison is reported separately")
     args = ap.parse_args()
+    if args.jobs < 1:
+        raise SystemExit("jobs must be positive")
     check_resolving_power(args.n_null, what="the generalize gym null")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    results = [run_env(e, args) for e in args.envs]
+    results = run_environments(args)
 
     banner("ACROSS ENVIRONMENTS")
     print(f"  {'environment':<16}{'weight null sd':>16}{'env null sd':>14}"
