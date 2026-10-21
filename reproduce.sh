@@ -31,6 +31,13 @@ N_NULL=24
 NULL_UPDATES=40
 STEER_SEEDS=10
 GYM_STEPS=400000
+CONTROL_JOBS="${CONTROL_JOBS:-2}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
+export PYTHONHASHSEED="${PYTHONHASHSEED:-0}"
+if ! [[ "$CONTROL_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "CONTROL_JOBS must be a positive integer"; exit 1
+fi
 QUICK=0
 TESTS_ONLY=0
 EXPLAIN_ONLY=0
@@ -68,9 +75,11 @@ if [ "$EXPLAIN_ONLY" = 1 ] && [ ! -d "$RUNS" ]; then
   echo "explain-only requires CHECKPOINTS pointing to an existing run"; exit 1
 fi
 if [ "$PRINT_CONFIG" = 1 ]; then
-  python3 - "$RUN_ROOT" "$REPORTS" "$FIGURES" "$RUNS" "$RUNS_NOFRIC" "$CORPUS" <<'PYCONFIG'
+  python3 - "$RUN_ROOT" "$REPORTS" "$FIGURES" "$RUNS" "$RUNS_NOFRIC" "$CORPUS" "$CONTROL_JOBS" <<'PYCONFIG'
 import json, sys
-print(json.dumps(dict(zip(("run_root", "reports", "figures", "runs", "runs_nofric", "corpus"), sys.argv[1:])), indent=2))
+config = dict(zip(("run_root", "reports", "figures", "runs", "runs_nofric", "corpus"), sys.argv[1:7]))
+config["control_jobs"] = int(sys.argv[7])
+print(json.dumps(config, indent=2))
 PYCONFIG
   exit 0
 fi
@@ -303,7 +312,7 @@ step "separating market replacement from inventory and time replacement"
 step "does it generalise? six control tasks"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
-    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
+    --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 # the blinded observations above are drawn per coordinate, which does not respect
 # constraints between coordinates: on Pendulum only 0.5% of them satisfy
@@ -317,13 +326,13 @@ step "does it generalise? six control tasks"
 step "five independently trained agents per task"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/seeds" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
-    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) \
+    --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) \
     --agent-seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) )
 
 step "the same six tasks with manifold-preserving blinding"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/resample" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 --blind resample \
-    --steps "$GYM_STEPS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
+    --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
 # -------------------------------------------------------------------- done
 step "confidence intervals on every reported z-score"
