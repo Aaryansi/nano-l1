@@ -839,6 +839,7 @@ def scheme_comparison(
     """
     fig, ax = _new_fig(9.0, 1.5 * len(schemes) + 2.4)
 
+    legend_added = False
     for row, (name, (nulls, signal, real)) in enumerate(schemes.items()):
         mu, sd = float(np.mean(nulls)), float(np.std(nulls, ddof=1))
         if sd <= 1e-12:
@@ -861,7 +862,8 @@ def scheme_comparison(
         ):
             ax.scatter([val], [row], s=150, color=color, zorder=5,
                        edgecolors=SURFACE, linewidths=2.0,
-                       label=label if row == 0 else None)
+                       label=label if not legend_added else None)
+        legend_added = True
 
     ax.axvline(0.0, color=REFERENCE, linewidth=1.2, linestyle="--", zorder=1)
     for x in (-1.96, 1.96):

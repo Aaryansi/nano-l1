@@ -25,3 +25,12 @@ def test_scheme_view_does_not_replace_zero_sd_with_one(monkeypatch, tmp_path):
     assert any("standardized span undefined" in text.get_text() for text in ax.texts)
     assert len(ax.collections) == 0
     plt.close(saved[0])
+
+
+def test_scheme_legend_survives_a_degenerate_first_row(monkeypatch, tmp_path):
+    saved = []
+    monkeypatch.setattr(plots, "_save", lambda fig, path: saved.append(fig))
+    plots.scheme_comparison({"zero": (np.zeros(3), 100., 1.),
+                             "variable": (np.arange(3.), 4., 2.)}, tmp_path / "plot.png")
+    assert saved[0].axes[0].get_legend_handles_labels()[1] == ["planted signal", "real market"]
+    plt.close(saved[0])
