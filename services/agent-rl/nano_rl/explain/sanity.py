@@ -1,38 +1,15 @@
-"""a null-model test for whether an rl explanation carries any information.
+"""Candidate reference diagnostics for observation-intervention return spans.
 
-the motivating observation, measured in scripts/stability.py and
-scripts/evaluate.py: five independently trained agents produce highly
-consistent explanations (rank correlation 0.850, 100% agreement on the single
-most important feature) of a policy that earns -0.595 per episode on the test
-split and is statistically indistinguishable from doing nothing (p = 0.10).
-the explanations are stable, structured, and carry no detectable
-outcome-relevant information.
+The span is v(N)-v(empty) for a specified policy, environment and intervention.
+Shapley efficiency links it to the sum of a decomposition, but cannot assess
+feature-level fidelity: decompositions with the same sum share the statistic.
+Non-rejection does not establish absence of signal or an empty explanation.
 
-that matters because consistency across runs is widely used as a proxy for
-trustworthiness. here it is high precisely where the explanation is empty, so
-it cannot serve that role.
-
-the test below adapts the randomization tests of adebayo et al. (2018) to rl.
-in supervised learning the null is artificial: randomize weights, or permute
-labels. this module implements the machinery for an environment-level null,
-where the null agents are trained normally on a corpus whose observation
-channel carries no exploitable structure.
-
-what this module does NOT supply is a null construction the paper endorses
-without qualification. the accompanying scripts build four of them and each
-perturbs something besides the information: the signal-free corpus varies the
-corpus, blinding collapses the reference to a point mass, outcome permutation
-destroys price calibration, and the stratified repair removes almost nothing.
-the test is only as good as the reference handed to it, which is the paper's
-argument rather than a caveat on it.
-
-the test statistic comes from the shapley framework itself. by efficiency,
-
-    sum_i phi_i = v(N) - v(empty)
-
-so the SPAN v(N) - v(empty) is the total value of observing the state at all.
-under the null it should be indistinguishable from zero, whatever the
-individual attributions look like.
+The legacy two-part rule combines a reference-centered empirical tail score
+and a normal approximation. It is a candidate diagnostic without a general
+exchangeability guarantee. Under-budget and zero-scale references are unresolved
+under this rule. Standard symmetric rank comparators with explicit assumptions
+are implemented separately in nano_rl.explain.rank.
 """
 
 from __future__ import annotations
@@ -77,7 +54,7 @@ class SanityResult:
         the reference distribution has no spread before reading a p-value off
         it.
         """
-        return bool(np.std(self.null_samples) <= 1e-12)
+        return self.null_std <= 1e-12
 
     @property
     def min_achievable_p_rank(self) -> float:
@@ -145,6 +122,10 @@ def test_span_against_null(
     the quantity being swept.
     """
     nulls = np.asarray(null_spans, dtype=float)
+    if nulls.ndim != 1 or not np.isfinite(nulls).all() or not np.isfinite(stat):
+        raise ValueError("comparison requires finite scalar observation and finite reference vector")
+    if not np.isfinite(alpha) or not 0 < alpha < 1:
+        raise ValueError("alpha must be between zero and one")
     if len(nulls) < 2:
         raise ValueError("need at least two null samples to form a distribution")
 
@@ -160,13 +141,9 @@ def test_span_against_null(
     # `degenerate_null` is the flag reports should branch on, and summary()
     # prints the z as undefined.
     #
-    # what this must NOT be read as is strong evidence. an earlier version of
-    # this project treated a point mass as maximally informative, since any
-    # deviation from it looks infinitely surprising. scripts/matched_null_test.py
-    # falsifies that: a point-mass null fires on a corpus built to contain no
-    # signal. degeneracy is a defect of the null construction and a reason to
-    # distrust the reference. it was first seen on Acrobot, where blind agents
-    # score -500 whether or not they can see, so every null span is exactly 0.
+    # Zero scale is unresolved for this normal-distance heuristic. This does
+    # not make every point-mass reference invalid for every possible test:
+    # an exchangeable rank procedure can handle ties without a scale.
     from math import erfc, inf, isinf, sqrt
 
     if std > 1e-12:
@@ -190,12 +167,9 @@ def test_span_against_null(
     # conservative reading of a weak reference, it is a different test whose
     # size depends on how many null draws happened to be drawn.
     #
-    # a reference that cannot resolve alpha does not produce a negative result
-    # either. it produces no result, which is what UNRESOLVED records. the same
-    # applies to a degenerate reference: a point mass has no scale, so the
-    # observation is outside its support by construction and the comparison is
-    # not a test. scripts/matched_null_test.py shows such a reference firing on
-    # a corpus built to contain no signal.
+    # Insufficient rank resolution or undefined normal scale cannot support
+    # this rule's rejection. Preserve UNRESOLVED rather than claiming a
+    # negative scientific result.
     min_rank = 1.0 / (len(nulls) + 1)
     degenerate = bool(std <= 1e-12)
 
@@ -225,33 +199,13 @@ def test_against_null(
     null_attributions: list[Attribution],
     alpha: float = 0.05,
 ) -> SanityResult:
-    """is the observed explanation distinguishable from explanations of nothing?
+    """Apply the legacy candidate rule to observed and reference spans.
 
-    args:
-        observed: attribution for the agent under scrutiny.
-        null_attributions: attributions for matched agents trained on
-            structure-free versions of the same environment.
-        alpha: significance level.
-
-    returns:
-        a SanityResult. `passes` True means the explanation carries information
-        the null cannot account for. False means the explanation is not
-        distinguishable from one produced for an agent with nothing to learn,
-        and should not be reported as a finding.
-
-    two p-values are reported because neither alone is adequate here.
-
-    the RANK p-value makes no distributional assumption, which is the right
-    instinct for a return-based statistic. but it bottoms out at 1/(n+1), so
-    with few null samples it cannot reject at any conventional level however
-    extreme the observation. an earlier run with n=8 reported p=0.111 for a
-    planted signal lying 10.5 standard deviations outside the null.
-
-    the NORMAL p-value has resolution but assumes a shape the null need not
-    have. `passes` requires BOTH, so the test is conservative: it will not
-    declare an explanation informative on the strength of a distributional
-    assumption alone, and it will not miss a ten-sigma effect for want of
-    samples.
+    `passes` records rejection by this rule, not explanation fidelity or task
+    utility. A false value can mean non-rejection or an unresolved comparison;
+    inspect the verdict. Reference centering is asymmetric, so the empirical
+    tail score is not automatically a valid exchangeable rank p-value. The
+    additional normal criterion does not supply a general size guarantee.
     """
     return test_span_against_null(
         attribution_span(observed),

@@ -14,6 +14,7 @@ from nano_rl.env.features import fit_normalizer
 from nano_rl.env.synthetic import make_learnable_corpus
 from nano_rl.explain.rollout import VectorizedRollout, build_background, masked_span
 from nano_rl.explain.sanity import test_span_against_null as compare
+from nano_rl.explain.rank import rank_comparisons
 from sanity_check_explanations import endpoint_span
 
 
@@ -53,7 +54,7 @@ def fixture(tmp_path):
                "real_results_per_seed": [result("market_0"), result("market_1")]}
     (tmp_path / "sanity_test.json").write_text(json.dumps(payload))
     row = {"endpoint_key": "signal", "data": {"evaluation_episodes": n},
-           "return": 7.5, "result": result("signal")}
+           "return": 7.5, "result": result("signal"), "rank_comparators": rank_comparisons(4., nulls)}
     case = {"signal_strength": 1., "trials": [row], **summarize([row])}
     calibration = {"endpoint_returns_file": "endpoints.npz", "synthetic_episodes": n,
                    "reference_endpoint_keys": payload["reference_endpoint_keys"],
@@ -72,14 +73,16 @@ def test_validation_catches_modified_raw_endpoints(tmp_path, changed):
         validate_primary_endpoints(tmp_path)
 
 
-@pytest.mark.parametrize("changed", ["decision", "rate"])
+@pytest.mark.parametrize("changed", ["decision", "rate", "rank"])
 def test_validation_catches_modified_calibration_claims(tmp_path, changed):
     _, _, payload = fixture(tmp_path)
     validate_primary_endpoints(tmp_path)
     if changed == "decision":
         payload["cases"][0]["trials"][0]["result"]["passes"] = True
-    else:
+    elif changed == "rate":
         payload["cases"][0]["n_rejected"] = 1
+    else:
+        payload["cases"][0]["trials"][0]["rank_comparators"]["greater"]["p_value"] = .01
     (tmp_path / "detection_calibration.json").write_text(json.dumps(payload))
     with pytest.raises(ValueError):
         validate_primary_endpoints(tmp_path)
