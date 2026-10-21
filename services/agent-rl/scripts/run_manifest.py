@@ -180,6 +180,38 @@ def validate_primary_endpoints(out: Path) -> None:
                     raise ValueError("calibration rate differs from raw endpoint decisions")
 
 
+def validate_horizon_returns(out: Path) -> None:
+    for path in sorted(out.rglob("horizon_scaling.json")):
+        payload = json.loads(path.read_text())
+        count = payload["evaluation_episodes"]
+        with np.load(path.parent / payload["endpoint_returns_file"], allow_pickle=False) as raw:
+            for row in payload["rows"]:
+                widths = {}
+                for arm in ("weight", "env"):
+                    spans = []
+                    for key in row["endpoint_keys"][arm]:
+                        full, masked, ids = [raw[f"{key}_{suffix}"] for suffix in ("full", "masked", "open_epoch")]
+                        if any(a.shape != (count,) or not np.isfinite(a).all() for a in (full, masked, ids)) or len(np.unique(ids)) != count:
+                            raise ValueError("invalid horizon endpoint returns or identities")
+                        spans.append(float(full.mean() - masked.mean()))
+                    widths[arm] = float(np.std(spans, ddof=1))
+                    if spans != row[f"{arm}_spans"] or widths[arm] != row[f"{arm}_std"]:
+                        raise ValueError("horizon reference differs from raw endpoint returns")
+                ratio = widths["weight"] / widths["env"] if widths["env"] > 1e-12 else None
+                if ratio != row["ratio"]:
+                    raise ValueError("horizon width ratio differs from raw endpoint returns")
+        from horizon_scaling import fit_power_law
+        x = np.array([row["n_steps"] for row in payload["rows"]], dtype=float)
+        for arm in ("weight", "env"):
+            y = np.array([row[f"{arm}_std"] for row in payload["rows"]])
+            slope, quality = fit_power_law(x, y)
+            if (payload.get(f"alpha_{arm}", slope) != slope
+                    or payload.get(f"r2_{arm}", quality) != quality):
+                raise ValueError("horizon fit differs from reconstructed reference widths")
+            if "fit_horizons" in payload and payload["fit_horizons"][arm] != x[y > 0].tolist():
+                raise ValueError("horizon fit membership differs from reference widths")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", type=Path, required=True)
@@ -200,6 +232,7 @@ def main() -> None:
         validate_evaluation(args.out)
         validate_control_returns(args.out)
         validate_primary_endpoints(args.out)
+        validate_horizon_returns(args.out)
         manifest["artifacts"] = {
             str(p.relative_to(args.out)): digest(p)
             for p in sorted(args.out.rglob("*"))
