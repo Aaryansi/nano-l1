@@ -4,6 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
 spec = importlib.util.spec_from_file_location("publication_figures", Path(__file__).resolve().parents[1] / "scripts/paper_figures.py")
 figures = importlib.util.module_from_spec(spec)
@@ -58,9 +59,10 @@ def test_constructions_use_each_observation_and_preserve_unresolved(monkeypatch,
     plt.close(saved[0])
 
 
-def test_zero_width_reference_is_labeled_undefined_not_infinite_evidence(monkeypatch, tmp_path):
+@pytest.mark.parametrize("z", [float("inf"), 0.])
+def test_zero_width_reference_is_labeled_undefined_not_infinite_evidence(monkeypatch, tmp_path, z):
     saved = capture(monkeypatch)
-    block = {"spans": [0., 0.], "result": {"z_score": float("inf"),
+    block = {"spans": [0., 0.], "result": {"z_score": z,
              "verdict": "UNRESOLVED", "passes": False}}
     figures.fig_nullchoice({"observed_span": 4., "null_synthetic": block,
                             "null_blinded_real": block}, tmp_path)

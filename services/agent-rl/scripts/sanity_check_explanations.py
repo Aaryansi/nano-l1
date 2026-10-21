@@ -203,9 +203,9 @@ def main() -> None:
 
     plots.null_test(
         {
-            "planted signal": (r_signal.statistic, r_signal.p_rank),
-            "null corpus": (r_null.statistic, r_null.p_rank),
-            "real market": (r_real.statistic, r_real.p_rank),
+            "planted signal": r_signal.as_dict(),
+            "null corpus": r_null.as_dict(),
+            "real market": r_real.as_dict(),
         },
         null_spans,
         out / "sanity_null_test.png",

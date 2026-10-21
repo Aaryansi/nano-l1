@@ -523,24 +523,21 @@ def attribution_stability(
 
 
 def null_test(
-    cases: dict[str, tuple[float, float]],
+    cases: dict[str, dict],
     null_samples: np.ndarray,
     path: Path,
-    title: str = "is this explanation distinguishable from an explanation of nothing?",
+    title: str = "observed return spans against the reference",
     subtitle: str = "",
 ) -> None:
-    """observed attribution spans against the null distribution.
-
-    the null band is the reference; a case inside it is an explanation that
-    could have been produced by an agent with nothing to learn.
-    """
+    """Display saved decisions; the plotted sample range is not a test."""
+    from nano_rl.explain.sanity import short_verdict
     fig, ax = _new_fig(8.6, 0.62 * len(cases) + 2.6)
 
     lo, hi = float(np.min(null_samples)), float(np.max(null_samples))
     mean = float(np.mean(null_samples))
 
     ax.axvspan(lo, hi, color=REFERENCE, alpha=0.16, zorder=1,
-               label="null range (agents with nothing to learn)")
+               label="reference sample range")
     ax.axvline(mean, color=REFERENCE, linewidth=1.4, linestyle="--", zorder=2)
 
     # the null draws themselves, so the band is not just an assertion
@@ -550,13 +547,14 @@ def null_test(
                 textcoords="offset points", color=INK_MUTED, fontsize=8.5,
                 ha="center")
 
-    for i, (name, (stat, p)) in enumerate(cases.items()):
-        inside = lo <= stat <= hi
-        color = C2 if inside else C1
+    for i, (name, result) in enumerate(cases.items()):
+        stat, p = result["statistic"], result["p_rank"]
+        status = short_verdict(result)
+        color = REFERENCE if status == "unresolved" else C1 if result["passes"] else C2
         ax.scatter([stat], [i], s=150, color=color, zorder=5,
                    edgecolors=SURFACE, linewidths=2.0)
         ax.annotate(
-            f"p = {p:.3f}   {'not distinguishable' if inside else 'informative'}",
+            f"rank score = {p:.3f}   {status}",
             xy=(stat, i), xytext=(12, 0), textcoords="offset points",
             color=INK, fontsize=9, va="center",
         )
@@ -571,7 +569,7 @@ def null_test(
         ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
                     color=INK_MUTED, fontsize=9, va="bottom")
     span = max(hi - lo, 1e-6)
-    xs = [s for s, _ in cases.values()] + [lo, hi]
+    xs = [r["statistic"] for r in cases.values()] + [lo, hi]
     ax.set_xlim(min(xs) - span * 0.4, max(xs) + span * 2.4)
     _save(fig, path)
 
@@ -836,16 +834,17 @@ def scheme_comparison(
 ) -> None:
     """each scheme's null spread, with the planted signal and the real agent.
 
-    one row per scheme. the shaded band is that scheme's null range; a marker
-    inside it is a statistic indistinguishable from an agent that learned
-    nothing. the schemes are on different scales, so each row is normalised by
-    its own null standard deviation and the x axis is in those units.
+    One row per scheme, normalized by its reference standard deviation.
+    The sample range does not establish a decision or population equivalence.
     """
     fig, ax = _new_fig(9.0, 1.5 * len(schemes) + 2.4)
 
     for row, (name, (nulls, signal, real)) in enumerate(schemes.items()):
         mu, sd = float(np.mean(nulls)), float(np.std(nulls, ddof=1))
-        sd = sd if sd > 1e-12 else 1.0
+        if sd <= 1e-12:
+            ax.text(0, row, "zero-width reference; standardized span undefined",
+                    color=INK_MUTED, fontsize=8, ha="center")
+            continue
         z_nulls = (np.asarray(nulls) - mu) / sd
 
         ax.axhspan(row - 0.42, row + 0.42, xmin=0, xmax=1,
@@ -877,8 +876,9 @@ def scheme_comparison(
     if subtitle:
         ax.annotate(subtitle, xy=(0, 1.035), xycoords="axes fraction",
                     color=INK_MUTED, fontsize=9, va="bottom")
-    ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
-              loc="upper left", bbox_to_anchor=(0.0, -0.14), ncol=2)
+    if ax.get_legend_handles_labels()[0]:
+        ax.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED,
+                  loc="upper left", bbox_to_anchor=(0.0, -0.14), ncol=2)
     _save(fig, path)
 
 

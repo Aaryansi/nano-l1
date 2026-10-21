@@ -81,8 +81,9 @@ def reference_label(result):
     return "outside reference" if rejected else "not rejected"
 
 
-def z_label(value):
-    return f"$z={value:+.2f}$" if np.isfinite(value) else "z undefined"
+def z_label(value, null_std=None):
+    defined = np.isfinite(value) and (null_std is None or null_std > 1e-12)
+    return f"$z={value:+.2f}$" if defined else "z undefined"
 
 
 def fig_method(out: Path):
@@ -163,7 +164,7 @@ def fig_null_test(d, out: Path):
         status = reference_label(r)
         ax.scatter([r["statistic"]], [i], s=55, color=REF if status == "unresolved" else C1 if r["passes"] else C2,
                    zorder=5, edgecolors="white", linewidths=1.1)
-        ax.annotate(z_label(r["z_score"]), xy=(r["statistic"], i),
+        ax.annotate(z_label(r["z_score"], float(nulls.std(ddof=1))), xy=(r["statistic"], i),
                     xytext=(7, 0), textcoords="offset points",
                     color=INK, fontsize=7, va="center")
 
@@ -308,7 +309,7 @@ def fig_nullchoice(d, out: Path):
         verdict = reference_label(block_["result"])
         # anchored to the axes edge, not to the data, so the two rows'
         # annotations line up instead of tracking their own maxima
-        ax.annotate(f"{z_label(z)}   {verdict}", xy=(1.0, y),
+        ax.annotate(f"{z_label(z, float(v.std(ddof=1)))}   {verdict}", xy=(1.0, y),
                     xycoords=("axes fraction", "data"),
                     xytext=(-2, -11), textcoords="offset points",
                     fontsize=6.4, color=MUTED, ha="right", va="top")

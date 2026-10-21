@@ -58,6 +58,8 @@ from nano_rl.explain.rollout import (  # noqa: E402
 )
 from nano_rl.explain.sanity import (  # noqa: E402
     check_resolving_power,
+    short_verdict,
+    summarize_verdicts,
     test_span_against_null,
 )
 
@@ -226,27 +228,22 @@ def main() -> None:
 
     banner("WHAT THIS SETTLES")
     degen = [t for t in TARGETS if results[t]["blinded_degenerate"]]
-    verdicts_A = {t: results[t]["null_signal_free"]["result"]["passes"]
-                  for t in TARGETS}
-    agree_A = len(set(verdicts_A.values())) == 1
-    fires = [t for t, v in verdicts_A.items() if v]
+    summary_A = summarize_verdicts(
+        [results[t]["null_signal_free"]["result"] for t in TARGETS])
+    agree_A = summary_A["agreement"]
 
     print("  under the paper's null, the three targets say:")
     for t in TARGETS:
         z = results[t]["null_signal_free"]["result"]["z_score"]
         print(f"    {t:<12} z {z:>+7.2f}   "
-              f"{'informative' if verdicts_A[t] else 'not distinguishable'}")
+              f"{short_verdict(results[t]['null_signal_free']['result'])}")
     print()
-    if agree_A:
-        print("  the three agree, so the verdict does not depend on which")
-        print("  question about the agent is being asked.")
+    if agree_A is None:
+        print("  agreement is unresolved: at least one reference cannot decide.")
+    elif agree_A:
+        print("  the resolved decisions agree in this run.")
     else:
-        print(f"  THE THREE DISAGREE. {', '.join(fires) or 'none'} fires while the")
-        print("  others decline, on one agent, one corpus and one null. so the")
-        print("  choice of explanatory target decides the verdict, exactly as")
-        print("  the choice of null construction does, and neither is usually")
-        print("  reported. that is a second degree of freedom, orthogonal to")
-        print("  the first.")
+        print("  the resolved decisions differ across targets in this run.")
 
     print()
     print("  on degeneracy, this run establishes less than it may appear.")
@@ -261,7 +258,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "sverl_targets.json").write_text(json.dumps({
         "targets": results,
-        "targets_agree_under_signal_free_null": bool(agree_A),
+        "targets_agree_under_signal_free_null": agree_A,
+        "signal_free_decision_summary": summary_A,
         "blinded_degenerate_targets": degen,
         "n_null": args.n_null, "n_states": args.states,
     }, indent=2))
