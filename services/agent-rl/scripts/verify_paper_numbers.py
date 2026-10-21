@@ -377,7 +377,7 @@ if sb:
     check("behaviour rank correlation", 0.850, beh["rank_corr_mean"], 0.02)
     check("behaviour min rank correlation", 0.761, beh["rank_corr_min"], 0.02)
     check("behaviour top-1 agreement", 1.0, beh["top1_agreement"], 0.001)
-    check("indistinguishable seed pairs", 10, sb["n_indistinguishable_pairs"], 0.001)
+    check("pairs without detected return difference", 10, sb["n_pairs_without_detected_difference"], 0.001)
 
 # ------------------------------------------------------------ faithfulness
 f = load("faithfulness.json")

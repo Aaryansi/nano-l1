@@ -31,6 +31,8 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/calibrate_detection.py \
   --out "$OUT/reports" --seeds 2 --updates 1 --episodes 64
 "$PY" scripts/horizon_scaling.py --out "$OUT/reports/horizon" \
   --horizons 2 3 4 --n-null 2 --updates 1 --episodes 32
+"$PY" scripts/stability.py --corpus "$CORPUS" --runs "$OUT/checkpoints/ppo" \
+  --out "$OUT/reports" --n-states 2 --outcome-coalitions 8 --outcome-episodes 8
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 \
   --trainer sb3 --steps 512 --null-steps 512 --n-null 2 --agent-seeds 2 \
   --attr-episodes 2 --out "$OUT/reports/controls"
