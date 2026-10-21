@@ -59,3 +59,5 @@ Calibration of the PPO critic compares predicted policy return with realized pol
 **Release requirements**
 
 Keep configurations, raw per-seed episode outputs, corpus/split identities, source and checkpoint hashes, dependency versions, and artifact hashes, including the timing artifact written before manifest completion. Smoke runs have reduced budgets and cannot validate scientific conclusions. The selected full run must finish successfully before any manuscript numbers or publication figures are regenerated from it. Report failed comparisons and revised conclusions as readily as successful controls.
+
+The headline and calibration endpoint archives retain both full-input and masked-input episode returns, episode identities, and keys for every observed/reference policy. Reconstruct spans, diagnostic decisions and calibration summaries from these archives before completing the manifest. A reused calibration bank copies its endpoint records and identifies the source JSON by content hash. The 99-draw sensitivity keeps its JSON and archive together under `reports/n99`; do not detach the JSON from its sidecar.

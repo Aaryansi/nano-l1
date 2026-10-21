@@ -109,7 +109,7 @@ if s:
 
 # the n=99 rerun quoted in 7.5. the point of the check is that the verdicts do
 # not move, so the verdicts are asserted, not just the numbers.
-n99 = load("sanity_test_n99.json")
+n99 = load("n99/sanity_test.json")
 print("\nsection 7.5: the headline at n=99")
 if n99:
     import numpy as np

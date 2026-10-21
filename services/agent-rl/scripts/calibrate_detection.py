@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from math import sqrt
 from pathlib import Path
@@ -12,7 +13,6 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nano_rl.env.synthetic import synthetic_train_eval, make_learnable_corpus
 from nano_rl.env.features import fit_normalizer
-from nano_rl.explain.rollout import VectorizedRollout, greedy_policy
 from nano_rl.explain.sanity import check_resolving_power, test_span_against_null, UNRESOLVED
 from sanity_check_explanations import build_null_distribution, train, endpoint_span
 
@@ -56,14 +56,21 @@ def main():
         raise SystemExit("trials/updates must be positive and strengths must be distinct")
     check_resolving_power(args.n_null, what="the calibration reference")
     args.out.mkdir(parents=True, exist_ok=True)
+    raw = {}
     if args.reference_json:
         reference = json.loads(args.reference_json.read_text())
         if reference.get("training_updates") != args.updates or len(reference["null_spans"]) != args.n_null:
             raise SystemExit("reference bank must match the requested training and draw budgets")
         nulls = reference["null_spans"]
+        reference_keys = reference["reference_endpoint_keys"]
+        with np.load(args.reference_json.parent / reference["endpoint_returns_file"], allow_pickle=False) as bank:
+            for key in reference_keys:
+                for suffix in ("full", "masked", "open_epoch"):
+                    raw[f"{key}_{suffix}"] = bank[f"{key}_{suffix}"]
     else:
-        nulls = build_null_distribution(args.n_null, args.updates, 0, 0, args.seed + 100000)
-    cases, raw = [], {}
+        nulls = build_null_distribution(args.n_null, args.updates, 0, 0, args.seed + 100000, raw=raw)
+        reference_keys = [f"reference_{k}" for k in range(args.n_null)]
+    cases = []
     for strength_index, strength in enumerate(args.strengths):
         rows = []
         for trial in range(args.trials):
@@ -73,18 +80,28 @@ def main():
                                         signal_strength=strength, seed=corpus_seed)
             norm = fit_normalizer(pair.train)
             agent = train(pair.train, norm, args.updates, policy_seed)
-            span = endpoint_span(agent, pair.evaluation, norm, policy_seed)
+            key = f"strength_{strength_index}_trial_{trial}"
+            span = endpoint_span(agent, pair.evaluation, norm, policy_seed, raw=raw, key=key)
             result = test_span_against_null(span, nulls)
-            returns = VectorizedRollout(pair.evaluation, normalizer=norm).run(greedy_policy(agent))["returns"]
-            raw[f"strength_{strength_index}_trial_{trial}"] = returns
-            rows.append({"trial": trial, "policy_seed": policy_seed, "data": pair.metadata(),
+            returns = raw[f"{key}_full"]
+            rows.append({"trial": trial, "policy_seed": policy_seed, "masking_seed": policy_seed,
+                         "endpoint_key": key, "data": pair.metadata(),
                          "return": float(returns.mean()), "result": result.as_dict()})
             print(f"strength {strength:g}, trial {trial + 1}/{args.trials}: {result.summary()}", flush=True)
         cases.append({"signal_strength": strength, **summarize(rows), "trials": rows})
     payload = {"design": "independent observed trials conditional on one independently trained reference bank",
                "interval_scope": "pointwise conditional binomial uncertainty; excludes variation across reference banks",
-               "updates": args.updates, "reference_json": str(args.reference_json) if args.reference_json else None,
+               "schema_version": 2, "synthetic_episodes": 1200,
+               "endpoint_returns_file": "detection_calibration_returns.npz",
+               "reference_endpoint_keys": reference_keys,
+               "updates": args.updates, "reference_json": args.reference_json.name if args.reference_json else None,
+               "reference_json_sha256": hashlib.sha256(args.reference_json.read_bytes()).hexdigest() if args.reference_json else None,
                "reference_base_seed": args.seed + 100000 if not args.reference_json else None,
+               "reference_data": reference["synthetic_data"] if args.reference_json else {
+                   "reference_train_seeds": list(range(1000, 1000 + args.n_null)),
+                   "reference_evaluation_seeds": list(range(1001000, 1001000 + args.n_null)),
+                   "reference_policy_seeds": list(range(args.seed + 110000, args.seed + 110000 + args.n_null)),
+                   "reference_masking_seeds": list(range(args.seed + 110000, args.seed + 110000 + args.n_null))},
                "null_spans": nulls, "cases": cases}
     (args.out / "detection_calibration.json").write_text(json.dumps(payload, indent=2))
     np.savez_compressed(args.out / "detection_calibration_returns.npz", **raw)
