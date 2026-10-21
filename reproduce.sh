@@ -220,7 +220,6 @@ step "does the headline survive a four-times larger null?"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS/n99" --updates "$NULL_UPDATES" \
     --n-null $([ "$QUICK" = 1 ] && echo 12 || echo 99) )
-cp "$REPORTS/n99/sanity_test.json" "$REPORTS/sanity_test_n99.json"
 
 step "conditional detection rates on independent synthetic trials"
 ( cd "$RL" && "$PY" scripts/calibrate_detection.py --out "$REPORTS" \

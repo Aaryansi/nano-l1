@@ -80,14 +80,24 @@ def attribute(agent, batch, norm, seed: int, coalitions: int, episodes: int):
     )
 
 
-def endpoint_span(agent, batch, norm, seed):
+def endpoint_span(agent, batch, norm, seed, *, raw=None, key=None):
+    if raw is not None and key is None:
+        raise ValueError("retaining endpoint returns requires a unique key")
     roll = VectorizedRollout(batch, normalizer=norm, max_position=100.)
     background = build_background(roll, n_samples=256, seed=seed)
-    return masked_span(agent, roll, background, seed)
+    result = masked_span(agent, roll, background, seed, return_samples=raw is not None)
+    if raw is None:
+        return result
+    if f"{key}_full" in raw:
+        raise ValueError(f"duplicate endpoint key: {key}")
+    raw[f"{key}_full"] = result["full"]
+    raw[f"{key}_masked"] = result["masked"]
+    raw[f"{key}_open_epoch"] = batch.open_epoch
+    return result["span"]
 
 
 def build_null_distribution(
-    n_null: int, updates: int, coalitions: int, episodes: int, base_seed: int
+    n_null: int, updates: int, coalitions: int, episodes: int, base_seed: int, *, raw=None
 ) -> list:
     """attributions for matched agents trained where there is nothing to learn.
 
@@ -102,7 +112,8 @@ def build_null_distribution(
         nn = fit_normalizer(nb)
         reference_seed = base_seed + 10_000 + k
         agent = train(nb, nn, updates, reference_seed)
-        span = endpoint_span(agent, pair.evaluation, nn, reference_seed)
+        span = endpoint_span(agent, pair.evaluation, nn, reference_seed,
+                             raw=raw, key=f"reference_{k}")
         out.append(span)
         print(f"    null {k + 1}/{n_null}: span {span:+8.4f}",
               flush=True)
@@ -130,8 +141,9 @@ def main() -> None:
     print("  this is the reinforcement-learning analogue of a randomization")
     print("  test, but the null is one that actually occurs in deployment:")
     print("  a normally trained agent in a structureless environment.\n")
+    raw = {}
     nulls = build_null_distribution(
-        args.n_null, args.updates, args.coalitions, args.episodes, args.seed
+        args.n_null, args.updates, args.coalitions, args.episodes, args.seed, raw=raw
     )
     null_spans = np.asarray(nulls)
     print(f"\n  null span: {null_spans.mean():+.4f} +/- {null_spans.std(ddof=1):.4f}")
@@ -144,7 +156,8 @@ def main() -> None:
     lb = signal_pair.train
     ln = fit_normalizer(lb)
     la = train(lb, ln, args.updates, args.seed)
-    r_signal = test_span_against_null(endpoint_span(la, signal_pair.evaluation, ln, args.seed), nulls)
+    r_signal = test_span_against_null(endpoint_span(
+        la, signal_pair.evaluation, ln, args.seed, raw=raw, key="planted_signal"), nulls)
     print(f"  {r_signal.summary()}")
     results["planted_signal"] = r_signal.as_dict()
 
@@ -154,7 +167,8 @@ def main() -> None:
     hb = null_pair.train
     hn = fit_normalizer(hb)
     ha = train(hb, hn, args.updates, args.seed + 77)
-    r_null = test_span_against_null(endpoint_span(ha, null_pair.evaluation, hn, args.seed), nulls)
+    r_null = test_span_against_null(endpoint_span(
+        ha, null_pair.evaluation, hn, args.seed, raw=raw, key="held_out_null"), nulls)
     print(f"  {r_null.summary()}")
     results["held_out_null"] = r_null.as_dict()
 
@@ -174,7 +188,8 @@ def main() -> None:
             attribute(a, split.test, split.normalizer, args.seed,
                       args.coalitions, args.episodes)
         )
-        spans.append(endpoint_span(a, split.test, split.normalizer, args.seed))
+        spans.append(endpoint_span(a, split.test, split.normalizer, args.seed,
+                                   raw=raw, key=f"market_{c.stem}"))
         print(f"  {c.name}: full-test span {spans[-1]:+8.4f}", flush=True)
 
     per_seed = [test_span_against_null(span, nulls).as_dict() for span in spans]
@@ -214,6 +229,15 @@ def main() -> None:
     )
 
     payload = {
+        "schema_version": 2,
+        "endpoint_returns_file": "sanity_endpoint_returns.npz",
+        "reference_endpoint_keys": [f"reference_{k}" for k in range(args.n_null)],
+        "observed_endpoint_keys": {"planted_signal": "planted_signal", "held_out_null": "held_out_null",
+                                   "real_market": f"market_{ckpts[0].stem}"},
+        "real_endpoint_keys": [f"market_{c.stem}" for c in ckpts],
+        "endpoint_masking_seeds": {"planted_signal": args.seed, "held_out_null": args.seed,
+                                   "real_market": args.seed},
+        "observed_policy_seeds": {"planted_signal": args.seed, "held_out_null": args.seed + 77},
         "null_spans": null_spans.tolist(),
         "training_updates": args.updates,
         "synthetic_episodes": 1200,
@@ -229,8 +253,10 @@ def main() -> None:
         "synthetic_data": {"signal": signal_pair.metadata(), "null": null_pair.metadata(),
                            "reference_train_seeds": list(range(1000, 1000 + args.n_null)),
                            "reference_policy_seeds": list(range(args.seed + 10000, args.seed + 10000 + args.n_null)),
+                           "reference_masking_seeds": list(range(args.seed + 10000, args.seed + 10000 + args.n_null)),
                            "reference_evaluation_seeds": list(range(1001000, 1001000 + args.n_null))},
     }
+    np.savez_compressed(out / payload["endpoint_returns_file"], **raw)
     (out / "sanity_test.json").write_text(json.dumps(payload, indent=2))
     print(f"\nwrote {out}/sanity_test.json")
 

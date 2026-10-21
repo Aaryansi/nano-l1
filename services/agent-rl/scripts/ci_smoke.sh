@@ -21,6 +21,12 @@ cd "$ROOT/services/agent-rl"
   --runs-nofric "$OUT/checkpoints/ppo_nofric" --out "$OUT/reports"
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/calibrate_detection.py \
   --out "$OUT/reports" --n-null 2 --updates 1 --trials 1 --strengths 0 1
+ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/sanity_check_explanations.py \
+  --corpus "$CORPUS" --runs "$OUT/checkpoints/ppo" --out "$OUT/reports/headline" \
+  --n-null 2 --updates 1 --episodes 8 --coalitions 8
+ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/calibrate_detection.py \
+  --out "$OUT/reports/reused-bank" --n-null 2 --updates 1 --trials 1 --strengths 0 1 \
+  --reference-json "$OUT/reports/headline/sanity_test.json"
 "$PY" scripts/state_masking.py --corpus "$CORPUS" --runs "$OUT/checkpoints/ppo" \
   --out "$OUT/reports" --seeds 2 --updates 1 --episodes 64
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 \

@@ -13,8 +13,10 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nano_rl.data.splits import walk_forward_split
 from nano_rl.env.binary_market import EpisodeBatch
+from nano_rl.explain.sanity import test_span_against_null
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -127,6 +129,54 @@ def validate_control_returns(out: Path) -> None:
                 raise ValueError("control width figure inputs differ from raw returns")
 
 
+def validate_primary_endpoints(out: Path) -> None:
+    """Reconstruct primary/reference spans and calibration decisions from episodes."""
+    def endpoint(raw, key, count):
+        full, masked, identities = (raw[f"{key}_{suffix}"] for suffix in ("full", "masked", "open_epoch"))
+        if any(values.shape != (count,) or not np.isfinite(values).all()
+               for values in (full, masked, identities)) or len(np.unique(identities)) != count:
+            raise ValueError("invalid primary endpoint returns or episode identities")
+        return float(full.mean() - masked.mean()), float(full.mean())
+
+    def comparison(raw, key, count, nulls, recorded):
+        span, mean = endpoint(raw, key, count)
+        if test_span_against_null(span, nulls).as_dict() != recorded:
+            raise ValueError("primary comparison differs from raw endpoint returns")
+        return mean
+
+    for path in sorted(out.rglob("sanity_test.json")):
+        payload = json.loads(path.read_text())
+        with np.load(path.parent / payload["endpoint_returns_file"], allow_pickle=False) as raw:
+            nulls = [endpoint(raw, key, payload["synthetic_episodes"])[0]
+                     for key in payload["reference_endpoint_keys"]]
+            if nulls != payload["null_spans"]:
+                raise ValueError("primary reference spans differ from raw endpoint returns")
+            for name, key in payload["observed_endpoint_keys"].items():
+                count = payload["endpoint_evaluation_episodes"] if name == "real_market" else payload["synthetic_episodes"]
+                comparison(raw, key, count, nulls, payload["results"][name])
+            for key, span, result in zip(payload["real_endpoint_keys"], payload["real_spans_per_seed"],
+                                         payload["real_results_per_seed"], strict=True):
+                comparison(raw, key, payload["endpoint_evaluation_episodes"], nulls, result)
+                if result["statistic"] != span:
+                    raise ValueError("primary market span differs from per-seed result")
+
+    from calibrate_detection import summarize
+    for path in sorted(out.rglob("detection_calibration.json")):
+        payload = json.loads(path.read_text())
+        with np.load(path.parent / payload["endpoint_returns_file"], allow_pickle=False) as raw:
+            nulls = [endpoint(raw, key, payload["synthetic_episodes"])[0]
+                     for key in payload["reference_endpoint_keys"]]
+            if nulls != payload["null_spans"]:
+                raise ValueError("calibration reference spans differ from raw endpoint returns")
+            for case in payload["cases"]:
+                for row in case["trials"]:
+                    mean = comparison(raw, row["endpoint_key"], row["data"]["evaluation_episodes"], nulls, row["result"])
+                    if mean != row["return"]:
+                        raise ValueError("calibration return differs from raw endpoint returns")
+                if any(case[key] != value for key, value in summarize(case["trials"]).items()):
+                    raise ValueError("calibration rate differs from raw endpoint decisions")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", type=Path, required=True)
@@ -146,6 +196,7 @@ def main() -> None:
     if args.phase == "complete":
         validate_evaluation(args.out)
         validate_control_returns(args.out)
+        validate_primary_endpoints(args.out)
         manifest["artifacts"] = {
             str(p.relative_to(args.out)): digest(p)
             for p in sorted(args.out.rglob("*"))

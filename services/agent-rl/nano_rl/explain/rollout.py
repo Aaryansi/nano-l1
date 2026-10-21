@@ -229,7 +229,7 @@ def greedy_policy(agent) -> Callable[[np.ndarray], np.ndarray]:
 
 
 def masked_span(agent, rollout: "VectorizedRollout", background: np.ndarray,
-                seed: int) -> float:
+                seed: int, *, return_samples: bool = False) -> float | dict:
     """v(N) - v(empty) under `rollout`: the statistic the null test uses.
 
     lives here rather than in each script because four of them need it and an
@@ -256,7 +256,9 @@ def masked_span(agent, rollout: "VectorizedRollout", background: np.ndarray,
 
         return policy
 
-    return float(
-        rollout.run(masked(full))["returns"].mean()
-        - rollout.run(masked(empty))["returns"].mean()
-    )
+    full_returns = rollout.run(masked(full))["returns"]
+    masked_returns = rollout.run(masked(empty))["returns"]
+    span = float(full_returns.mean() - masked_returns.mean())
+    if return_samples:
+        return {"span": span, "full": full_returns, "masked": masked_returns}
+    return span
