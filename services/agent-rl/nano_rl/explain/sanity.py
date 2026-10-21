@@ -371,3 +371,24 @@ def short_verdict(result) -> str:
     """
     v = result["verdict"] if isinstance(result, dict) else result.verdict
     return v.split(" (")[0].lower()
+
+
+def summarize_verdicts(results) -> dict:
+    """Aggregate decisions without treating an unresolved comparison as a vote.
+
+    Complete agreement and all/none rejection claims require every comparison
+    to be resolved. Counts remain available when only part of a set resolves.
+    """
+    verdicts = [r["verdict"] if isinstance(r, dict) else r.verdict for r in results]
+    allowed = {INFORMATIVE, NOT_DISTINGUISHABLE, UNRESOLVED}
+    if not verdicts or not set(verdicts) <= allowed:
+        raise ValueError("need nonempty results with recognized verdicts")
+    unresolved = verdicts.count(UNRESOLVED)
+    rejected = verdicts.count(INFORMATIVE)
+    complete = unresolved == 0
+    return {"n_comparisons": len(verdicts), "n_unresolved": unresolved,
+            "n_rejected": rejected,
+            "n_not_rejected": verdicts.count(NOT_DISTINGUISHABLE),
+            "agreement": len(set(verdicts)) == 1 if complete else None,
+            "all_rejected": rejected == len(verdicts) if complete else None,
+            "none_rejected": rejected == 0 if complete else None}

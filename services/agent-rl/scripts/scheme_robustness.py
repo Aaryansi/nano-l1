@@ -47,6 +47,8 @@ from nano_rl.explain.outcome_schemes import (  # noqa: E402
 from nano_rl.explain.rollout import VectorizedRollout, build_background  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     check_resolving_power,
+    short_verdict,
+    summarize_verdicts,
     test_span_against_null,
 )
 
@@ -122,7 +124,7 @@ def main() -> None:
         print(f"  {key:<16} {a.mean():>+9.3f} +/- {a.std(ddof=1):>7.3f}")
 
     # -------------------------------------------------------- power check
-    banner("2. PLANTED SIGNAL: every scheme must fire")
+    banner("2. PLANTED SIGNAL: single positive-control trial")
     lb_pair = synthetic_train_eval(make_learnable_corpus, n_episodes=900, seed=args.seed)
     lb = lb_pair.train
     ln = fit_normalizer(lb)
@@ -138,7 +140,7 @@ def main() -> None:
         r = test_span_against_null(lr[key], nulls[key])
         signal_res[key] = r
         print(f"  {key:<18}{r.statistic:>+12.2f}{r.z_score:>+10.2f}"
-              f"{('informative' if r.passes else 'not distinguishable'):>26}")
+              f"{short_verdict(r):>26}")
 
     # ----------------------------------------------------- the real agent
     banner("3. THE REAL MARKET: does the verdict depend on the scheme?")
@@ -159,20 +161,22 @@ def main() -> None:
         r = test_span_against_null(rr[key], nulls[key])
         real_res[key] = r
         print(f"  {key:<18}{r.statistic:>+12.2f}{r.z_score:>+10.2f}"
-              f"{('informative' if r.passes else 'not distinguishable'):>26}")
+              f"{short_verdict(r):>26}")
 
     # ------------------------------------------------------------ verdict
     banner("VERDICT")
-    all_fire = all(signal_res[k].passes for k in nulls)
-    none_fire = not any(real_res[k].passes for k in nulls)
+    signal_summary = summarize_verdicts(signal_res.values())
+    real_summary = summarize_verdicts(real_res.values())
+    all_fire = signal_summary["all_rejected"]
+    none_fire = real_summary["none_rejected"]
     print(f"  every scheme fires on the planted signal : {all_fire}")
     print(f"  no scheme fires on the real market       : {none_fire}")
-    if all_fire and none_fire:
-        print("\n  the verdict does not depend on how credit is assigned.")
-        print("  the finding is a property of the agent, not of shapley.")
+    if signal_summary["agreement"] is None or real_summary["agreement"] is None:
+        print("\n  scheme agreement is unresolved: at least one reference cannot decide.")
+    elif signal_summary["agreement"] and real_summary["agreement"]:
+        print("\n  the resolved decisions agree across schemes in each case.")
     else:
-        print("\n  the schemes DISAGREE, so the verdict is scheme dependent")
-        print("  and the paper must say so.")
+        print("\n  the resolved decisions differ across schemes in at least one case.")
 
     # per-feature agreement between the two non-efficient schemes
     corr = magnitude_rank_correlation(rr["loo_values"], rr["ooi_values"])
@@ -182,16 +186,16 @@ def main() -> None:
     plots.scheme_comparison(
         {k: (np.array(nulls[k]), lr[k], rr[k]) for k in nulls},
         out / "scheme_robustness.png",
-        subtitle=f"{args.n_null} null agents per scheme; the planted signal must "
-                 f"fire and the real market must not",
+        subtitle=f"{args.n_null} reference agents per scheme; single control trials",
     )
 
     (out / "scheme_robustness.json").write_text(json.dumps({
         "nulls": {k: list(map(float, v)) for k, v in nulls.items()},
         "planted_signal": {k: signal_res[k].as_dict() for k in nulls},
         "real_market": {k: real_res[k].as_dict() for k in nulls},
-        "all_schemes_fire_on_signal": bool(all_fire),
-        "no_scheme_fires_on_real": bool(none_fire),
+        "all_schemes_fire_on_signal": all_fire,
+        "no_scheme_fires_on_real": none_fire,
+        "decision_summaries": {"planted_signal": signal_summary, "real_market": real_summary},
         "loo_vs_ooi_rank_corr": corr,
         "feature_names": list(FEATURE_NAMES),
     }, indent=2))
