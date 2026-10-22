@@ -208,6 +208,9 @@ def validate_horizon_returns(out: Path) -> None:
         count = payload["evaluation_episodes"]
         with np.load(path.parent / payload["endpoint_returns_file"], allow_pickle=False) as raw:
             for row in payload["rows"]:
+                if ("clock_feature_deadline_seconds" in row
+                        and row["clock_feature_deadline_seconds"] != 60 * (row["n_steps"] + 1)):
+                    raise ValueError("horizon clock deadline differs from the generated decision grid")
                 widths = {}
                 for arm in ("weight", "env"):
                     spans = []

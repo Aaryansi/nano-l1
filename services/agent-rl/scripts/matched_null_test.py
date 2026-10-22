@@ -1,31 +1,12 @@
-"""the null-model test with every null matched to its own corpus.
+"""Compare original-input and noise-trained policies on matched populations.
 
-scripts/sanity_check_explanations.py builds ONE null distribution, from agents
-trained and attributed on synthetic signal-free corpora, and compares three
-observations against it. Two of those observations are themselves on synthetic
-corpora built the same way, so the comparison is sound. The third, the real
-market agent, is attributed on real Kalshi episodes, and comparing it to spans
-measured on synthetic ones puts corpus-to-corpus variation into the reference
-distribution that the observation does not have. scripts/null_corpus_check.py
-measured the size of that mistake.
-
-Section 3 of the paper defines the null as corrupting the observation channel
-while leaving dynamics and reward intact. That is a per-corpus construction: the
-null for a case is agents trained on THAT case's episodes with observations
-replaced by moment-matched noise, and attributed on the same rollout as the
-observation. Nothing else changes. This script implements that definition
-literally, for all three cases, so the corpus is held fixed within each
-comparison and information is the only thing that varies.
-
-It reports the span directly rather than summing a Shapley attribution. The two
-are equal by efficiency, and the span costs two rollouts against a few hundred,
-so this is the same statistic computed the cheap way.
-
-The old construction is kept and still run, because the paper reports what was
-tried before as well as what it settled on.
-
-usage:
-    python scripts/matched_null_test.py --corpus data/corpus/corpus_candles_60s_spot.npz
+Each synthetic comparison uses independent training and evaluation draws;
+the market uses chronological training and test splits. Noise replacement
+changes the policy's training input distribution and ability to respond to
+state. The environment and evaluation population are matched within each case,
+but this does not isolate a single information mechanism or prove exchangeability.
+Endpoint return differences avoid estimating individual Shapley coordinates;
+they cannot establish the fidelity of a feature decomposition.
 """
 
 from __future__ import annotations
@@ -134,7 +115,7 @@ def main() -> None:
     banner("EVERY NULL MATCHED TO ITS OWN CORPUS")
     print("  each case's reference distribution is built by blinding the same")
     print("  episodes the observation is measured on. the corpus is held fixed")
-    print("  within a comparison; only the information varies.")
+    print("  within a comparison; training input distributions also change.")
 
     cases = []
 

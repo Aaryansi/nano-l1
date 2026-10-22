@@ -1,31 +1,11 @@
-"""what the outcome permutation actually removes, measured.
+"""Describe calibration and static gross payoffs after settlement shuffling.
 
-the permutation null claims to remove the information and nothing else. the
-first half of that is checked by tests: every array except `settlement` is bit
-identical, so no observation moves. the second half is an empirical question
-about what the information WAS, and it has an uncomfortable answer worth
-reporting rather than leaving for a reviewer to find.
-
-the market's price is well calibrated: a contract trading at 0.83 settles at 1
-about 83% of the time. permuting the outcomes across episodes destroys that.
-every price bucket then settles near the base rate, which is exactly the
-information removal the null needs, but it also means the null environment is a
-market whose prices are WRONG. buying at 0.90 wins 90% of the time in the real
-world and about 50% of the time in the null, so trading is strictly more
-punishing there than in the environment the observed agent faced.
-
-this measures the size of that asymmetry so the paper can state it. a stratified
-permutation, shuffling outcomes only within price buckets, would preserve
-calibration and remove only the information beyond the price; that is a
-different and narrower null, and it is named as future work rather than run.
-
-the calibration numbers here use terminal mid-price on the training split with
-eight quantile bins. that is not the estimator behind the figure quoted in the
-setup section, so the two are not directly comparable and only the contrast
-between the real and permuted columns is meant to be read.
-
-usage:
-    python scripts/permutation_calibration.py --corpus data/corpus/corpus_candles_60s_spot.npz
+Preserving feature arrays and the marginal settlement rate does not preserve
+the decision problem. Independent shuffling can make buying below the marginal
+settlement rate and selling above it profitable in a frictionless one-period
+model. Terminal-price diagnostics here are empirical gross payoffs, without
+execution costs or a live trading claim. They do not establish efficiency of
+the original market or invalidate permutation tests for other hypotheses.
 """
 
 from __future__ import annotations
@@ -80,10 +60,8 @@ def main() -> None:
     print(f"    real     {rerr:.4f}")
     print(f"    permuted {perr:.4f}")
     print()
-    print("  the price stops predicting the outcome, which is the information")
-    print("  the null is meant to remove. it also means the null environment")
-    print("  prices contracts wrongly, so trading there is strictly more")
-    print("  punishing than in the environment the observed agent faced.")
+    print("  Shuffling changes price-settlement dependence and the reward law.")
+    print("  Price remains reward-relevant through the acquisition cost.")
 
     print()
     print("  per-contract edge of fading the terminal price, a rule needing")
@@ -95,10 +73,10 @@ def main() -> None:
         fades[label] = {"all": a, "extremes": e, "n_extreme": n}
         print(f"  {label:>11}{a:>16.4f}{e:>17.4f}{n:>8}")
     print()
-    print(f"  at the 100-contract position cap that is about "
-          f"${100 * fades['permuted']['extremes']:.0f} an episode in the")
-    print("  permuted world and nothing in the real one. the null agents do not")
-    print("  have LESS to learn than the observed agent. they have far more.")
+    print(f"  Static gross payoff at 100 contracts on permuted extreme-price episodes: "
+          f"${100 * fades['permuted']['extremes']:.2f} per selected episode.")
+    print("  These terminal-price diagnostics omit costs and execution constraints.")
+    print("  They are not evidence of live trading profit or market efficiency.")
 
     res = {"fade_edge": fades,
            "outcome_rate_real": outcome_rate(real),

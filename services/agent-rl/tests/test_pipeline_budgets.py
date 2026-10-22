@@ -1,8 +1,9 @@
 """every null in the pipeline must be large enough to decide at alpha.
 
 a rank test with n reference draws cannot return a p-value below 1/(n+1). if
-that floor sits above alpha the comparison is not a weak test, it is not a test
-at all: no statistic whatsoever can be called informative against it.
+that floor sits above alpha, rejection is impossible at that level. The
+legacy workflow records this as unresolved. An exchangeable rank procedure
+can remain valid at that resolution while being unable to reject.
 
 this is pinned as a test because the failure is invisible at runtime. three
 pipeline steps ran at n=12 (floor 0.0769) against alpha=0.05 for weeks. they

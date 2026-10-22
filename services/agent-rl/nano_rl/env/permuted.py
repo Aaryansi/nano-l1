@@ -1,31 +1,14 @@
-"""a null that keeps the agent sighted and the corpus fixed.
+"""Settlement permutations and diagnostics for a changed decision problem.
 
-both null constructions this project has used are flawed in opposite
-directions. training on synthetic signal-free corpora varies the corpus as well
-as the information, which widens the reference and biases toward declining.
-blinding the observation channel holds the corpus fixed but removes the agent's
-capacity to respond to observational structure, so the null agents converge to
-a constant policy, every null span is exactly zero, and the test fires on
-anything.
+Global permutation preserves feature arrays and the marginal settlement rate,
+while changing their relationship to settlement and to rewards. Price remains
+reward-relevant through acquisition cost even when it no longer predicts the
+permuted settlement. This is not an efficient-market null or an intervention
+that changes only information available to the agent.
 
-what is wanted is the reinforcement-learning analogue of the label-permutation
-test that Adebayo et al. use in supervised learning, which this paper claims to
-be supplying and has so far approximated two different broken ways. The analogue
-is direct once stated:
-
-    permute the outcomes across episodes, and leave everything else alone.
-
-the observation stream is untouched. every price path, every spread, every
-volume and every spot feature is exactly what it was, because
-EpisodeBatch.market_features is a function of the quote and spot arrays and
-never reads `settlement`. an agent trained here sees a real market with real
-structure and real frictions, can still learn to avoid costs, and simply cannot
-predict the thing it is being paid to predict, because the outcome it is graded
-against belongs to a different contract.
-
-the marginal outcome rate is preserved exactly, since a permutation is a
-relabelling. so the null agents face the same base rate as the observed agent
-rather than an artificially balanced or skewed one.
+Within-price-bucket permutation is an additional descriptive control. A valid
+conditional randomization test would need justified exchangeability within its
+conditioning structure; feature preservation alone does not supply that.
 """
 
 from __future__ import annotations

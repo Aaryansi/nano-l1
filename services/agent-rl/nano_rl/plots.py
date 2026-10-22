@@ -694,9 +694,9 @@ def competence_curve(
 ) -> None:
     """detection z-score against agent return, along a training trajectory.
 
-    each point is a checkpoint of the same agent on the same task, so the only
-    thing varying is how good it is. the shaded band is where an explanation is
-    not distinguishable from an explanation of an agent that learned nothing.
+    Each point is a correlated checkpoint along one training trajectory.
+    The shaded normal-distance band does not implement the combined diagnostic
+    or establish that a policy learned nothing.
     """
     fig, ax = _new_fig(8.6, 5.0)
     r = np.asarray(returns, dtype=float)
@@ -704,7 +704,7 @@ def competence_curve(
     det = np.asarray(detected, dtype=bool)
 
     ax.axhspan(-1.96, 1.96, color=REFERENCE, alpha=0.16, zorder=1)
-    ax.annotate("not distinguishable from an explanation of nothing",
+    ax.annotate("normal-distance band only",
                 xy=(r.min(), 0), xytext=(4, 4), textcoords="offset points",
                 color=INK_MUTED, fontsize=8.5, va="bottom")
 

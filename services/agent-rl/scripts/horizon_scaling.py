@@ -66,7 +66,8 @@ def measure_horizon(n_steps, n_null, updates, n_episodes, seed, *, raw=None):
         normalizers.append(training_norm.state_dict())
     w, v = np.asarray(weight), np.asarray(env_null)
     ws, vs = float(w.std(ddof=1)), float(v.std(ddof=1))
-    return {"n_steps": n_steps, "weight_std": ws, "env_std": vs,
+    return {"n_steps": n_steps, "clock_feature_deadline_seconds": batch.duration_s,
+            "weight_std": ws, "env_std": vs,
             "weight_spans": weight, "env_spans": env_null,
             "ratio": ws / vs if vs > 1e-12 else None,
             "endpoint_keys": keys, "shared_data": pair.metadata(),
@@ -99,8 +100,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     if (args.n_null < 2 or args.updates < 1 or args.episodes < 2
-            or min(args.horizons) < 1 or len(set(args.horizons)) != len(args.horizons)):
-        raise SystemExit("require at least two references/episodes, positive updates and distinct positive horizons")
+            or min(args.horizons) < 2 or len(set(args.horizons)) != len(args.horizons)):
+        raise SystemExit("require at least two references/episodes, positive updates and distinct horizons of at least two steps")
     args.out.mkdir(parents=True, exist_ok=True)
     raw = {}
     rows = [measure_horizon(h, args.n_null, args.updates, args.episodes, args.seed, raw=raw)
@@ -126,7 +127,7 @@ def main():
         "fit_horizons": {"weight": x[w > 0].tolist(), "env": x[v > 0].tolist()},
         "zero_width_horizons": [row["n_steps"] for row in rows if row["env_std"] <= 1e-12],
         "evaluation_episodes": args.episodes, "training_updates": args.updates,
-        "step_seconds": 60, "clock_feature_deadline_seconds": 900,
+        "step_seconds": 60, "clock_feature_deadline": "inferred per horizon from the decision grid",
         "background_samples": 192, "endpoint_returns_file": "horizon_endpoint_returns.npz",
     }, indent=2, allow_nan=False))
 

@@ -1,19 +1,13 @@
-"""transaction-cost model for kalshi binary contracts.
+"""Assumed transaction-cost and execution model for binary contracts.
 
-two components, both measured rather than assumed:
+The default fee is ceil-to-cents(0.07 * abs(order size) * price * (1-price)),
+charged per order. Buys cross the supplied ask and sells cross the supplied bid.
+Historical inputs are coarse candle-derived quote proxies. This implementation
+does not establish exact historical series fees or executable liquidity.
 
-  fees    kalshi's published taker formula, ceil(0.07 * C * P * (1-P)) rounded
-          up to the next cent **per order**. verified against two independent
-          public sources; see docs/MDP.md section 7.2.
-
-  spread  crossing the quoted book. bid/ask come from the 1-minute candlestick
-          containing the step, which is the only public source of quotes.
-
-why this module matters more than it looks: the fee formula peaks at P = 0.5,
-and the KXBTC15M contract sits near 0.5 by construction, so friction is at its
-theoretical maximum for exactly the instrument being traded. getting this
-wrong in the optimistic direction would manufacture false profit, so the
-defaults here are deliberately conservative (pure taker, no maker rebate).
+Impact defaults to zero; there is no queue, partial-fill or funding simulation.
+The zero-cost ablation removes fees and spread crossing together. Differences
+between separately trained agents cannot uniquely identify a learning failure.
 """
 
 from __future__ import annotations
@@ -24,9 +18,8 @@ from dataclasses import dataclass
 # kalshi taker fee coefficient. fee = ceil_cents(TAKER_COEF * C * P * (1-P)).
 TAKER_FEE_COEF = 0.07
 
-# a maker formula with a smaller coefficient exists but is series-dependent and
-# unconfirmed for KXBTC15M, so we do not model it. treating every fill as a
-# taker is strictly conservative: it can only understate performance.
+# This unused coefficient is retained for historical API compatibility.
+# Maker fills, rebates and series-specific schedules are not simulated.
 MAKER_FEE_COEF_UNCONFIRMED = 0.0175
 
 
@@ -99,10 +92,9 @@ class CostModel:
     """converts a desired position change into an executed fill.
 
     execution assumption: the agent is a price taker and crosses the spread.
-    a buy lifts the ask, a sell hits the bid. there is no queue simulation and
-    no partial fill; at the sizes used here (single-digit contracts against a
-    book with six-figure open interest) that is a reasonable simplification,
-    and it is stated as such in the report.
+    A buy lifts the ask and a sell hits the bid. The default target cap is
+    100 contracts, so a reversal can trade 200. Full fills at the proxy quote
+    are assumed, with no evidence here about queue priority or available depth.
     """
 
     def __init__(
@@ -117,9 +109,9 @@ class CostModel:
             impact_coef: linear market-impact coefficient, in price units per
                 unit of (order size / bar volume). zero disables impact.
             enabled: when False, both fees and spread crossing are switched
-                off and execution happens at mid. this exists for the zero-cost
-                ablation described in docs/MDP.md section 9.4, which separates
-                "cannot predict" from "predicts but cannot cover costs".
+                off and execution happens at mid. This joint cost ablation
+                changes both the objective and the learning problem; it cannot
+                uniquely separate prediction limits from optimization effects.
         """
         self.fee_coef = fee_coef
         self.impact_coef = impact_coef

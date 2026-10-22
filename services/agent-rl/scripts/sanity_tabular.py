@@ -1,30 +1,9 @@
-"""sanity check: can a tabular learner solve a corpus with known signal?
+"""Tabular learning checks on the synthetic planted and balanced populations.
 
-this must pass before any ppo result is believable. it validates the
-environment, the reward accounting, and the feature plumbing end to end using
-the simplest possible learner, with no function approximation, replay, or
-target network to mask an environment bug.
-
-two cases, each with its OWN benchmark:
-
-    learnable corpus  benchmark is signal_policy_return, which is genuinely
-                      optimal there. the agent must approach it. failure means
-                      the signal cannot reach the agent.
-
-    null corpus       benchmark is flat_policy_return, i.e. exactly zero.
-                      signal_policy_return is the WRONG target here, since
-                      following noise just pays frictions. the agent must
-                      learn to abstain.
-
-on the training budget: the null case needs materially more episodes than the
-learnable one, and the reason is measured in scripts/diagnose_null.py. true
-action values on the null corpus differ by 2.75 while single-episode returns
-have a standard deviation near 50, a signal-to-noise ratio of about 1:18. until
-the frequently-visited bins agree on FLAT, the binned signal re-randomises each
-step and the position churns. 3000 episodes is not reliably enough; 20000 is.
-
-usage:
-    python scripts/sanity_tabular.py
+The reference strategies are first-observation sign followed by holding, and
+always flat. They provide transparent comparisons, not a proof of optimality
+or general environment correctness. The discretized learner ignores history;
+learning success and failure are conditional on that representation and budget.
 """
 
 from __future__ import annotations

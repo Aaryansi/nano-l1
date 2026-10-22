@@ -1,30 +1,11 @@
-"""is there a bucket width that removes information and keeps calibration?
+"""Describe within-price-bucket settlement permutations across resolutions.
 
-the plain outcome permutation fails because it destroys the price's calibration
-and hands the null agents an arbitrage. stratifying the permutation by price
-fixes that by construction, but introduces a tension that may have no solution:
-
-  coarse buckets   plenty of shuffling, but the bucket spans a wide price range
-                   so calibration drifts back and the arbitrage returns.
-  fine buckets     calibration preserved, but each bucket becomes homogeneous,
-                   and shuffling inside a bucket where every outcome is already
-                   identical removes nothing.
-
-this sweeps the bucket count and measures both sides, without training anything,
-so the question is answered in seconds rather than hours. only if a usable
-window exists is it worth running the full null test there.
-
-the two quantities to watch:
-
-  removal      fraction of episodes whose settlement changed, and how far the
-               permuted labels decorrelate from the originals. this is how much
-               information the construction actually destroys.
-  distortion   calibration error and the per-contract edge of fading the
-               terminal price. this is how much the construction breaks the
-               world, which is what killed the unstratified version.
-
-usage:
-    python scripts/stratified_sweep.py --corpus data/corpus/corpus_candles_60s_spot.npz
+Label-change fractions, label correlations, calibration error and static gross
+fade payoffs describe this finite corpus. They do not measure conditional
+information removal or establish randomization validity. The fixed thresholds
+are exploratory screening heuristics. Failure to meet them is not proof that a
+conditional null is impossible or vacuous. A conditional null may legitimately
+preserve predictive information in its conditioning price.
 """
 
 from __future__ import annotations
@@ -54,8 +35,8 @@ def measure(real, perm) -> dict:
     b = np.asarray(perm.settlement, dtype=float)
 
     changed = float((a != b).mean())
-    # correlation between the original and permuted labels. 1.0 means nothing
-    # was removed; 0.0 means the label is now independent of the truth.
+    # Descriptive marginal correlation; this does not measure conditional
+    # information removal or establish a valid sequential randomization law.
     corr = float(np.corrcoef(a, b)[0, 1]) if a.std() > 0 and b.std() > 0 else 1.0
 
     _, cal = calibration(perm)
@@ -98,7 +79,7 @@ def main() -> None:
     print("=" * 82)
     print(f"  the real corpus: calibration error {cal_real:.4f}, "
           f"fade edge {fade_real:+.4f}")
-    print(f"  usable means: changed >= {args.min_changed:.0%}, "
+    print(f"  exploratory screen: changed >= {args.min_changed:.0%}, "
           f"calibration error <= {args.max_cal_error}, "
           f"fade edge <= {args.max_fade_edge}")
     print(f"  the price alone: r = {price_r:.3f} with the outcome, and "
@@ -143,16 +124,9 @@ def main() -> None:
               f"and fade edge {best['fade_edge']:+.4f}.")
         print("  worth running the full null test there.")
     else:
-        print("  NO usable window. every bucket count either fails to remove")
-        print("  enough information or distorts the world enough to matter.")
-        print("  the tension is not resolvable by tuning the bucket width, and")
-        print("  the diagnostic above says why. the terminal price already")
-        print(f"  correlates {price_r:.3f} with the outcome, so 'information beyond")
-        print("  the price' lives in a small minority of episodes. shuffling")
-        print("  within price buckets therefore leaves most labels untouched at")
-        print("  ANY resolution. the construction is sound and vacuous here:")
-        print("  it removes the right thing, and in this market there is almost")
-        print("  none of it to remove.")
+        print("  No tested bucket count meets these exploratory thresholds.")
+    print("  Label correlation and change fractions are not conditional-information")
+    print("  estimates. This screen does not prove a conditional null valid or impossible.")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -164,6 +138,7 @@ def main() -> None:
         "thresholds": {"max_cal_error": args.max_cal_error,
                        "max_fade_edge": args.max_fade_edge,
                        "min_changed": args.min_changed},
+        "screen_scope": "exploratory thresholds, not conditional validity or information removal",
         "usable_exists": bool(usable),
         "best": (max(usable, key=lambda r: r["changed"]) if usable else None),
     }, indent=2))

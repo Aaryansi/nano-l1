@@ -174,11 +174,10 @@ def masked_policy(
     """wrap a policy so it only observes the features in `mask`.
 
     features outside the mask are replaced with draws from `background`, which
-    is the interventional formulation used throughout this project. the draw is
-    resampled at every step rather than fixed per episode: holding one draw
-    constant would leak information through the *consistency* of the masked
-    values, which is a subtle way for a masked agent to do better than it
-    should.
+    is a specified intervention. Donors are redrawn each step. Fixing a donor
+    for an episode would define a different intervention; neither choice is
+    automatically a valid information-removal or conditional-randomization null.
+    Row support does not imply consistency with inventory, history or rewards.
     """
 
     def policy(obs: np.ndarray) -> np.ndarray:
@@ -196,9 +195,9 @@ def build_background(
 ) -> np.ndarray:
     """a reference distribution of observations, drawn from a flat agent.
 
-    taken with the agent held flat so the position block reflects "no
-    inventory", which is the natural reference point for asking what a feature
-    contributed relative to doing nothing.
+    The position block is zero because the reference agent is held flat.
+    This empirical distribution is an explicit modeling choice, not a unique
+    baseline or a guarantee of compatibility with a recipient trajectory.
     """
     rng = np.random.default_rng(seed)
     n = rollout.n_episodes

@@ -1,14 +1,9 @@
-"""actor-critic network for ppo.
+"""Small actor-critic network with a shared trunk and two heads.
 
-a small mlp with a shared trunk and two heads. the value head matters as much
-as the policy head here: docs/MDP.md section 1.2 makes the critic's V(s)
-checkable against realised settlement frequency, which is the phase-5c
-"explain the value predictions" target. so the critic is a deliverable, not
-just a variance-reduction device.
-
-sizing: 18 inputs, two hidden layers of 64. deliberately small. the corpus has
-~90k transitions and no exploitable signal, so a larger network would only
-memorise noise faster.
+The market configuration has 18 inputs and two hidden layers of 64 units.
+The policy head produces action logits; the value head predicts policy return
+in reward units. Settlement frequency is a separate prediction target and is
+not a valid calibration target for this dollar-return critic.
 """
 
 from __future__ import annotations
