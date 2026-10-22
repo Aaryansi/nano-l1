@@ -80,6 +80,12 @@ def test_trajectory_auditor_checks_both_objectives_and_rejects_altered_saved_ret
     result = audit(corpus, tmp_path)
     assert len(result["checkpoints"]) == 2
     assert all(row["actions_checked"] == len(split.test) * 3 for row in result["checkpoints"])
+    original = raw["ppo_pnl"]
+    raw["ppo_pnl"] = original[:, :, None]
+    np.savez_compressed(path, **raw)
+    with pytest.raises(ValueError, match="saved pnl shape"):
+        audit(corpus, tmp_path)
+    raw["ppo_pnl"] = original
     raw["ppo_pnl"][0, 0] += 1.
     np.savez_compressed(path, **raw)
     with pytest.raises(ValueError, match="saved pnl"):

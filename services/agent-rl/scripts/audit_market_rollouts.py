@@ -39,6 +39,9 @@ def audit(corpus: Path, run: Path) -> dict:
             checkpoints = sorted((run / "checkpoints" / directory).glob("seed*.pt"))
             require(checkpoints and len(checkpoints) == saved[f"{directory}_pnl"].shape[0],
                     f"{directory} checkpoint count")
+            for suffix in ("pnl", "trades", "fees"):
+                require(saved[f"{directory}_{suffix}"].shape == (len(checkpoints), len(split.test)),
+                        f"{directory} saved {suffix} shape")
             for index, checkpoint in enumerate(checkpoints):
                 agent = PPOAgent(N_FEATURES, 3, PPOConfig(seed=0)).load(str(checkpoint))
                 policy = greedy_policy(agent)
