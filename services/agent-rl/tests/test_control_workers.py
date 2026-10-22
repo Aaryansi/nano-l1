@@ -29,6 +29,18 @@ def test_spawned_control_workers_match_serial_execution(tmp_path):
         rows = json.loads((out / "generalize_gym.json").read_text())
         assert [row["env_id"] for row in rows] == ["FrozenLake-v1", "CliffWalking-v0"]
         for row in rows:
+            assert row["nulls_agree"] == 0
+            assert row["n_resolved_comparisons"] == 0
+            assert row["n_unresolved_comparisons"] == 2
+            assert all(agent["reference_agreement"] is None for agent in row["checkpoints"])
+        original = (out / "generalize_gym.json").read_text()
+        tampered = json.loads(original)
+        tampered[0]["nulls_agree"] = 1
+        (out / "generalize_gym.json").write_text(json.dumps(tampered))
+        with pytest.raises(ValueError, match="control agreement counts differ"):
+            validate_control_returns(out)
+        (out / "generalize_gym.json").write_text(original)
+        for row in rows:
             execution = row.pop("execution")
             assert execution["workers"] == jobs
             assert execution["torch_threads"] == 1

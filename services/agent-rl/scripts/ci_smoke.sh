@@ -70,6 +70,7 @@ PY
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 CliffWalking-v0 --jobs 2 \
   --trainer sb3 --steps 512 --null-steps 512 --n-null 2 --agent-seeds 2 \
   --attr-episodes 2 --out "$OUT/reports/controls"
+"$PY" scripts/bootstrap_z.py --reports "$OUT/reports" --out "$OUT/reports" --n-boot 100
 "$PY" scripts/run_manifest.py --corpus "$CORPUS" --checkpoints "$OUT/checkpoints" \
   --out "$OUT/reports" --phase complete --quick 1
 echo "smoke execution verified; reduced budgets do not support publication claims"

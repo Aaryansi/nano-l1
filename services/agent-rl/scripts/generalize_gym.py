@@ -40,6 +40,7 @@ from nano_rl.envs.gym_null import (  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     check_resolving_power,
     short_verdict,
+    summarize_verdicts,
     test_span_against_null,
 )
 
@@ -198,11 +199,7 @@ def run_env(env_id: str, args) -> dict:
         span = span_rollouts["span"]
         r_env = test_span_against_null(span, env_spans)
         r_wt = test_span_against_null(span, weight_spans)
-        # compare verdicts rather than bool(passes): a degenerate null
-        # (Acrobot's blind agents all score -500, so every span is exactly 0)
-        # is UNRESOLVED, and counting that as agreement with a null that
-        # genuinely declined overstates how often the two nulls agree.
-        same = short_verdict(r_env) == short_verdict(r_wt)
+        same = summarize_verdicts([r_env, r_wt])["agreement"]
         rows.append(
             {
                 unit_key: frac, "return": ret, "span": span,
@@ -215,19 +212,23 @@ def run_env(env_id: str, args) -> dict:
                 "detected_weight": bool(r_wt.passes),
                 "verdict_env": short_verdict(r_env),
                 "verdict_weight": short_verdict(r_wt),
+                "reference_agreement": same,
             }
         )
         shown = f"{frac:>8.0%}" if not replicate_mode else f"{frac:>9d}"
         print(f"  {shown} {ret:>10.1f} {span:>10.2f} {r_env.z_score:>+10.2f} "
-              f"{r_wt.z_score:>+12.2f} {'yes' if same else 'NO':>8}", flush=True)
+              f"{r_wt.z_score:>+12.2f} "
+              f"{('unresolved' if same is None else 'yes' if same else 'NO'):>10}", flush=True)
 
     # exact per-feature values for the converged agent only
     _, exact_vals = exact_shapley_span(
         final, env_id, bg, n_feat, n_episodes=args.attr_episodes, seed=args.seed
     )
-    agree = sum(1 for r in rows if r["verdict_env"] == r["verdict_weight"])
+    resolved_count = sum(r["reference_agreement"] is not None for r in rows)
+    agree = sum(r["reference_agreement"] is True for r in rows)
     noun = "independently trained agents" if replicate_mode else "checkpoints"
-    print(f"\n  the two nulls agree on {agree}/{len(rows)} {noun}")
+    print(f"\n  resolved reference decisions agree on {agree}/{resolved_count} {noun}; "
+          f"{len(rows) - resolved_count} comparisons unresolved")
     if replicate_mode:
         rets = np.array([r["return"] for r in rows], dtype=float)
         spns = np.array([r["span"] for r in rows], dtype=float)
@@ -263,6 +264,8 @@ def run_env(env_id: str, args) -> dict:
         "checkpoints": rows,
         "exact_shapley_final": exact_vals.tolist(),
         "nulls_agree": agree,
+        "n_resolved_comparisons": resolved_count,
+        "n_unresolved_comparisons": len(rows) - resolved_count,
         "n_checkpoints": len(rows),
         # what the rows are. a reader, and the verifier, must not have to guess
         # whether these are correlated snapshots or independent runs.
@@ -334,14 +337,14 @@ def main() -> None:
         ratio_s = "undefined" if ratio is None else f"{ratio:.0f}x"
         print(f"  {r['env_id']:<16}{r['weight_null']['std']:>16.2f}"
               f"{r['env_null']['std']:>14.4f}{ratio_s:>14}"
-              f"{r['nulls_agree']:>10}/{r['n_checkpoints']}")
+              f"{r['nulls_agree']:>10}/{r['n_resolved_comparisons']}")
 
     total_pairs = sum(r["n_checkpoints"] for r in results)
     total_agree = sum(r["nulls_agree"] for r in results)
-    print(f"\n  overall the two nulls agree on {total_agree}/{total_pairs} "
-          f"checkpoints across {len(results)} environments")
-    if total_agree == 0:
-        print("  they never agree, so the choice of null decides every verdict")
+    total_resolved = sum(r["n_resolved_comparisons"] for r in results)
+    print(f"\n  resolved reference decisions agree on {total_agree}/{total_resolved} "
+          f"comparisons across {len(results)} environments; "
+          f"{total_pairs - total_resolved} comparisons unresolved")
 
     eligible = [row for task in results for row in task["checkpoints"]
                 if row["competence"]["eligible_for_sensitivity_claim"]]
