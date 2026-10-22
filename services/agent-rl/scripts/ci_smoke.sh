@@ -71,6 +71,9 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 Cl
   --trainer sb3 --steps 512 --null-steps 512 --n-null 2 --agent-seeds 2 \
   --attr-episodes 2 --out "$OUT/reports/controls"
 "$PY" scripts/bootstrap_z.py --reports "$OUT/reports" --out "$OUT/reports" --n-boot 100
+"$PY" scripts/audit_market_rollouts.py --corpus "$CORPUS" --run "$OUT" \
+  --out "$OUT/reports/rollout_parity.json"
 "$PY" scripts/run_manifest.py --corpus "$CORPUS" --checkpoints "$OUT/checkpoints" \
   --out "$OUT/reports" --phase complete --quick 1
+"$PY" scripts/verify_release.py --run "$OUT" --corpus "$CORPUS" --allow-quick
 echo "smoke execution verified; reduced budgets do not support publication claims"
