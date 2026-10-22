@@ -1,22 +1,11 @@
-"""does the null-test result hold across environments, or only on CartPole?
+"""Compare reference constructions on six control-task configurations.
 
-supersedes scripts/generalize_cartpole.py, which ran one task. the finding
-being checked is not about trading or about any particular domain: it is that
-the ESTABLISHED null construction, randomizing network weights, produces a
-reference distribution so wide in reinforcement learning that a test built on
-it has no power, while randomizing the environment's information content does
-not.
-
-that claim rests on a comparison between two nulls, so it needs to hold on more
-than one task to be a claim about RL rather than about CartPole.
-
-both environments here have small enough observation spaces to enumerate every
-coalition, so the per-feature Shapley values reported for the final agent are
-exact. the test statistic itself is the span v(all) - v(none), which by the
-efficiency axiom needs only the two endpoint evaluations rather than all 2^n.
-
-usage:
-    python scripts/generalize_gym.py --envs CartPole-v1 Acrobot-v1
+Report checkpoint and independent-seed decisions alongside competence gates,
+observation dependence and reference resolution. Failed learning or a collapsed
+legacy reference is not evidence of low detection power. Reference widths are
+in each task's reward units and do not by themselves measure test power.
+Exact feature coalitions where feasible and endpoint spans address the chosen
+intervention, not general feature-level fidelity or a universal RL null.
 """
 
 from __future__ import annotations

@@ -1,28 +1,13 @@
-"""ppo with gae, written from scratch.
+"""PPO with generalized advantage estimation and a clipped surrogate.
 
-why ppo rather than dqn, given the spec allowed either:
+The actor maps the supplied observation to an action distribution. The critic
+estimates expected policy return in the reward's units, dollars for the default
+market objective. It does not estimate settlement probability. The market uses
+gamma=1 so dense equity increments telescope to terminal profit and loss.
 
-  1. the correct policy on this problem is mostly "do not trade", and
-     scripts/diagnose_null.py measured a max-operator method getting that
-     wrong in the dangerous direction. tabular q learned SHORT at -1.258
-     against a true -2.750 and FLAT at -0.701 against a true 0.000, so it
-     overestimated trading and underestimated abstention. a policy gradient
-     has no max operator and does not inherit that bias.
-
-  2. ppo carries an explicit value head. docs/MDP.md section 1.2 turns V(s)
-     into a falsifiable object, because every episode resolves to a known 0/1
-     and predicted values can be checked against realised frequencies. that
-     calibration figure is a phase-5c deliverable, so a critic is required
-     rather than optional.
-
-  3. on a near-zero-signal problem, ppo's trust region limits how far a noisy
-     advantage estimate can move the policy in one step.
-
-references drawn on, not copied: schulman et al. 2017 for the clipped
-surrogate, schulman et al. 2016 for gae, and the implementation-details survey
-by engstrom et al. 2020 / huang et al. 2022 for advantage normalisation,
-orthogonal init, and gradient clipping. the code here is written directly
-against those descriptions.
+The implementation includes advantage normalization, orthogonal initialization
+and gradient clipping. Synthetic learning checks and scalar/vector accounting
+parity provide bounded implementation evidence, not a general correctness proof.
 """
 
 from __future__ import annotations

@@ -1,28 +1,10 @@
-"""integrated gradients, as a second attribution family.
+"""Integrated gradients for action-probability attribution.
 
-every attribution result in this project so far uses Shapley values. that
-leaves an obvious objection: the failures shown might be properties of Shapley
-estimation rather than of RL explanation. integrated gradients is a good
-control because its mechanism is entirely different. Shapley perturbs
-coalitions of features and averages marginal contributions; IG integrates the
-model's gradient along a straight path from a baseline to the input. they share
-no machinery.
-
-they do share the structural property the null test needs. Shapley has
-efficiency,
-
-    sum_i phi_i = v(N) - v(empty)
-
-and IG has completeness,
-
-    sum_i phi_i = F(x) - F(baseline)
-
-so both supply a scalar span for free, and the same test applies to either.
-
-implemented from scratch against the definition in sundararajan et al. (2017).
-the completeness axiom is asserted in tests/test_gradients.py rather than
-assumed, since a wrong step count or a missing (x - baseline) factor produces
-plausible-looking attributions that violate it.
+Completeness links the feature sum to a probability difference from a specified
+baseline. Shapley efficiency similarly links a decomposition to its own endpoint
+difference. These identities do not equate different targets or interventions,
+and do not establish cross-family return-test agreement. Numerical integration
+accuracy is checked against probability endpoints in tests/test_gradients.py.
 """
 
 from __future__ import annotations

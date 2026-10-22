@@ -1,24 +1,11 @@
-"""synthetic corpora with known-optimal policies, for agent sanity checks.
+"""Synthetic reference fixtures for training and explanation checks.
 
-the real corpus has no exploitable signal: phase 2 measured the residual
-correlation between spot and outcome at +0.016, and the market's own
-calibration error at 0.017. that is an honest finding, but it makes the real
-data useless for **validating an agent implementation**, because a broken agent
-and a correct agent both earn approximately nothing.
-
-so we generate corpora where the answer is known:
-
-    make_learnable_corpus   a genuinely predictive feature exists. a correct
-                            agent must find it and earn close to the analytic
-                            optimum. if it does not, the agent is broken.
-
-    make_null_corpus        no signal at all, same shapes and frictions. a
-                            correct agent must learn to ABSTAIN and earn ~0.
-                            if it churns, the agent is broken in the other
-                            direction.
-
-both build a real EpisodeBatch and run through the real environment, so these
-exercise the actual reward accounting and cost model rather than a mock.
+The planted population supplies repeated noisy settlement signals. Its
+first-observation sign strategy is a specified reference, not a proven optimum.
+At the default balanced price, the zero-strength population has no predictive
+feature signal and flat earns zero population return before finite-sample noise.
+Neither low market correlations nor a failed learner establish market efficiency.
+All fixtures use the actual EpisodeBatch accounting and assumed cost model.
 """
 
 from __future__ import annotations
@@ -71,16 +58,16 @@ def make_learnable_corpus(
         signal     = (2*settlement - 1) * signal_strength + N(0, noise)
         mid price  = `price`, constant and therefore uninformative
 
-    because the price never moves, all profit must come from reading the
-    signal and holding to settlement. that makes the optimal policy simple and
-    its value analytic, which is what we want from a test fixture.
+    Repeated noisy signals can support aggregation, delayed entry or abstention.
+    The first-observation sign policy is a transparent reference strategy;
+    its realized corpus payoff is not a proven optimal population value.
 
     args:
         signal_strength: separation between the two outcome classes. 1.0 with
             noise 0.3 gives a very learnable but not trivial problem.
         noise: gaussian noise on the signal.
         price: constant mid. 0.5 puts the fee at its maximum, which is the
-            adversarial choice and matches the real contract.
+            maximum for the assumed coefficient.
 
     returns:
         an EpisodeBatch whose `spot` block carries the signal.
@@ -127,8 +114,10 @@ def make_null_corpus(
 ) -> EpisodeBatch:
     """same shape and frictions, but the feature carries no information.
 
-    the optimal policy here is to stay flat, earning exactly zero. any agent
-    that trades is paying frictions for noise.
+    At the default price=0.5 and balanced independent settlement population,
+    a predictable trading strategy has no positive population edge before
+    costs. Flat earns exactly zero. Other prices can create a directional
+    base-rate edge even though the feature signal strength remains zero.
     """
     batch = make_learnable_corpus(
         n_episodes=n_episodes,
@@ -149,18 +138,11 @@ def signal_policy_return(
 ) -> float:
     """mean per-episode return of "read the signal once, hold to settlement".
 
-    on `make_learnable_corpus` this IS the optimal policy, because the price is
-    constant so there is nothing to gain from trading later, and holding to
-    expiry is free. a correct agent should approach this number.
-
-    on `make_null_corpus` it is NOT optimal: the signal is noise, so following
-    it just pays frictions. the optimum there is to stay flat and earn exactly
-    zero. the function is named for what it computes rather than for what it
-    means, because conflating the two is how a benchmark silently becomes
-    wrong on half the cases it is used for.
-
-    computed analytically rather than by search, so it cannot inherit a bug
-    from the agent it is used to check.
+    This computes the exact realized payoff of that fixed strategy on the
+    supplied corpus under the assumed entry fees. It is not a proof of
+    optimality: repeated noisy signals, waiting and abstention can matter.
+    On the default balanced zero-strength population, following the first
+    noise draw has zero expected gross payoff and incurs transaction costs.
     """
     signal = batch.spot[:, 0, SIGNAL_IDX]  # first-step signal
     action = np.sign(signal)  # +1 long, -1 short

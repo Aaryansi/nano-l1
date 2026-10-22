@@ -63,8 +63,8 @@ def span_behaviour(agent, obs, bg, seed, n_draws=64) -> float:
     """v(N) - v(empty) for pi(a* | s), averaged over states.
 
     a* is the action the agent takes on the REAL observation, held fixed while
-    the observation is masked. that is the SVERL behaviour question: what did
-    seeing the state do to the probability of the thing it actually did.
+    the observation is masked. This is a chosen-action probability proxy;
+    its empirical-row baseline is not a conditional-occupancy construction.
     """
     rng = np.random.default_rng(seed)
     with torch.no_grad():

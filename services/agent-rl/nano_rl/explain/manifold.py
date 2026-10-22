@@ -1,49 +1,14 @@
-"""conditional (on-manifold) masking, and a measurement of how far off the
-manifold the usual marginal masking actually goes.
+"""Empirical-row and nearest-neighbor input-replacement interventions.
 
-the objection this module exists to answer is the standard one against
-perturbation attribution. v(S) is defined by replacing the features outside S
-with draws from a reference distribution. drawing those replacements
-independently of the features that were kept breaks the joint distribution, so
-the policy is evaluated on states that never occur. slack et al. (2020) build
-their attack on exactly that gap. a reviewer is entitled to ask whether the span
-measures information or measures distribution shift.
+Marginal replacement takes missing coordinates from an empirical background
+row. Conditional replacement selects donors among nearest neighbors in retained
+coordinates. This is an approximation, not a known conditional feature law.
 
-there are two masking modes here:
-
-    marginal      replacements come from a background row chosen uniformly.
-                  this is the interventional formulation used everywhere else
-                  in this project.
-
-    conditional   replacements come from a background row chosen among the k
-                  nearest to the current observation *in the kept features
-                  only*. this approximates drawing from p(x_masked | x_kept)
-                  and keeps the synthetic state near the data manifold.
-
-one structural point matters more than the experiment, and it is worth stating
-before any number is measured. the null test's statistic is
-
-    span = v(N) - v(empty)
-
-and neither of those two coalitions can be off-manifold under either mode:
-
-  * v(N) masks nothing, so the policy sees real observations.
-  * v(empty) masks everything. the implementation replaces all features from a
-    SINGLE background row, so the synthetic observation is itself a real
-    observation, just a different one. there is nothing to condition on when
-    the kept set is empty, so the conditional and marginal modes coincide.
-
-so the headline result is immune to the objection by construction, and the two
-modes must agree on the span to numerical noise. that is a prediction, and this
-module exists partly so it can be checked rather than asserted.
-
-where the objection does bite is the per-feature decomposition, which uses
-intermediate coalitions that mix kept and resampled features. those points can
-be off-manifold, and the functions here measure how far.
-
-one honest caveat that neither mode fixes: replacements are redrawn every
-timestep, so while each masked state is a plausible state, the sequence of them
-is not a plausible trajectory.
+For full replacement, the input row comes from empirical background support.
+That fact alone does not ensure compatibility with the recipient's inventory,
+reward, history or subsequent observations. Repeated row draws can also break
+sequence structure. Neither endpoint support nor nearest-neighbor matching
+establishes immunity to distribution shift in an active decision process.
 """
 
 from __future__ import annotations

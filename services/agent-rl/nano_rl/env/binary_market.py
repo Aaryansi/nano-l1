@@ -14,12 +14,10 @@ tests/test_env_accounting.py:
   2. the terminal position marks at the true settlement value in {0, 1}, never
      at the last traded price.
 
-  3. settlement is free. kalshi does not charge a fee to hold a contract to
-     expiry, so holding to settlement avoids one leg of the round-trip fee.
-     this is economically real and materially changes the optimal policy, so
-     it is modelled rather than abstracted away. set
-     `force_close_at_last_quote=True` to liquidate into the final market
-     quote instead and measure how much that exemption is worth.
+  3. The model charges no additional settlement fee. Set
+     `force_close_at_last_quote=True` to liquidate into the final observable
+     quote instead. This changes the terminal mark as well as transaction
+     costs, so its return contrast does not isolate a fee exemption.
 """
 
 from __future__ import annotations
@@ -190,9 +188,8 @@ class BinaryMarketEnv(gym.Env if gym is not None else object):  # type: ignore[m
                 artefact of size rather than of strategy.
             force_close_at_last_quote: when True, any open position is
                 liquidated into the final market quote instead of being
-                held to expiry. holding to expiry is free on kalshi, so
-                this is strictly more expensive and exists to measure how
-                much of the agent's pnl depends on that exemption.
+                held to expiry. The changed mark and extra execution costs
+                define a separate terminal convention, not a fee-only control.
             random_episode_order: shuffle episode order each pass. training
                 wants this on; evaluation wants it off for reproducibility.
         """

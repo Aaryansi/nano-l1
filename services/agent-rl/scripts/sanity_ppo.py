@@ -1,16 +1,10 @@
-"""sanity check: is the ppo implementation correct?
+"""PPO learning checks against specified synthetic reference strategies.
 
-same two synthetic corpora as scripts/sanity_tabular.py, so ppo is held to the
-benchmark tabular q already cleared. tabular q reached 98.2% of optimum on the
-learnable corpus and exactly 0.00 on the null corpus, which means the
-environment is sound and any ppo failure here is ppo's.
-
-both must hold:
-    learnable  approach signal_policy_return
-    null       abstain, ~0 return and few trades
-
-usage:
-    python scripts/sanity_ppo.py --updates 60
+Compare the planted-signal learner with a first-observation sign policy and the
+balanced zero-strength learner with flat. The sign policy is not a proven
+optimum when repeated noisy signals, delayed entry and abstention are possible.
+Passing exercises this training setup; failing does not identify whether the
+limitation lies in optimization, representation, budget or implementation.
 """
 
 from __future__ import annotations

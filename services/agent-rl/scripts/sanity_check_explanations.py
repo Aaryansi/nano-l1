@@ -1,28 +1,14 @@
-"""does this explanation say anything, or is it an explanation of nothing?
+"""Reference diagnostics for specified input-replacement return spans.
 
-the observation that motivates the test: five independently trained agents
-produce highly consistent explanations (rank correlation 0.865, unanimous on
-the most important feature) of a policy that earns -0.418 per episode and is
-statistically indistinguishable from doing nothing. consistency is widely used
-as a proxy for trustworthiness, and here it is high exactly where the
-explanation is empty.
+The statistic is full-policy return minus return under a specified replacement
+intervention. Shapley efficiency identifies a sum, not feature-level fidelity.
+One planted-signal case and one zero-strength case are detection examples, not
+estimates of power or specificity. Repeated conditional calibration is separate.
 
-this script runs the null-model test on three cases where the right answer is
-known or strongly implied, in increasing order of how much it matters:
-
-  PLANTED SIGNAL   one feature is informative by construction. the test must
-                   PASS, or it has no power.
-  NULL CORPUS      nothing is informative by construction. the test must FAIL
-                   to reject, or it has no specificity.
-  REAL MARKET      an efficient market, agent with no measurable edge. this is
-                   the case the test exists for.
-
-the statistic is the shapley span v(N) - v(empty), the total value of observing
-the state, which the efficiency axiom supplies for free.
-
-usage:
-    python scripts/sanity_check_explanations.py \\
-        --corpus data/corpus/corpus_candles_60s_spot.npz --runs runs/ppo
+The market checkpoint is evaluated on held-out historical episodes. Its result
+against a synthetic reference bank is descriptive: exchangeability with that
+bank is not established, and non-rejection does not imply an empty explanation,
+absence of exploitable signal, or market efficiency.
 """
 
 from __future__ import annotations
@@ -122,7 +108,7 @@ def reference_protocol(updates):
 def build_null_distribution(
     n_null: int, updates: int, coalitions: int, episodes: int, base_seed: int, *, raw=None
 ) -> list:
-    """attributions for matched agents trained where there is nothing to learn.
+    """Reference spans from independently drawn zero-strength populations.
 
     each null agent gets its own corpus seed as well as its own training seed,
     so the distribution reflects variation in the data-generating process too,
@@ -160,10 +146,9 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     banner("0. THE NULL DISTRIBUTION")
-    print("  agents trained where there is provably nothing to learn.")
-    print("  this is the reinforcement-learning analogue of a randomization")
-    print("  test, but the null is one that actually occurs in deployment:")
-    print("  a normally trained agent in a structureless environment.\n")
+    print("  agents trained on the specified balanced zero-strength population.")
+    print("  training and evaluation corpus draws are independent.")
+    print("  market comparisons with this bank remain descriptive.\n")
     raw = {}
     nulls = build_null_distribution(
         args.n_null, args.updates, args.coalitions, args.episodes, args.seed, raw=raw
@@ -247,8 +232,7 @@ def main() -> None:
         },
         null_spans,
         out / "sanity_null_test.png",
-        subtitle=f"null from {args.n_null} agents trained where there is "
-                 f"nothing to learn",
+        subtitle=f"{args.n_null} agents from the balanced zero-strength population",
     )
 
     payload = {

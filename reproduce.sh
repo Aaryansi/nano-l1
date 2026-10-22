@@ -144,7 +144,7 @@ if [ "$EXPLAIN_ONLY" = "0" ]; then
       --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase started --quick "$QUICK" )
 
   # ---------------------------------------------------------- sanity checks
-  step "sanity: does the learning loop work where the answer is known?"
+  step "synthetic learning checks against specified reference strategies"
   ( cd "$RL" && "$PY" scripts/sanity_tabular.py \
       --learn-episodes $([ "$QUICK" = 1 ] && echo 800 || echo 3000) \
       --null-episodes  $([ "$QUICK" = 1 ] && echo 4000 || echo 20000) )
@@ -179,7 +179,7 @@ step "attribution stability across seeds"
     --runs "$RUNS" --out "$REPORTS" )
 
 # ---------------------------------------------------------- the null-model test
-step "null-model test: is the explanation distinguishable from nothing?"
+step "return-span comparison against the synthetic reference bank"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" --updates "$NULL_UPDATES" )
 
@@ -198,12 +198,12 @@ step "the null-model test again, with every null matched to its own corpus"
 # run a null test on.
 # does the null-construction failure hold across SVERL's three explanatory
 # targets, or only for the outcome-level statistic the rest of the paper uses?
-step "the three SVERL targets against both null constructions"
+step "three target proxies against both reference constructions"
 ( cd "$RL" && "$PY" scripts/sverl_targets.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) )
 
-step "is there a stratified permutation that works?"
+step "descriptive stratified-permutation screening"
 ( cd "$RL" && "$PY" scripts/stratified_sweep.py --corpus "$CORPUS" \
     --out "$REPORTS" )
 
@@ -235,11 +235,11 @@ step "conditional detection rates on independent synthetic trials"
     --reference-json "$REPORTS/sanity_test.json" --n-null "$N_NULL" \
     --updates "$NULL_UPDATES" --trials $([ "$QUICK" = 1 ] && echo 2 || echo 30) )
 
-step "power curve, and estimation certainty vs validity"
+step "signal-strength illustration and attribution estimation diagnostics"
 ( cd "$RL" && "$PY" scripts/power_curve.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" --updates "$NULL_UPDATES" )
 
-step "can an explanation be steered at fixed performance?"
+step "attribution suppression, behaviour and paired return contrasts"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
     --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" )
 
@@ -280,7 +280,7 @@ step "does the verdict depend on the credit-assignment scheme?"
     --runs "$RUNS" --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
-step "horizon scaling: why does the weight null fail?"
+step "descriptive reference widths across synthetic horizons"
 ( cd "$RL" && "$PY" scripts/horizon_scaling.py --out "$REPORTS" \
     --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 16) )
 
@@ -306,7 +306,7 @@ step "separating market replacement from inventory and time replacement"
 ( cd "$RL" && "$PY" scripts/state_masking.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" --seeds "$SEEDS" --updates "$EXPLAIN_UPDATES" )
 
-# four classic-control tasks, not two. box2d environments are deliberately not
+# Six control tasks. box2d environments are deliberately not
 # used: they need a system swig binary to build, which would trade the
 # one-command property for one more feature dimension.
 step "does it generalise? six control tasks"
@@ -314,22 +314,16 @@ step "does it generalise? six control tasks"
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
     --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )
 
-# the blinded observations above are drawn per coordinate, which does not respect
-# constraints between coordinates: on Pendulum only 0.5% of them satisfy
-# cos^2 + sin^2 = 1. rerun with whole-row resampling, which stays on the
-# observation manifold by construction, so the paper can show the verdicts do not
-# depend on it. written separately because the reported table is the gaussian one.
-# four checkpoints from one run are correlated observations of one trajectory,
-# so they cannot support a claim about behaviour ACROSS agents. this trains five
-# independent agents per task instead, reusing the same references, so the
-# replicate is the training run.
+# Whole-row resampling retains donor row support, not compatibility with the
+# recipient trajectory. Independent observed seeds are distinct replicates;
+# checkpoints along one training trajectory are correlated observations.
 step "five independently trained agents per task"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/seeds" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 \
     --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) \
     --agent-seeds $([ "$QUICK" = 1 ] && echo 2 || echo 5) )
 
-step "the same six tasks with manifold-preserving blinding"
+step "the same six tasks with whole-row resampling"
 ( cd "$RL" && "$PY" scripts/generalize_gym.py --out "$REPORTS/resample" \
     --envs CartPole-v1 Acrobot-v1 MountainCar-v0 Pendulum-v1 FrozenLake-v1 CliffWalking-v0 --trainer sb3 --blind resample \
     --steps "$GYM_STEPS" --jobs "$CONTROL_JOBS" --n-null $([ "$QUICK" = 1 ] && echo 6 || echo 24) )

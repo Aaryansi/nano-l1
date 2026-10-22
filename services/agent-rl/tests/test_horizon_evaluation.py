@@ -30,6 +30,7 @@ def test_horizon_uses_each_training_normalizer_and_saves_reconstructable_endpoin
     monkeypatch.setattr(horizon, "span_of", span)
     raw = {}
     row = horizon.measure_horizon(4, 2, 1, 16, 0, raw=raw)
+    assert row["clock_feature_deadline_seconds"] == 300
     assert len(checked) == 2
     assert row["shared_data"]["train_seed"] != row["shared_data"]["evaluation_seed"]
     assert row["shared_data"]["evaluation_seed"] not in row["reference_train_seeds"]
@@ -38,6 +39,11 @@ def test_horizon_uses_each_training_normalizer_and_saves_reconstructable_endpoin
     payload = {"rows": [row], "evaluation_episodes": 16, "endpoint_returns_file": "endpoints.npz"}
     (tmp_path / "horizon_scaling.json").write_text(json.dumps(payload))
     validate_horizon_returns(tmp_path)
+    row["clock_feature_deadline_seconds"] = 900
+    (tmp_path / "horizon_scaling.json").write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="horizon clock deadline differs"):
+        validate_horizon_returns(tmp_path)
+    row["clock_feature_deadline_seconds"] = 300
     payload["alpha_weight"] = 100.
     (tmp_path / "horizon_scaling.json").write_text(json.dumps(payload))
     with pytest.raises(ValueError, match="horizon fit differs"):
