@@ -1,36 +1,14 @@
-"""does the null-construction problem hold across all three SVERL targets?
+"""Compare SVERL-inspired behaviour, critic and return target proxies.
 
-everything this paper reports about null construction is measured on the
-OUTCOME-level statistic: the span of expected episode return. the obvious
-objection is that the failures might be a property of that particular
-characteristic function rather than of explaining reinforcement learning agents.
+These categories distinguish chosen-action probability, the learned critic's
+return estimate, and collected episode return. They are not a replication of
+the conditional-occupancy performance policy in SVERL (Beechey et al., 2023).
+Behaviour and critic endpoints average over sampled flat-inventory states;
+return endpoints replay a specified input-replacement intervention.
 
-beechey, smith and simsek (SVERL, ICML 2023) identify three explanatory targets,
-and they are genuinely different questions about the same agent:
-
-    behaviour    what did the observation do to pi(a* | s), the action taken
-    prediction   what did it do to V(s), the critic's estimate
-    outcomes     what did it do to the return actually collected
-
-we already implement all three. this measures the span under each and asks two
-questions of each:
-
-  1. do the three targets agree on the real market agent, against the same null?
-  2. does the blinded construction degenerate for all three, or only for
-     outcomes?
-
-question 2 is the one that matters. if blinding collapses the reference to a
-point mass for every target, the failure is a property of the CONSTRUCTION and
-generalises past our choice of statistic. if it collapses only for outcomes, our
-result is narrower than the paper currently claims and the paper must say so.
-
-the span is read off the two endpoint coalitions for every target, which is
-exact rather than estimated: by efficiency the shapley values sum to it, and
-evaluating v(N) and v(empty) directly avoids inheriting permutation-sampling
-noise into a quantity that does not need it.
-
-usage:
-    python scripts/sverl_targets.py --corpus data/corpus/corpus_candles_60s_spot.npz
+Endpoint differences equal sums of efficient Shapley decompositions, but do
+not assess feature-level fidelity. Decisions and reference degeneracy describe
+this checkpoint, population, intervention and training budget only.
 """
 
 from __future__ import annotations
@@ -164,7 +142,7 @@ def main() -> None:
     bg = build_background(roll, n_samples=192, seed=args.seed)
     obs = states_of(roll, args.states, args.seed)
 
-    banner("THE THREE SVERL TARGETS ON THE REAL MARKET AGENT")
+    banner("THREE TARGET PROXIES ON THE REAL MARKET AGENT")
     observed = all_spans(agent, roll, obs, bg, args.seed)
     for t in TARGETS:
         print(f"  {t:<12} span {observed[t]:+.4f}")
@@ -219,20 +197,20 @@ def main() -> None:
                                  "spans": a_nulls[t], "result": ra.as_dict()},
             "null_blinded": {"mean": float(B.mean()), "std": float(B.std(ddof=1)),
                              "spans": b_nulls[t], "result": rb.as_dict()},
-            "blinded_degenerate": bool(B.std(ddof=1) < 1e-9),
+            "blinded_degenerate": rb.degenerate_null,
         }
         print(f"  {t:<12}{observed[t]:>+10.4f}"
               f"{f'{A.mean():+.3f} +/- {A.std(ddof=1):.3f}':>22}{ra.z_score:>+8.2f}"
               f"{'':>3}{f'{B.mean():+.3f} +/- {B.std(ddof=1):.3f}':>22}"
               f"{rb.z_score:>+8.2f}")
 
-    banner("WHAT THIS SETTLES")
+    banner("DESCRIPTIVE SUMMARY")
     degen = [t for t in TARGETS if results[t]["blinded_degenerate"]]
     summary_A = summarize_verdicts(
         [results[t]["null_signal_free"]["result"] for t in TARGETS])
     agree_A = summary_A["agreement"]
 
-    print("  under the paper's null, the three targets say:")
+    print("  under the synthetic reference, the three proxies say:")
     for t in TARGETS:
         z = results[t]["null_signal_free"]["result"]["z_score"]
         print(f"    {t:<12} z {z:>+7.2f}   "
@@ -246,13 +224,10 @@ def main() -> None:
         print("  the resolved decisions differ across targets in this run.")
 
     print()
-    print("  on degeneracy, this run establishes less than it may appear.")
     print(f"  blinding degenerated for: {', '.join(degen) if degen else 'no target'}.")
-    print("  that is expected and is NOT evidence against the outcome-level")
-    print("  result: the collapse reported elsewhere was found on synthetic")
-    print("  corpora, and on the real corpus only once the blind agents had")
-    print("  converged, near 160 updates. this run uses the real corpus at 40,")
-    print("  which is neither condition. it is not a test of that claim.")
+    print(f"  each reference was trained for {args.updates} updates.")
+    print("  behaviour and critic proxies use sampled flat-inventory states;")
+    print("  they do not implement a conditional-occupancy performance policy.")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -262,6 +237,8 @@ def main() -> None:
         "signal_free_decision_summary": summary_A,
         "blinded_degenerate_targets": degen,
         "n_null": args.n_null, "n_states": args.states,
+        "updates": args.updates,
+        "scope": "SVERL-inspired target proxies, not a replication of its performance policy",
     }, indent=2))
     print(f"\nwrote {out}/sverl_targets.json")
 

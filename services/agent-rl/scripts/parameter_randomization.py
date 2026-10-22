@@ -1,38 +1,14 @@
-"""the canonical parameter-randomization sanity check, run on our own agents.
+"""Parameter-dependence checks on market and planted-signal agents.
 
-this is a different experiment from the parameter null in
-scripts/generalize_gym.py, and the distinction is the point of running it.
+Cascading and independent layer reinitialization follow the design of Adebayo
+et al. (2018), adapted to vectors of absolute behaviour and return attributions.
+They test sensitivity to learned parameters. This differs from placing a
+trained policy's endpoint span in a bank of random-policy spans.
 
-  - the parameter NULL builds a reference distribution: it randomizes weights
-    many times, records the attribution span of each random policy, and asks
-    where the trained agent's span falls in that distribution.
-
-  - the canonical check of adebayo et al. (2018) compares ONE explanation
-    against ONE degraded copy of itself: randomize the trained network's layers
-    progressively and measure how much the explanation moves. if it does not
-    move, the explanation does not depend on what the network learned.
-
-the paper previously described the first as "the established sanity check",
-which invites the objection that we tested something adebayo et al. did not
-propose and then reported it as underpowered. so we run the actual check here.
-
-the question worth answering is not whether the check works, but whether it
-separates our two agents. the market agent's explanation is empty in the sense
-that its outcome-attribution span is indistinguishable from agents trained
-where there is provably nothing to learn. the planted-signal agent's is not.
-if the canonical check moves the same amount on both, then passing it is not
-evidence that there is anything to explain, which is the paper's thesis stated
-in the incumbent's own terms.
-
-randomization follows adebayo et al.: cascading (top-down, accumulating) and
-independent (one layer at a time from the trained weights). the similarity
-metric for a feature-vector attribution is spearman rank correlation on the
-absolute values, the analogue of their rank correlation on saliency maps,
-reported alongside cosine similarity.
-
-usage:
-    python scripts/parameter_randomization.py --corpus <path> --runs runs/ppo \
-        --out reports
+Neither comparison establishes feature-level fidelity or task utility. An
+unprofitable policy can have a faithful and useful explanation. The two agents
+and fixed correlation thresholds here are descriptive examples, not a test of
+whether a policy is worth explaining. Undefined correlations stay undefined.
 """
 
 from __future__ import annotations
@@ -107,6 +83,43 @@ def similarity(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
     return rho, cos
 
 
+def similarity_summary(rhos: list[float], cosines: list[float]) -> dict:
+    """Summarize defined correlations without treating constants as evidence."""
+    def moments(values):
+        defined = np.asarray(values, dtype=float)
+        defined = defined[np.isfinite(defined)]
+        if not len(defined):
+            return None, None, 0
+        return float(defined.mean()), float(defined.std()), len(defined)
+
+    rho, rho_std, n_rho = moments(rhos)
+    cos, cos_std, n_cos = moments(cosines)
+    return {"rank_corr_mean": rho, "rank_corr_std": rho_std,
+            "cosine_mean": cos, "cosine_std": cos_std,
+            "n_defined_rank_corr": n_rho, "n_defined_cosine": n_cos,
+            "n_randomizations": len(rhos)}
+
+
+def descriptive_contrasts(market, planted, market_outcome=None, planted_outcome=None):
+    """Fixed exploratory thresholds, not hypothesis tests or target agreement."""
+    def defined(*values):
+        return all(v is not None and np.isfinite(v) for v in values)
+
+    return {
+        "correlation_gap_exceeds_threshold": (
+            bool(abs(market - planted) > 0.3) if defined(market, planted) else None),
+        "outcome_pattern_threshold_crossed": (
+            bool(market_outcome < 0.6 < planted_outcome)
+            if defined(market_outcome, planted_outcome) else None),
+        "thresholds": {"absolute_correlation_gap": 0.3, "outcome_correlation": 0.6},
+        "scope": "descriptive heuristics; undefined correlations cannot establish a finding",
+    }
+
+
+def format_diagnostic(value) -> str:
+    return "undefined" if value is None else f"{value:+.3f}"
+
+
 def outcome_attribution(
     agent: PPOAgent, batch, bg: np.ndarray, norm, coalitions: int,
     episodes: int, seed: int,
@@ -155,14 +168,13 @@ def run_agent_outcomes(
         row = {
             "stage": layer,
             "layers_randomized": names,
-            "rank_corr_mean": float(np.nanmean(rhos)),
-            "rank_corr_std": float(np.nanstd(rhos)),
-            "cosine_mean": float(np.nanmean(coss)),
+            **similarity_summary(rhos, coss),
         }
         rows.append(row)
         print(f"  cascading    {layer:<12} "
-              f"rho {row['rank_corr_mean']:>+7.3f} +/- {row['rank_corr_std']:.3f}   "
-              f"cos {row['cosine_mean']:>+7.3f}")
+              f"rho {format_diagnostic(row['rank_corr_mean'])} "
+              f"+/- {format_diagnostic(row['rank_corr_std'])}   "
+              f"cos {format_diagnostic(row['cosine_mean'])}")
     agent.net.load_state_dict(original)
     return {"cascading": rows}
 
@@ -195,15 +207,13 @@ def run_agent(
             row = {
                 "stage": layer,
                 "layers_randomized": names,
-                "rank_corr_mean": float(np.nanmean(rhos)),
-                "rank_corr_std": float(np.nanstd(rhos)),
-                "cosine_mean": float(np.nanmean(coss)),
-                "cosine_std": float(np.nanstd(coss)),
+                **similarity_summary(rhos, coss),
             }
             out[mode].append(row)
             print(f"  {mode:<12} {layer:<12} "
-                  f"rho {row['rank_corr_mean']:>+7.3f} +/- {row['rank_corr_std']:.3f}   "
-                  f"cos {row['cosine_mean']:>+7.3f}")
+                  f"rho {format_diagnostic(row['rank_corr_mean'])} "
+                  f"+/- {format_diagnostic(row['rank_corr_std'])}   "
+                  f"cos {format_diagnostic(row['cosine_mean'])}")
 
     agent.net.load_state_dict(original)
     return out
@@ -253,9 +263,15 @@ def main() -> None:
     result = {
         "n_states": args.n_states,
         "seeds": args.seeds,
-        "market": run_agent("market agent (empty explanation)", market, menv,
+        "checkpoint": ckpt[0].name,
+        "updates": args.updates, "seed": args.seed,
+        "outcome_seeds": args.outcome_seeds,
+        "outcome_coalitions": args.outcome_coalitions,
+        "outcome_episodes": args.outcome_episodes,
+        "scope": "parameter dependence of two fixed trained agents; not feature fidelity or task utility",
+        "market": run_agent("market agent", market, menv,
                             mbg, args.n_states, args.seeds, args.seed),
-        "planted": run_agent("planted-signal agent (informative)", pagent, penv,
+        "planted": run_agent("planted-signal agent", pagent, penv,
                              pbg, args.n_states, args.seeds, args.seed),
     }
 
@@ -275,33 +291,34 @@ def main() -> None:
         po = result["planted_outcomes"]["cascading"][-1]["rank_corr_mean"]
         result["fully_randomized_rank_corr_outcomes"] = {
             "market": mo, "planted": po}
-        result["outcome_target_agrees_with_behaviour"] = bool(mo < 0.6 < po)
 
     # the comparison the paper needs: does the check separate the two agents?
     def deepest(d):
         return d["cascading"][-1]["rank_corr_mean"]
 
     m, p = deepest(result["market"]), deepest(result["planted"])
-    result["separates_agents"] = bool(abs(m - p) > 0.3)
+    outcomes = result.get("fully_randomized_rank_corr_outcomes", {})
+    result["descriptive_contrasts"] = descriptive_contrasts(
+        m, p, outcomes.get("market"), outcomes.get("planted"))
     result["fully_randomized_rank_corr"] = {"market": m, "planted": p}
 
-    banner("verdict")
-    print(f"  fully randomized, market  rho = {m:+.3f}")
-    print(f"  fully randomized, planted rho = {p:+.3f}")
-    print(f"  separates the two agents: {result['separates_agents']}")
+    banner("DESCRIPTIVE PARAMETER DEPENDENCE")
+    print(f"  fully randomized, market  rho = {format_diagnostic(m)}")
+    print(f"  fully randomized, planted rho = {format_diagnostic(p)}")
+    print(f"  fixed correlation-gap heuristic: "
+          f"{result['descriptive_contrasts']['correlation_gap_exceeds_threshold']}")
     if not args.skip_outcomes:
         o = result["fully_randomized_rank_corr_outcomes"]
-        print(f"\n  outcome target, market  rho = {o['market']:+.3f}")
-        print(f"  outcome target, planted rho = {o['planted']:+.3f}")
-        print(f"  same direction as behaviour: "
-              f"{result['outcome_target_agrees_with_behaviour']}")
+        print(f"\n  outcome target, market  rho = {format_diagnostic(o['market'])}")
+        print(f"  outcome target, planted rho = {format_diagnostic(o['planted'])}")
     print("\n  the canonical check asks whether an explanation depends on the")
-    print("  learned weights. it does not ask whether the thing explained is")
-    print("  worth explaining, and these two agents differ on the second.")
+    print("  learned weights. This does not establish feature-level fidelity,")
+    print("  task utility, or whether an unprofitable policy is explainable.")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "parameter_randomization.json").write_text(json.dumps(result, indent=2))
+    (out / "parameter_randomization.json").write_text(
+        json.dumps(result, indent=2, allow_nan=False))
     print(f"\nwrote {out / 'parameter_randomization.json'}")
 
 
