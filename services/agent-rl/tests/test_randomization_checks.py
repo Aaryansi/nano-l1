@@ -27,7 +27,9 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from behavioural_equivalence import js, kl  # noqa: E402
-from parameter_randomization import LAYERS, randomize, similarity  # noqa: E402
+from parameter_randomization import (  # noqa: E402
+    LAYERS, descriptive_contrasts, randomize, similarity, similarity_summary,
+)
 
 from nano_rl.agents.networks import ActorCritic  # noqa: E402
 
@@ -71,6 +73,38 @@ class TestDivergences:
 
 
 class TestSimilarity:
+    def test_undefined_correlations_cannot_produce_negative_findings(self):
+        summary = similarity_summary([float("nan")] * 3, [float("nan")] * 3)
+        assert summary["rank_corr_mean"] is None
+        assert summary["rank_corr_std"] is None
+        assert summary["n_defined_rank_corr"] == 0
+        assert summary["n_defined_cosine"] == 0
+        assert summary["n_randomizations"] == 3
+        contrast = descriptive_contrasts(None, 0.9, float("nan"), 0.7)
+        assert contrast["correlation_gap_exceeds_threshold"] is None
+        assert contrast["outcome_pattern_threshold_crossed"] is None
+        import json
+        json.dumps(summary, allow_nan=False)
+
+    def test_summary_reports_defined_denominators_and_population_spread(self):
+        summary = similarity_summary([0.2, float("nan"), 0.8], [1, 0, float("nan")])
+        assert summary["rank_corr_mean"] == pytest.approx(0.5)
+        assert summary["rank_corr_std"] == pytest.approx(0.3)
+        assert summary["n_defined_rank_corr"] == 2
+        assert summary["cosine_mean"] == 0.5
+        assert summary["n_defined_cosine"] == 2
+
+    @pytest.mark.parametrize("m,p,mo,po,gap,pattern", [
+        (0.1, 0.9, 0.2, 0.9, True, True),
+        (0.7, 0.9, 0.7, 0.9, False, False),
+        (0.1, 0.9, None, None, True, None),
+        (float("nan"), 0.9, 0.2, 0.9, None, True),
+    ])
+    def test_descriptive_thresholds_are_finite_aware(self, m, p, mo, po, gap, pattern):
+        result = descriptive_contrasts(m, p, mo, po)
+        assert result["correlation_gap_exceeds_threshold"] is gap
+        assert result["outcome_pattern_threshold_crossed"] is pattern
+
     def test_identical_attributions_are_perfectly_correlated(self):
         a = np.array([0.4, 0.1, 0.3, 0.2])
         rho, cos = similarity(a, a)

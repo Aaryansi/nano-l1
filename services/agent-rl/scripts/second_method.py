@@ -1,20 +1,14 @@
-"""is the finding a property of RL explanation, or of Shapley values?
+"""Integrated-gradient behaviour proxies and descriptive attribution profiles.
 
-every attribution result so far uses Shapley. the obvious objection is that the
-failures shown are artefacts of Shapley estimation rather than facts about
-explaining RL agents. integrated gradients is the control: it shares no
-machinery with Shapley, integrating the model's gradient along a path from a
-baseline rather than averaging marginal contributions over coalitions.
+IG completeness yields a chosen-action probability difference from a zero
+normalized input. The headline span instead measures episode return under
+input replacement. These are different estimands; this script does not compare
+cross-family return tests or establish that their conclusions agree.
 
-both supply a scalar span for free, Shapley by efficiency and IG by
-completeness, so the same null test applies to either without modification.
-
-this script also closes the last single-seed gap in the writeup. per-feature
-attributions were previously reported from one checkpoint; here both families
-are computed across all five trained seeds and reported as mean +/- std.
-
-usage:
-    python scripts/second_method.py --corpus data/corpus/corpus_candles_60s_spot.npz
+The one planted-signal case is a detection example, not a power estimate.
+Profiles cover all supplied checkpoints, with empirical-row backgrounds for
+Shapley and zero-input baselines for IG, on separately sampled visited states.
+Their correlations describe these choices and can be undefined for constants.
 """
 
 from __future__ import annotations
@@ -119,11 +113,10 @@ def main() -> None:
     baseline = np.zeros(N_FEATURES, dtype=np.float32)
 
     # ------------------------------------------------------ IG null distribution
-    banner("A. INTEGRATED GRADIENTS: the same test, a different attribution family")
-    print("  IG shares no machinery with shapley. it integrates the model's")
-    print("  gradient along a path from a baseline; shapley averages marginal")
-    print("  contributions over coalitions. both give a span for free, so the")
-    print("  same null test applies unchanged.\n")
+    banner("A. INTEGRATED GRADIENTS: a behaviour-probability proxy")
+    print("  IG integrates the chosen action's probability from a zero")
+    print("  normalized input. This differs from the return intervention")
+    print("  tested by the headline endpoint statistic.\n")
 
     null_spans = []
     for k in range(args.n_null):
@@ -153,6 +146,8 @@ def main() -> None:
 
     # the real agents
     ckpts = sorted(Path(args.runs).glob("seed*.pt"))
+    if not ckpts:
+        raise SystemExit(f"no checkpoints in {args.runs}; train first")
     env = BinaryMarketEnv(split.test, normalizer=split.normalizer,
                           max_position=100.0, random_episode_order=False)
     real_agents = [
@@ -168,28 +163,19 @@ def main() -> None:
     r_real = test_span_against_null(float(np.mean(real_spans)), null_spans)
     print(f"  real agent     : {r_real.summary()}")
 
-    print(f"\n  {'family':<22}{'planted signal':>18}{'real market':>18}")
-    print(f"  {'shapley (section 3.5)':<22}{'z = +12.27':>18}{'z = -0.15':>18}")
-    print(f"  {'integrated gradients':<22}"
-          f"{'z = ' + format(r_signal.z_score, '+.2f'):>18}"
-          f"{'z = ' + format(r_real.z_score, '+.2f'):>18}")
-
-    same = (r_signal.passes == True) and (r_real.passes == False)
-    print(f"\n  the two families {'AGREE' if same else 'DISAGREE'} on both cases")
-    if same:
-        print("  so the finding is a property of the agent, not of shapley.")
+    print("\n  No cross-family return-test comparison is performed here.")
+    print("  One planted case is a detection example, not a power estimate.")
 
     # ---------------------------------------------- multi-seed per-feature
-    banner("B. PER-FEATURE ATTRIBUTIONS ACROSS ALL FIVE SEEDS")
-    print("  closes the last single-seed gap: these were previously reported")
-    print("  from one checkpoint.\n")
+    banner(f"B. PER-FEATURE ATTRIBUTIONS ACROSS {len(real_agents)} CHECKPOINTS")
+    print("  Descriptive profiles use different baselines and state samples.")
 
     roll = VectorizedRollout(split.test, normalizer=split.normalizer,
                              max_position=100.0)
     bg = build_background(roll, n_samples=192, seed=args.seed)
 
     shap_profiles = [
-        shapley_profile(a, env, bg, args.n_states // 2, args.seed + i)
+        shapley_profile(a, env, bg, max(1, args.n_states // 2), args.seed + i)
         for i, a in enumerate(real_agents)
     ]
 
@@ -227,12 +213,18 @@ def main() -> None:
         "ig_null_spans": null_spans.tolist(),
         "ig_planted_signal": r_signal.as_dict(),
         "ig_real_market": r_real.as_dict(),
-        "families_agree": bool(same),
+        "target": "chosen-action probability relative to zero normalized input",
+        "cross_family_return_test_comparison": {
+            "performed": False,
+            "reason": "IG behaviour proxy and headline return span have different targets",
+        },
+        "checkpoints": [c.name for c in ckpts],
+        "n_states": args.n_states, "updates": args.updates, "seed": args.seed,
         "shapley_profiles": shap_arr.tolist(),
         "ig_profiles": ig_arr.tolist(),
-        "consistency_shapley": c_shap,
-        "consistency_ig": c_ig,
-        "shapley_vs_ig_rank_corr": agree,
+        "consistency_shapley": c_shap if np.isfinite(c_shap) else None,
+        "consistency_ig": c_ig if np.isfinite(c_ig) else None,
+        "shapley_vs_ig_rank_corr": agree if np.isfinite(agree) else None,
     }, indent=2))
     print(f"\nwrote {out}/second_method.json")
 

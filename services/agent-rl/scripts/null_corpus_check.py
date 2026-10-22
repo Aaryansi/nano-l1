@@ -1,28 +1,12 @@
-"""which null does the market verdict actually depend on?
+"""Compare two reference constructions for one fixed market checkpoint.
 
-the positive control raised a problem. measured against a null of agents
-trained on synthetic signal-free CORPORA, the real market agent's span is
-unremarkable (z = +0.23). measured against a null of agents trained on the real
-episodes with the observation channel blinded, a freshly trained agent looked
-informative. those cannot both be the last word, and the difference matters
-because one of them is the paper's headline.
-
-two things differ between the comparisons and they have to be separated:
-
-  the agent        the paper explains a checkpoint trained for 100 updates;
-                   the control trained a fresh one for 40.
-
-  the null         synthetic-corpus nulls measure their spans on SYNTHETIC
-                   episodes, while the observed span is measured on real test
-                   episodes. blinded-real nulls measure on the same real
-                   episodes as the observation.
-
-this script holds the agent fixed at the paper's checkpoint and the measurement
-corpus fixed at the real test split, and varies only the null construction. any
-remaining difference is attributable to the null and to nothing else.
-
-usage:
-    python scripts/null_corpus_check.py --corpus data/corpus/corpus_candles_60s_spot.npz
+The observed checkpoint and its held-out evaluation population are fixed.
+Synthetic-reference policies train and evaluate on independent synthetic draws;
+blinded-market policies train with noise inputs on the market training split
+and evaluate with the original held-out inputs. Training distributions,
+interventions and reference evaluation populations therefore differ together.
+A decision difference cannot identify a unique causal mechanism. Agreement is
+unresolved if either legacy reference cannot support a decision.
 """
 
 from __future__ import annotations
@@ -52,6 +36,7 @@ from nano_rl.explain.rollout import (  # noqa: E402
 from nano_rl.explain.sanity import (  # noqa: E402
     check_resolving_power,
     short_verdict,
+    summarize_verdicts,
     test_span_against_null,
 )
 
@@ -143,22 +128,26 @@ def main():
               f"{r.z_score:>+9.2f}"
               f"{short_verdict(r):>24}")
 
-    agree = ra.passes == rb.passes
+    summary = summarize_verdicts([ra, rb])
+    agree = summary["agreement"]
     print()
-    if agree:
-        print("  the two constructions agree. the paper's verdict does not")
-        print("  depend on which null is used.")
+    if agree is None:
+        print("  agreement is unresolved: at least one reference cannot decide.")
+    elif agree:
+        print("  the resolved decisions agree for this checkpoint in this run.")
     else:
-        print("  THE TWO CONSTRUCTIONS DISAGREE. the paper's headline verdict")
-        print("  depends on the null construction, and the paper must say so")
-        print("  and argue for the one it uses.")
+        print("  the resolved decisions differ for this checkpoint in this run.")
+    print("  the reference training and evaluation populations also differ;")
+    print("  this comparison does not isolate a single causal mechanism.")
 
     Path(args.out).mkdir(parents=True, exist_ok=True)
     (Path(args.out) / "null_corpus_check.json").write_text(json.dumps({
         "checkpoint": ckpt.name, "observed_span": observed, "return": ret,
         "null_synthetic": {"spans": a_spans, "result": ra.as_dict()},
         "null_blinded_real": {"spans": b_spans, "result": rb.as_dict()},
-        "constructions_agree": bool(agree),
+        "constructions_agree": agree,
+        "decision_summary": summary,
+        "scope": "one fixed checkpoint; reference training and evaluation populations differ",
     }, indent=2))
     print(f"\nwrote {args.out}/null_corpus_check.json")
 
