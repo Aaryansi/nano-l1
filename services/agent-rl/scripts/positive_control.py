@@ -95,7 +95,9 @@ def direct_contrast(prediction, trading):
     pairs = []
     for a, b in zip(prediction["per_seed"], trading["per_seed"], strict=True):
         za, zb = a["result"]["z_score"], b["result"]["z_score"]
-        difference = float(za - zb) if np.isfinite(za) and np.isfinite(zb) else None
+        defined = (a["result"]["null_std"] > 1e-12 and b["result"]["null_std"] > 1e-12
+                   and np.isfinite(za) and np.isfinite(zb))
+        difference = float(za - zb) if defined else None
         pairs.append({"seed": a["seed"], "difference": difference})
     values = [r["difference"] for r in pairs if r["difference"] is not None]
     return {"estimand": "prediction minus trading standardized span, conditional on estimated references",
