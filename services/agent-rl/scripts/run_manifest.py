@@ -143,6 +143,29 @@ def validate_control_returns(out: Path) -> None:
                 if values.shape != (task["competence_episodes"],) or not np.isfinite(values).all() or len(values) != len(row["return_episode_seeds"]) or not np.isclose(
                         values.mean(), row["return"], rtol=0, atol=1e-9):
                     raise ValueError("control competence return differs from raw returns")
+                if "n_resolved_comparisons" in task:
+                    from nano_rl.explain.sanity import short_verdict, summarize_verdicts
+                    from generalize_gym import competence_gate
+                    comparisons = [test_span_against_null(row["span"], task[key]["spans"])
+                                   for key in ("env_null", "weight_null")]
+                    for suffix, comparison in zip(("env", "weight"), comparisons):
+                        if (row[f"verdict_{suffix}"] != short_verdict(comparison)
+                                or row[f"detected_{suffix}"] != comparison.passes):
+                            raise ValueError("control verdict differs from raw endpoint returns")
+                    if row["reference_agreement"] is not summarize_verdicts(comparisons)["agreement"]:
+                        raise ValueError("control reference agreement differs from resolved decisions")
+                    if row["competence"] != competence_gate(task["env_id"], row["return"], row["span"]):
+                        raise ValueError("control competence differs from raw performance and span")
+            if "n_resolved_comparisons" in task:
+                agreements = [row["reference_agreement"] for row in task["checkpoints"]]
+                if (task["n_checkpoints"] != len(agreements)
+                        or task["nulls_agree"] != sum(value is True for value in agreements)
+                        or task["n_resolved_comparisons"] != sum(value is not None for value in agreements)
+                        or task["n_unresolved_comparisons"] != sum(value is None for value in agreements)):
+                    raise ValueError("control agreement counts differ from resolved decisions")
+                if task["n_eligible_agents"] != sum(row["competence"]["eligible_for_sensitivity_claim"]
+                                                    for row in task["checkpoints"]):
+                    raise ValueError("control eligibility count differs from competence records")
         derived = path.with_name("null_width_conjecture.json")
         if derived.exists():
             payload = json.loads(derived.read_text())
@@ -265,6 +288,18 @@ def validate_stability_returns(out: Path) -> None:
                         raise ValueError("stability and primary evaluations disagree")
 
 
+def validate_reference_bootstraps(out: Path) -> None:
+    from bootstrap_z import bootstrap, collect
+    for path in sorted(out.rglob("z_intervals.json")):
+        payload = json.loads(path.read_text())
+        expected = {}
+        for label, observed, nulls in collect(path.parent):
+            row = payload[label]
+            expected[label] = bootstrap(observed, nulls, row["n_boot"], row["seed"])
+        if payload != expected:
+            raise ValueError("reference resampling summary differs from recorded inputs")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", type=Path, required=True)
@@ -287,6 +322,7 @@ def main() -> None:
         validate_primary_endpoints(args.out)
         validate_horizon_returns(args.out)
         validate_stability_returns(args.out)
+        validate_reference_bootstraps(args.out)
         manifest["artifacts"] = {
             str(p.relative_to(args.out)): digest(p)
             for p in sorted(args.out.rglob("*"))
