@@ -18,7 +18,7 @@
   "layout_fixture": false,
   "input_manifest_sha256": "5e41f728e152fbbf997b1fea05a3f3e227fd6d8efdb8985eda54acf7b1d1b7bb",
   "manuscript_source_sha256": {
-    "docs/paper/article.tex": "3a55f7de14e3cb4c98f77708ecab4a1935f06b330d3741fef13b7d70260e6367",
+    "docs/paper/article.tex": "192a2ccaa4d2641248fc47ebe5f09c14b85fa0a37beb6e555f1a71cb458a7072",
     "docs/paper/main.tex": "955888b8b6f192da2275727fd863725f1b8b5725b81c298eeb08cdfe3756117d",
     "docs/paper/workshop.tex": "5ebb25ad95116a307cdcc8517591685e2ae85d0c0c8351e596ea99486d864cd8",
     "docs/paper/core/main.tex": "781813bb6d375a826baaae8f7da909d142d33448df585ef891222efcb3b56321",
@@ -29,12 +29,12 @@
   "artifacts_sha256": {
     "metrics.tex": "e0b1b0679f5ce22ef9960e8ee1842566821bc7eef9b5c1e7e2f4bdbcc60e3db5",
     "tables.tex": "7f0fcc44a4dae1b65228284764cf85651241f0bb459f6962d133a1af201ea2f1",
-    "statistics.json": "edbd20bbd65201123a5e92e4618d98d1166979066ebbb7489f8bc583813a87a4",
+    "statistics.json": "e831a67dea8982bbf97cecc8250e6d8b6168ab05efdf3fae674dea130cc591f6",
     "figures/calibration.png": "9de55e5e0c1753a59bbe242b91653d721c4ace7a785ad80575dbfcd3d2be9d8b",
     "figures/state_interventions.png": "0b445c01077352fb597955b85ba4a758845c0454af8e138af123c858c4473d44",
     "figures/steering.png": "38580943740d864e7264bde85c7e15985ddf8c14e04418d71ec383a8de28cca6",
-    "main.pdf": "8b2bf19ca4ff39321d7dc1ba09acb8bbb3ac7167a001eb751fda732be78606bc",
-    "core/main.pdf": "7695696374eec14170603f66c3d87f4906dfeaa477ded10e10ff73ff11aadb7c",
-    "workshop.pdf": "8d24355efcf128d0579963ba091b3ccd619a37638544b523e333a63753c33f87"
+    "main.pdf": "89ebea72181d6465dff052c90375d98cb1c5736df4d9752a6297e87866bc1851",
+    "core/main.pdf": "7dc67873907e9c9eed01fcc5b22f7ab1b1ea7d92e7dfe2f958b9aa395b453b0d",
+    "workshop.pdf": "23c015deb7d8b396508cbde83ddc73ce4d061b70c3388cc01c0759e502d2e4c4"
   }
 }

@@ -325,6 +325,9 @@ legacy normal-scale rule then cannot decide. That outcome differs from a
 resolved non-rejection and from a trained observed agent failing to learn.
 
 \subsection{State preservation and attribution suppression}
+The market state controls use the five saved cost-enabled checkpoints. Each
+synthetic case trains five new policies for 60 updates, using 1,200 episodes
+per training draw and 1,200 common independent evaluation episodes.
 Full replacement changes inventory inputs as well as market inputs. The
 market-row and donor-trajectory controls retain the real clock and all four
 inventory coordinates of the intervened rollout. A donor row preserves empirical row support, and a
@@ -363,7 +366,9 @@ An auxiliary single-seed comparison examines greedy behaviour; it cannot
 establish behavioural equivalence across the full experiment.
 The penalty targets the expiry clock in the market and the planted
 signal in the synthetic case, with ten seeds and penalty 20 fixed for the
-reported comparison. All penalties are retained. \SteeringParagraph{}
+reported comparison. Each steering policy trains for 60 updates. Synthetic
+training and independent evaluation each use 1,500 episodes; market evaluation
+uses the complete test partition. All penalties are retained. \SteeringParagraph{}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{\paperroot/figures/steering.png}

@@ -10,12 +10,14 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 import numpy as np
 
 from run_manifest import (digest, validate_control_returns, validate_evaluation,
-                          validate_horizon_returns, validate_primary_endpoints,
-                          validate_reference_bootstraps, validate_stability_returns)
+                          validate_stability_returns)
+from portable_validation import (ABSOLUTE_TOLERANCE, validate_primary_endpoints,
+                                 validate_reference_bootstraps, validate_horizon_returns)
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -147,9 +149,16 @@ def verify(run: Path, corpus: Path, *, allow_quick=False) -> dict:
     actual_checkpoints = {str(path.relative_to(run / "checkpoints"))
                           for path in (run / "checkpoints").rglob("seed*.pt")}
     require(actual_checkpoints == set(manifest["checkpoints"]), "checkpoint membership differs")
-    for validator in (validate_evaluation, validate_control_returns, validate_primary_endpoints,
-                      validate_horizon_returns, validate_stability_returns, validate_reference_bootstraps):
+    for validator in (validate_evaluation, validate_control_returns, validate_stability_returns):
         validator(reports)
+    differences = []
+    validate_primary_endpoints(reports, differences)
+    validate_horizon_returns(reports, differences)
+    validate_reference_bootstraps(reports, differences)
+    if differences:
+        error, context, actual, recorded = max(differences)
+        print(f"accepted CPU roundoff in {len(differences)} numeric fields; maximum {error:.3g} "
+              f"at {context}: {actual!r} versus {recorded!r}", file=sys.stderr)
     parity = load(reports / "rollout_parity.json")
     require(parity["corpus_sha256"] == manifest["corpus_sha256"], "parity corpus differs")
     require(parity["audit_script_sha256"] == digest(Path(__file__).with_name("audit_market_rollouts.py")),
@@ -172,6 +181,9 @@ def verify(run: Path, corpus: Path, *, allow_quick=False) -> dict:
     return {"source_commit": manifest["commit"], "artifacts_checked": len(manifest["artifacts"]),
             "checkpoints_checked": len(manifest["checkpoints"]),
             "scientific_budgets_checked": not manifest["quick"],
+            "reconstruction_absolute_tolerance": ABSOLUTE_TOLERANCE,
+            "verification_script_sha256": digest(Path(__file__)),
+            "reconstruction_script_sha256": digest(Path(__file__).with_name("portable_validation.py")),
             "scope": "content hashes, recorded source, declared budgets, primary raw-summary reconstruction and complete market trajectory parity"}
 
 

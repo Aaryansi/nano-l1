@@ -5,6 +5,9 @@
     "artifacts_checked": 64,
     "checkpoints_checked": 10,
     "scientific_budgets_checked": true,
+    "reconstruction_absolute_tolerance": 1e-09,
+    "verification_script_sha256": "2898cb55484c569458950ae9292e6e3aad7bf9c2cf5b58dd61c982539d6b209d",
+    "reconstruction_script_sha256": "ff0bb6168c26609fbd02aed3df664506cf90f79acc2e9a43011337ed21ee879f",
     "scope": "content hashes, recorded source, declared budgets, primary raw-summary reconstruction and complete market trajectory parity"
   },
   "input_manifest_sha256": "5e41f728e152fbbf997b1fea05a3f3e227fd6d8efdb8985eda54acf7b1d1b7bb",
