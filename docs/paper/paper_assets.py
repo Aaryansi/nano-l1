@@ -135,6 +135,14 @@ def numerical_text(statistics, context):
         f"The full-input replacement span is {number(full['mean_span'])}, with interval "
         f"{interval(full['ci95'])}; the donor-trajectory span retaining inventory and clock "
         f"is {number(trajectory['mean_span'])}, with interval {interval(trajectory['ci95'])}.")
+    null_state = next(row for row in statistics["state_interventions"]["cases"]
+                      if row["case"] == "null")["interventions"]
+    null_full, null_path = null_state["full_observation"], null_state["market_trajectories"]
+    macros["NullStateParagraph"] = (
+        f"The zero-strength population also has a full-input span of "
+        f"{number(null_full['mean_span'])}, with interval {interval(null_full['ci95'])}; "
+        f"its donor-trajectory span is {number(null_path['mean_span'])}, with interval "
+        f"{interval(null_path['ci95'])}.")
     sentences = []
     for key, label in (("real_market", "market clock"), ("learnable_synthetic", "synthetic signal")):
         rows = statistics["steering"]["populations"][key]

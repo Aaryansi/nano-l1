@@ -1,58 +1,41 @@
-# agent-rl
+# Research implementation
 
-everything the paper runs. the environment, the PPO agent, the attribution
-implementations, the four null constructions, and the tests that pin them.
+The binary-market environment, PPO trainer, explanation methods, reference constructions and tests used by the paper live here. The full experiment entry point is [reproduce.sh](../../reproduce.sh) at the repository root. Computation uses the CPU with pinned Python dependencies.
 
-nothing here needs a GPU. the full pipeline is driven from `reproduce.sh` at
-the repository root, not from this directory.
-
-## layout
-
-| | |
+| Directory | Purpose |
 |---|---|
-| `nano_rl/env/` | binary-market env, features, synthetic corpora, permuted-outcome corpora |
-| `nano_rl/agents/` | PPO and the actor-critic network |
-| `nano_rl/explain/` | Shapley, integrated gradients, trajectory attribution, masking, the decision rule |
-| `nano_rl/envs/` | gym wrappers for the control tasks, including the blinded-observation wrapper |
-| `scripts/` | one script per experiment; see below |
-| `tests/` | 312 tests, run with `pytest` |
-| `runs/` | trained checkpoints, five seeds |
+| `nano_rl/env/` | Market accounting, observations, synthetic and shuffled-outcome corpora |
+| `nano_rl/agents/` | Market PPO and actor-critic network |
+| `nano_rl/explain/` | Return interventions, Shapley and IG targets, ranking diagnostics and reference rules |
+| `nano_rl/envs/` | Control-task wrappers and independent control trainer |
+| `scripts/` | Experiment producers, release verification and publication reconstruction |
+| `tests/` | Accounting, trajectory parity, exact attribution games, statistical states and pipeline regressions |
 
-## the decision rule
+## Entry points
 
-`nano_rl/explain/sanity.py` is the module every verdict in the paper comes
-from. it is small and worth reading first. it has already shipped two bugs of
-the kind that do not announce themselves, both now pinned by tests: a degenerate
-null returning `z = 0.0` and silently converting an observation outside the
-reference into a null result, and a rank statistic whose floor of `1/(n+1)`
-made rejection impossible at the budget then in use.
-
-## scripts
-
-most scripts correspond to a section of the paper and are called in order by
-`reproduce.sh`. run that rather than invoking them individually.
-
-six are **not** called by `reproduce.sh`. they are kept because they are the
-provenance of claims made in `docs/AGENT_NOTES.md` and `docs/REPORT.md`, and
-deleting them would leave those claims unsourced:
-
-| | |
-|---|---|
-| `diagnose_null.py` | why tabular Q churns on a corpus with no signal |
-| `diagnose_ppo.py` | why PPO collapsed to always-flat on a corpus with real signal |
-| `sweep_abstention.py` | can PPO learn to abstain on noise, and under what settings |
-| `smoke_episode.py` | read-only check of the resampler against cached markets |
-| `verify_kalshi_data.py` | the original de-risking spike: is a causal dataset buildable |
-| `verify_kalshi_candles.py` | do the exchange's candles carry bid/ask history |
-
-## running
+Run from the repository root after installing [requirements.txt](requirements.txt) into a Python 3.12 environment:
 
 ```sh
-python -m venv .venv && ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/python -m pytest              # 312 tests
-./.venv/bin/python scripts/verify_paper_numbers.py   # 186 claims vs artifacts
+PY=services/agent-rl/.venv/bin/python
+(cd services/agent-rl && .venv/bin/python -m pytest)
+"$PY" services/agent-rl/scripts/verify_release.py \
+  --run data/releases/research_v1 \
+  --corpus data/releases/market_snapshot_v1/corpus.npz
+"$PY" services/agent-rl/scripts/verify_paper_numbers.py
 ```
 
-`verify_paper_numbers.py` reads `reports/*.json` and asserts every numerical
-claim in `docs/paper/main.tex` against the artifact that produced it. it exits
-non-zero on a mismatch and runs as the last stage of `reproduce.sh`.
+`run_manifest.py` validates experiment outputs and records provenance. `audit_market_rollouts.py` compares complete scalar/vector observations, actions, accounting and saved returns for every market checkpoint. `verify_release.py` checks selected evidence and declared budgets; `--allow-quick` explicitly limits its result to execution evidence. `publication_statistics.py` reconstructs numerical manuscript inputs, with undefined standardized quantities represented by null.
+
+`verify_paper_numbers.py` checks the selected experiment against the generated manuscript and all publication hashes. Its `--reports PATH` mode compares a separate completed full run with the published numerical claims. It never falls back to another run's results. [docs/paper/build.py](../../docs/paper/build.py) builds all profiles from the shared article, using verified full-budget data.
+
+## Reference interpretation
+
+`nano_rl/explain/sanity.py` retains the legacy reference-centered rank/normal diagnostic with outside, within and unresolved outcomes. A zero-width reference or insufficient rank resolution is unresolved under this rule. Standard upper-tail and pooled-symmetric rank comparators are evaluated on the same synthetic calibration trials. Their marginal rank guarantees require exchangeability; a metadata match alone does not prove that assumption.
+
+Each endpoint span concerns a declared input intervention. Probability attribution, critic attribution, return intervention, feature-level fidelity and task utility are separate targets. See the [protocol](../../docs/EXPERIMENT_PROTOCOL.md), [implemented model](../../docs/MDP.md) and [shared manuscript](../../docs/paper/article.tex).
+
+## Auxiliary tools
+
+Historical ingestion and exploratory training tools remain available for new experiments, including `verify_kalshi_data.py`, `verify_kalshi_candles.py`, `smoke_episode.py`, `diagnose_null.py`, `diagnose_ppo.py` and `sweep_abstention.py`. They are outside the fixed release protocol and do not establish the manuscript's numerical claims. Downloading a new API window produces a new dataset.
+
+The CI smoke script writes isolated reduced-budget outputs, exercises the full verification path and explicitly reports that scientific budgets were not checked. It never updates the selected release.

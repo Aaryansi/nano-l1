@@ -339,7 +339,7 @@ step "confidence intervals on every reported z-score"
 ( cd "$RL" && "$PY" scripts/bootstrap_z.py --reports "$REPORTS" \
     --out "$REPORTS" --n-boot 10000 )
 
-step "redrawing the paper's figures at publication size"
+step "rendering auxiliary experiment figures"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$FIGURES" )
 
@@ -384,4 +384,4 @@ echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
 echo
 echo "publication verification is opt-in with --verify-paper"
-echo "docs/REPORT.md  the trading project"
+echo "docs/REPORT.md  selected evidence and manuscript verification"

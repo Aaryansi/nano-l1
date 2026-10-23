@@ -1,0 +1,4083 @@
+{
+  "design": "independent observed trials conditional on one independently trained reference bank",
+  "interval_scope": "pointwise conditional binomial uncertainty; excludes variation across reference banks",
+  "schema_version": 2,
+  "synthetic_episodes": 1200,
+  "reference_protocol": {
+    "generator": "make_learnable_corpus(signal_strength=0)",
+    "implementation_sha256": {
+      "nano_rl/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/agents/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/agents/networks.py": "f81bac48e4f600331904d8fbca865e940640c2e23d9d860ac338bb826efb7129",
+      "nano_rl/agents/ppo.py": "7558859d3e05a33d98469685abcfc437cb3baef78d1f9af1f2410030c4e10801",
+      "nano_rl/agents/tabular_q.py": "04f3713f3378a7d063d5a872621623d56915f2f9f2cef525b5219749af99bf0a",
+      "nano_rl/baselines.py": "f4385f2f9ede54d0c6953bb001a221a1045d63a0ed9acf1a57094b1b14c33d50",
+      "nano_rl/data/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/data/binance.py": "a9c12fd874eb34dac5fca004aa7472e5e67f00264511858ca83e318a0024ca0b",
+      "nano_rl/data/episode.py": "829be88afe894380f2faaace70d0f5210f678ff64634bbcf0ab78d4012b4260b",
+      "nano_rl/data/kalshi.py": "d6cb2989fc2fb4e164269f71210b1bfa5c3c308abee9513fe2217256c9e234d8",
+      "nano_rl/data/splits.py": "4b5db95a4e48c790cafbc54d63a6e5677b519be5107755229f8de94dbf0381f8",
+      "nano_rl/env/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/env/binary_market.py": "4d374110e3d9799aeb6637d95aaa2c695c476aebcb1b643c375184b5905ef1a6",
+      "nano_rl/env/costs.py": "f9fd948a0fa1dca06ce6c2424810ce7214719289a81e238e0b479a546518a6da",
+      "nano_rl/env/features.py": "4fd645ca40ff063163655f3f2d985434214c7543124e39db2d4eafaea23638e3",
+      "nano_rl/env/permuted.py": "7ebe3b2462639b357e051d56b890b545714fb56b5e0797814442f88c45670d34",
+      "nano_rl/env/prediction.py": "64f512973c75bd1a0e92eac16763134632cad4e63a9ccd616501c017ee436ead",
+      "nano_rl/env/synthetic.py": "8ba1852b1857eac7c464f8abedaad5ac281cc30729c9108c2afd64806f79c319",
+      "nano_rl/envs/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/envs/control_training.py": "8ef416232f2b13ba171fc0b7eb651312005eaf712a5e63858d416e1aa09923ac",
+      "nano_rl/envs/gym_null.py": "b4e8101a833c1df3b47febb6141df68e3d17f2a601008301fdc6739ebed0677f",
+      "nano_rl/explain/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "nano_rl/explain/diagnostics.py": "e6cf531e19fc9710315196c0fbe07b58aaa5305c5e2b79a54346342ee60f1ef0",
+      "nano_rl/explain/gradients.py": "b060170ca754ce0993b55adfe95e78f859a4f6726a3396fe4ae629d1144ab7b9",
+      "nano_rl/explain/interventions.py": "220f23adb824ef48488ab98c3a2a99395a7902df1f6693f635dc86527b7c9e10",
+      "nano_rl/explain/manifold.py": "0a8921b0a417362cc2f238ee242c1967463e5c48bac5f2214f4cca125ad9e852",
+      "nano_rl/explain/outcome_schemes.py": "89145d2bdc3e203e34e2acceef4353ad2be7676a2a3a7fcf087349f2464e238c",
+      "nano_rl/explain/rank.py": "bb0d5f7f2a48103f767b58df94b723803f7464c93a715518f36ceb7f928f5c1d",
+      "nano_rl/explain/rollout.py": "247f0db89c204c19eb60d105420fefb4ec0f3737bb6970a67b170ec8a40f0d89",
+      "nano_rl/explain/sanity.py": "3e9da769b319df08dd7adfc94461e988cb914ffcd924b0bc9ad4b79ba0dce424",
+      "nano_rl/explain/shapley.py": "17308da28ce2e9c611cf5194f0b9319db684d9b54be70a65ba694f8a66cc333a",
+      "nano_rl/explain/trajectory.py": "b0b7257f8dc67b67df83ca828ba59f36df069a772a3af67c9b2b27fec85c2527",
+      "nano_rl/metrics.py": "551ff5f7d6a4bb8cf68e3060d5a087dd57bcbc5aa3799aa14952805ba53e229b",
+      "nano_rl/plots.py": "3625f594937ddbdc342b6f9a4f80152a23d61ef1e53f2b27252b16c979980397",
+      "scripts/sanity_check_explanations.py": "25caeabb5ad1dbba1d6a14cf01888d44777e52bcdf7db885ef08611a12ddb144",
+      "scripts/calibrate_detection.py": "1f5fa31f55ca0785bb74fe6e6aaf3c96b3542fcb5e5cdaa2c1fd5e57c200a0c9"
+    },
+    "runtime": {
+      "numpy": "2.1.3",
+      "torch": "2.5.1",
+      "torch_threads": 1
+    },
+    "episodes_per_corpus": 1200,
+    "steps": 14,
+    "noise": 0.3,
+    "price": 0.5,
+    "spread": 0.02,
+    "independent_training_evaluation": true,
+    "training_updates": 40,
+    "ppo": {
+      "lr": 0.0003,
+      "gamma": 1.0,
+      "gae_lambda": 0.95,
+      "clip_coef": 0.2,
+      "value_coef": 0.5,
+      "entropy_coef": 0.01,
+      "max_grad_norm": 0.5,
+      "episodes_per_batch": 64,
+      "update_epochs": 4,
+      "minibatch_size": 256,
+      "anneal_lr": true,
+      "hidden": 64,
+      "device": "cpu",
+      "invariance_feature": null,
+      "invariance_coef": 0.0
+    },
+    "max_position": 100.0,
+    "normalizer": "training market features only",
+    "evaluation": "greedy, all evaluation episodes",
+    "background_samples": 256,
+    "intervention": "fresh whole background row per episode per decision",
+    "masking_seed_equals_policy_seed": true
+  },
+  "rank_validity_scope": "requires jointly exchangeable observed/reference statistics; applicable only to the matched zero-strength synthetic DGP, not established for market comparisons",
+  "rank_rate_scope": "rates and intervals are conditional on this bank; finite-rank validity is marginal over both bank and observed draw",
+  "endpoint_returns_file": "detection_calibration_returns.npz",
+  "reference_endpoint_keys": [
+    "reference_0",
+    "reference_1",
+    "reference_2",
+    "reference_3",
+    "reference_4",
+    "reference_5",
+    "reference_6",
+    "reference_7",
+    "reference_8",
+    "reference_9",
+    "reference_10",
+    "reference_11",
+    "reference_12",
+    "reference_13",
+    "reference_14",
+    "reference_15",
+    "reference_16",
+    "reference_17",
+    "reference_18",
+    "reference_19",
+    "reference_20",
+    "reference_21",
+    "reference_22",
+    "reference_23"
+  ],
+  "updates": 40,
+  "reference_json": "sanity_test.json",
+  "reference_json_sha256": "e6d4f4845b43c004c59eec645fb42e70d5a1c13f450bbede621c1a105d657ef9",
+  "reference_base_seed": null,
+  "reference_data": {
+    "signal": {
+      "train_seed": 0,
+      "evaluation_seed": 1000000,
+      "train_episodes": 1200,
+      "evaluation_episodes": 1200
+    },
+    "null": {
+      "train_seed": 9999,
+      "evaluation_seed": 1009999,
+      "train_episodes": 1200,
+      "evaluation_episodes": 1200
+    },
+    "reference_train_seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1023
+    ],
+    "reference_policy_seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004,
+      10005,
+      10006,
+      10007,
+      10008,
+      10009,
+      10010,
+      10011,
+      10012,
+      10013,
+      10014,
+      10015,
+      10016,
+      10017,
+      10018,
+      10019,
+      10020,
+      10021,
+      10022,
+      10023
+    ],
+    "reference_masking_seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004,
+      10005,
+      10006,
+      10007,
+      10008,
+      10009,
+      10010,
+      10011,
+      10012,
+      10013,
+      10014,
+      10015,
+      10016,
+      10017,
+      10018,
+      10019,
+      10020,
+      10021,
+      10022,
+      10023
+    ],
+    "reference_evaluation_seeds": [
+      1001000,
+      1001001,
+      1001002,
+      1001003,
+      1001004,
+      1001005,
+      1001006,
+      1001007,
+      1001008,
+      1001009,
+      1001010,
+      1001011,
+      1001012,
+      1001013,
+      1001014,
+      1001015,
+      1001016,
+      1001017,
+      1001018,
+      1001019,
+      1001020,
+      1001021,
+      1001022,
+      1001023
+    ]
+  },
+  "null_spans": [
+    13.782494440078732,
+    9.315621928373973,
+    3.602915272712708,
+    13.457288054625193,
+    5.012081681887309,
+    6.431038901805879,
+    7.22437245130539,
+    14.001662273406982,
+    4.344373710155487,
+    17.526452645460765,
+    5.6199974441528315,
+    4.647289809385935,
+    7.109371682008108,
+    4.266665331522623,
+    2.6587482976913464,
+    8.632288658618927,
+    10.792079532941184,
+    8.146663436889648,
+    7.38645578622818,
+    2.9187492767969765,
+    5.19395617087682,
+    5.948748081525166,
+    9.088538904984793,
+    7.688747102419535
+  ],
+  "cases": [
+    {
+      "signal_strength": 0.0,
+      "n_trials": 30,
+      "n_resolved": 30,
+      "n_unresolved": 0,
+      "n_rejected": 0,
+      "n_positive_rejections": 0,
+      "rejection_rate_resolved": 0.0,
+      "rejection_rate_ci95": [
+        0.0,
+        0.11351339317396876
+      ],
+      "positive_detection_rate_resolved": 0.0,
+      "positive_detection_ci95": [
+        0.0,
+        0.11351339317396876
+      ],
+      "rank_comparators": {
+        "greater": {
+          "n_trials": 30,
+          "n_rejected": 0,
+          "rejection_rate": 0.0,
+          "rejection_rate_ci95": [
+            0.0,
+            0.11351339317396876
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        },
+        "two-sided": {
+          "n_trials": 30,
+          "n_rejected": 0,
+          "rejection_rate": 0.0,
+          "rejection_rate_ci95": [
+            0.0,
+            0.11351339317396876
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        }
+      },
+      "trials": [
+        {
+          "trial": 0,
+          "policy_seed": 800000,
+          "masking_seed": 800000,
+          "endpoint_key": "strength_0_trial_0",
+          "data": {
+            "train_seed": 500000,
+            "evaluation_seed": 1500000,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.6,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.68,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -8.332914268175761,
+          "result": {
+            "statistic": 6.128539006710053,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.68,
+            "p_normal": 0.6837328145185491,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.4073746883342544,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 1,
+          "policy_seed": 800001,
+          "masking_seed": 800001,
+          "endpoint_key": "strength_0_trial_1",
+          "data": {
+            "train_seed": 500001,
+            "evaluation_seed": 1500001,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.48,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.348748462994894,
+          "result": {
+            "statistic": 10.719579586982725,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.48,
+            "p_normal": 0.433696279993634,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.78288221896192,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 2,
+          "policy_seed": 800002,
+          "masking_seed": 800002,
+          "endpoint_key": "strength_0_trial_2",
+          "data": {
+            "train_seed": 500002,
+            "evaluation_seed": 1500002,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.2,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.32,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -4.689164260228475,
+          "result": {
+            "statistic": 11.669788356622059,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.32,
+            "p_normal": 0.3033716191808313,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 1.0292299764390374,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 3,
+          "policy_seed": 800003,
+          "masking_seed": 800003,
+          "endpoint_key": "strength_0_trial_3",
+          "data": {
+            "train_seed": 500003,
+            "evaluation_seed": 1500003,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.2,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.28,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.459998944600423,
+          "result": {
+            "statistic": 12.381869593461355,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.28,
+            "p_normal": 0.2248082043904769,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 1.2138416338366804,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 4,
+          "policy_seed": 800004,
+          "masking_seed": 800004,
+          "endpoint_key": "strength_0_trial_4",
+          "data": {
+            "train_seed": 500004,
+            "evaluation_seed": 1500004,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.76,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.48,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -6.530205476284027,
+          "result": {
+            "statistic": 4.862706719239553,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.48,
+            "p_normal": 0.4620046736116977,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.735549880275336,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 5,
+          "policy_seed": 800005,
+          "masking_seed": 800005,
+          "endpoint_key": "strength_0_trial_5",
+          "data": {
+            "train_seed": 500005,
+            "evaluation_seed": 1500005,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.64,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.6,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.2064562821388245,
+          "result": {
+            "statistic": 5.775206258296966,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.6,
+            "p_normal": 0.6177945415973312,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.49897848425357527,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 6,
+          "policy_seed": 800006,
+          "masking_seed": 800006,
+          "endpoint_key": "strength_0_trial_6",
+          "data": {
+            "train_seed": 500006,
+            "evaluation_seed": 1500006,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.6,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -1.4166657129923503,
+          "result": {
+            "statistic": 9.870830488204957,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.56,
+            "p_normal": 0.5735448367301306,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.5628385361152654,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 7,
+          "policy_seed": 800007,
+          "masking_seed": 800007,
+          "endpoint_key": "strength_0_trial_7",
+          "data": {
+            "train_seed": 500007,
+            "evaluation_seed": 1500007,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.64,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.6,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -9.166663805643717,
+          "result": {
+            "statistic": 5.780622634092968,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.6,
+            "p_normal": 0.6187841542256665,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.49757425386375803,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 8,
+          "policy_seed": 800008,
+          "masking_seed": 800008,
+          "endpoint_key": "strength_0_trial_8",
+          "data": {
+            "train_seed": 500008,
+            "evaluation_seed": 1500008,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.68,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.56,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -3.0397902512550354,
+          "result": {
+            "statistic": 5.408123514652252,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.56,
+            "p_normal": 0.5524137607676495,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.5941470551979866,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 9,
+          "policy_seed": 800009,
+          "masking_seed": 800009,
+          "endpoint_key": "strength_0_trial_9",
+          "data": {
+            "train_seed": 500009,
+            "evaluation_seed": 1500009,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 1.0,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.08,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -9.687497218449911,
+          "result": {
+            "statistic": 0.11812404870986803,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.08,
+            "p_normal": 0.049343265890116485,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.9656135656414722,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 10,
+          "policy_seed": 800010,
+          "masking_seed": 800010,
+          "endpoint_key": "strength_0_trial_10",
+          "data": {
+            "train_seed": 500010,
+            "evaluation_seed": 1500010,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.52,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.946456574598948,
+          "result": {
+            "statistic": 10.446454667250315,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.48,
+            "p_normal": 0.4764196839309609,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.7120728203991856,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 11,
+          "policy_seed": 800011,
+          "masking_seed": 800011,
+          "endpoint_key": "strength_0_trial_11",
+          "data": {
+            "train_seed": 500011,
+            "evaluation_seed": 1500011,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.92,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.28,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -7.403122707207998,
+          "result": {
+            "statistic": 3.008957130908967,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.28,
+            "p_normal": 0.22392914714511603,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.2161464276874425,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 12,
+          "policy_seed": 800012,
+          "masking_seed": 800012,
+          "endpoint_key": "strength_0_trial_12",
+          "data": {
+            "train_seed": 500012,
+            "evaluation_seed": 1500012,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.92,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.28,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -4.251456873416901,
+          "result": {
+            "statistic": 2.99312388976415,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.28,
+            "p_normal": 0.2223696259926943,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.2202512976636484,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 13,
+          "policy_seed": 800013,
+          "masking_seed": 800013,
+          "endpoint_key": "strength_0_trial_13",
+          "data": {
+            "train_seed": 500013,
+            "evaluation_seed": 1500013,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.56,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -4.303332303365072,
+          "result": {
+            "statistic": 10.40749587059021,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.48,
+            "p_normal": 0.4826963129748695,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.7019725008716501,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 14,
+          "policy_seed": 800014,
+          "masking_seed": 800014,
+          "endpoint_key": "strength_0_trial_14",
+          "data": {
+            "train_seed": 500014,
+            "evaluation_seed": 1500014,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.92,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.28,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -8.666663805643717,
+          "result": {
+            "statistic": 3.5164570705095937,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.28,
+            "p_normal": 0.278110467729271,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.0845737922466638,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 15,
+          "policy_seed": 800015,
+          "masking_seed": 800015,
+          "endpoint_key": "strength_0_trial_15",
+          "data": {
+            "train_seed": 500015,
+            "evaluation_seed": 1500015,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.56,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.116665267944336,
+          "result": {
+            "statistic": 10.027079971631368,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.56,
+            "p_normal": 0.5462777238728572,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.603347223341615,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 16,
+          "policy_seed": 800016,
+          "masking_seed": 800016,
+          "endpoint_key": "strength_0_trial_16",
+          "data": {
+            "train_seed": 500016,
+            "evaluation_seed": 1500016,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.6,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.68,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -6.241872416337331,
+          "result": {
+            "statistic": 6.021873128414154,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.64,
+            "p_normal": 0.6635417364286142,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.4350285058500573,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 17,
+          "policy_seed": 800017,
+          "masking_seed": 800017,
+          "endpoint_key": "strength_0_trial_17",
+          "data": {
+            "train_seed": 500017,
+            "evaluation_seed": 1500017,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.56,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.989165023167928,
+          "result": {
+            "statistic": 10.032288086414336,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.56,
+            "p_normal": 0.545380035669563,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.6046974607194017,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 18,
+          "policy_seed": 800018,
+          "masking_seed": 800018,
+          "endpoint_key": "strength_0_trial_18",
+          "data": {
+            "train_seed": 500018,
+            "evaluation_seed": 1500018,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.32,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.76,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -2.447914719581604,
+          "result": {
+            "statistic": 9.049164222081503,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.72,
+            "p_normal": 0.7264766010607057,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.3498162524639165,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 19,
+          "policy_seed": 800019,
+          "masking_seed": 800019,
+          "endpoint_key": "strength_0_trial_19",
+          "data": {
+            "train_seed": 500019,
+            "evaluation_seed": 1500019,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 1.0,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.16,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -4.540623613198599,
+          "result": {
+            "statistic": 1.386457693576812,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.08,
+            "p_normal": 0.10167438087299326,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.6367898806481775,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 20,
+          "policy_seed": 800020,
+          "masking_seed": 800020,
+          "endpoint_key": "strength_0_trial_20",
+          "data": {
+            "train_seed": 500020,
+            "evaluation_seed": 1500020,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.76,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.48,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -7.503122325738271,
+          "result": {
+            "statistic": 4.709790047804514,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.48,
+            "p_normal": 0.43822472911329097,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.7751945144783918,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 21,
+          "policy_seed": 800021,
+          "masking_seed": 800021,
+          "endpoint_key": "strength_0_trial_21",
+          "data": {
+            "train_seed": 500021,
+            "evaluation_seed": 1500021,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.88,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.32,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.499998092651367,
+          "result": {
+            "statistic": 3.7060403958956396,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.32,
+            "p_normal": 0.3004713664365902,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.0354230913100326,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 22,
+          "policy_seed": 800022,
+          "masking_seed": 800022,
+          "endpoint_key": "strength_0_trial_22",
+          "data": {
+            "train_seed": 500022,
+            "evaluation_seed": 1500022,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 1.0,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.2,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -6.348747191429138,
+          "result": {
+            "statistic": 2.2972911445299795,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.2,
+            "p_normal": 0.161318633046578,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -1.4006504287226558,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 23,
+          "policy_seed": 800023,
+          "masking_seed": 800023,
+          "endpoint_key": "strength_0_trial_23",
+          "data": {
+            "train_seed": 500023,
+            "evaluation_seed": 1500023,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.8,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.44,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -8.99999713897705,
+          "result": {
+            "statistic": 4.5945816532770785,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.4,
+            "p_normal": 0.4207833058490339,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.8050630344723141,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 24,
+          "policy_seed": 800024,
+          "masking_seed": 800024,
+          "endpoint_key": "strength_0_trial_24",
+          "data": {
+            "train_seed": 500024,
+            "evaluation_seed": 1500024,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.88,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.32,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -7.309164247512817,
+          "result": {
+            "statistic": 4.204581933021545,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.32,
+            "p_normal": 0.3648443024093593,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.9061729795406182,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 25,
+          "policy_seed": 800025,
+          "masking_seed": 800025,
+          "endpoint_key": "strength_0_trial_25",
+          "data": {
+            "train_seed": 500025,
+            "evaluation_seed": 1500025,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.2,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.28,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -5.571248790423075,
+          "result": {
+            "statistic": 12.700619887510937,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.24,
+            "p_normal": 0.19481026759248646,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 1.296479705219763,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 26,
+          "policy_seed": 800026,
+          "masking_seed": 800026,
+          "endpoint_key": "strength_0_trial_26",
+          "data": {
+            "train_seed": 500026,
+            "evaluation_seed": 1500026,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.56,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.76,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -6.475830596288045,
+          "result": {
+            "statistic": 6.4954150787989295,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.76,
+            "p_normal": 0.7548431658362862,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.3122596983248349,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 27,
+          "policy_seed": 800027,
+          "masking_seed": 800027,
+          "endpoint_key": "strength_0_trial_27",
+          "data": {
+            "train_seed": 500027,
+            "evaluation_seed": 1500027,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.8,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.44,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -4.5074983501434325,
+          "result": {
+            "statistic": 4.645831982294718,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.44,
+            "p_normal": 0.4284912661595059,
+            "min_achievable_p_rank": 0.04,
+            "z_score": -0.7917760558347121,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 28,
+          "policy_seed": 800028,
+          "masking_seed": 800028,
+          "endpoint_key": "strength_0_trial_28",
+          "data": {
+            "train_seed": 500028,
+            "evaluation_seed": 1500028,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.08,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.08,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -1.8408320013682047,
+          "result": {
+            "statistic": 15.633744896252951,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.08,
+            "p_normal": 0.03969475899838488,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.05691129814003,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 29,
+          "policy_seed": 800029,
+          "masking_seed": 800029,
+          "endpoint_key": "strength_0_trial_29",
+          "data": {
+            "train_seed": 500029,
+            "evaluation_seed": 1500029,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.24,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.64,
+              "rejected": false,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": -6.00624783039093,
+          "result": {
+            "statistic": 9.54499677658081,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.6,
+            "p_normal": 0.632391121225427,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 0.4783640429999033,
+            "passes": false,
+            "verdict": "NOT DISTINGUISHABLE FROM NULL",
+            "n_null_samples": 24
+          }
+        }
+      ]
+    },
+    {
+      "signal_strength": 0.2,
+      "n_trials": 30,
+      "n_resolved": 30,
+      "n_unresolved": 0,
+      "n_rejected": 30,
+      "n_positive_rejections": 30,
+      "rejection_rate_resolved": 1.0,
+      "rejection_rate_ci95": [
+        0.8864866068260312,
+        0.9999999999999999
+      ],
+      "positive_detection_rate_resolved": 1.0,
+      "positive_detection_ci95": [
+        0.8864866068260312,
+        0.9999999999999999
+      ],
+      "rank_comparators": {
+        "greater": {
+          "n_trials": 30,
+          "n_rejected": 30,
+          "rejection_rate": 1.0,
+          "rejection_rate_ci95": [
+            0.8864866068260312,
+            0.9999999999999999
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        },
+        "two-sided": {
+          "n_trials": 30,
+          "n_rejected": 30,
+          "rejection_rate": 1.0,
+          "rejection_rate_ci95": [
+            0.8864866068260312,
+            0.9999999999999999
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        }
+      },
+      "trials": [
+        {
+          "trial": 0,
+          "policy_seed": 800030,
+          "masking_seed": 800030,
+          "endpoint_key": "strength_1_trial_0",
+          "data": {
+            "train_seed": 500000,
+            "evaluation_seed": 1500000,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 24.197711226940154,
+          "result": {
+            "statistic": 42.30708004792531,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.9079361949654527e-19,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 8.972145622428727,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 1,
+          "policy_seed": 800031,
+          "masking_seed": 800031,
+          "endpoint_key": "strength_1_trial_1",
+          "data": {
+            "train_seed": 500001,
+            "evaluation_seed": 1500001,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 28.92250210762024,
+          "result": {
+            "statistic": 52.09416099866232,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.1814841533108805e-30,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 11.509509538125082,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 2,
+          "policy_seed": 800032,
+          "masking_seed": 800032,
+          "endpoint_key": "strength_1_trial_2",
+          "data": {
+            "train_seed": 500002,
+            "evaluation_seed": 1500002,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 22.916670163472492,
+          "result": {
+            "statistic": 45.14728694836299,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.7742283330534417e-22,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.70848759595043,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 3,
+          "policy_seed": 800033,
+          "masking_seed": 800033,
+          "endpoint_key": "strength_1_trial_3",
+          "data": {
+            "train_seed": 500003,
+            "evaluation_seed": 1500003,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 27.88291948159536,
+          "result": {
+            "statistic": 50.89187025467555,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 4.1794741165363567e-29,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 11.19780790151626,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 4,
+          "policy_seed": 800034,
+          "masking_seed": 800034,
+          "endpoint_key": "strength_1_trial_4",
+          "data": {
+            "train_seed": 500004,
+            "evaluation_seed": 1500004,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 30.228335768381754,
+          "result": {
+            "statistic": 53.487077326774596,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.681920266350786e-32,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 11.870632087976905,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 5,
+          "policy_seed": 800035,
+          "masking_seed": 800035,
+          "endpoint_key": "strength_1_trial_5",
+          "data": {
+            "train_seed": 500005,
+            "evaluation_seed": 1500005,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 28.415002485911053,
+          "result": {
+            "statistic": 49.84207870642344,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.692287346746264e-28,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.925642665840211,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 6,
+          "policy_seed": 800036,
+          "masking_seed": 800036,
+          "endpoint_key": "strength_1_trial_6",
+          "data": {
+            "train_seed": 500006,
+            "evaluation_seed": 1500006,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 22.16791972955068,
+          "result": {
+            "statistic": 38.886871990362806,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 6.194290849301669e-16,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 8.085434604800993,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 7,
+          "policy_seed": 800037,
+          "masking_seed": 800037,
+          "endpoint_key": "strength_1_trial_7",
+          "data": {
+            "train_seed": 500007,
+            "evaluation_seed": 1500007,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 26.275835491816203,
+          "result": {
+            "statistic": 44.92957916736603,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 4.818487280990943e-22,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.652045448342934,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 8,
+          "policy_seed": 800038,
+          "masking_seed": 800038,
+          "endpoint_key": "strength_1_trial_8",
+          "data": {
+            "train_seed": 500008,
+            "evaluation_seed": 1500008,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 2.2766694895426434,
+          "result": {
+            "statistic": 18.887288512388867,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 0.003726707003794819,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.9004134834474717,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 9,
+          "policy_seed": 800039,
+          "masking_seed": 800039,
+          "endpoint_key": "strength_1_trial_9",
+          "data": {
+            "train_seed": 500009,
+            "evaluation_seed": 1500009,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 23.329586224555968,
+          "result": {
+            "statistic": 40.722079990704856,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.1167536686103333e-17,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 8.561224125834281,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 10,
+          "policy_seed": 800040,
+          "masking_seed": 800040,
+          "endpoint_key": "strength_1_trial_10",
+          "data": {
+            "train_seed": 500010,
+            "evaluation_seed": 1500010,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 26.047502584457398,
+          "result": {
+            "statistic": 49.34957801024119,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.519409226660151e-27,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.797958681081294,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 11,
+          "policy_seed": 800041,
+          "masking_seed": 800041,
+          "endpoint_key": "strength_1_trial_11",
+          "data": {
+            "train_seed": 500011,
+            "evaluation_seed": 1500011,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 28.186252420743305,
+          "result": {
+            "statistic": 46.54332909901937,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 7.46581737851772e-24,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.070420535475149,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 12,
+          "policy_seed": 800042,
+          "masking_seed": 800042,
+          "endpoint_key": "strength_1_trial_12",
+          "data": {
+            "train_seed": 500012,
+            "evaluation_seed": 1500012,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 26.59458642164866,
+          "result": {
+            "statistic": 63.0720745229721,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 9.82649802530965e-47,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 14.355604485783715,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 13,
+          "policy_seed": 800043,
+          "masking_seed": 800043,
+          "endpoint_key": "strength_1_trial_13",
+          "data": {
+            "train_seed": 500013,
+            "evaluation_seed": 1500013,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 26.64250266710917,
+          "result": {
+            "statistic": 49.8691618569692,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.045115598992519e-28,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.932664147450925,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 14,
+          "policy_seed": 800044,
+          "masking_seed": 800044,
+          "endpoint_key": "strength_1_trial_14",
+          "data": {
+            "train_seed": 500014,
+            "evaluation_seed": 1500014,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 26.827502660751342,
+          "result": {
+            "statistic": 46.48978726307551,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.596714724656404e-24,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.056539468874403,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 15,
+          "policy_seed": 800045,
+          "masking_seed": 800045,
+          "endpoint_key": "strength_1_trial_15",
+          "data": {
+            "train_seed": 500015,
+            "evaluation_seed": 1500015,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 30.643752551078798,
+          "result": {
+            "statistic": 52.69916110674541,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.8935350363711662e-31,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 11.666359721644492,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 16,
+          "policy_seed": 800046,
+          "masking_seed": 800046,
+          "endpoint_key": "strength_1_trial_16",
+          "data": {
+            "train_seed": 500016,
+            "evaluation_seed": 1500016,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 16.34750302950541,
+          "result": {
+            "statistic": 36.49291244983673,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.343564666381732e-14,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 7.464785140027692,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 17,
+          "policy_seed": 800047,
+          "masking_seed": 800047,
+          "endpoint_key": "strength_1_trial_17",
+          "data": {
+            "train_seed": 500017,
+            "evaluation_seed": 1500017,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 17.693543781439462,
+          "result": {
+            "statistic": 38.60207809607188,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.1322566096532347e-15,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 8.011599949256427,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 18,
+          "policy_seed": 800048,
+          "masking_seed": 800048,
+          "endpoint_key": "strength_1_trial_18",
+          "data": {
+            "train_seed": 500018,
+            "evaluation_seed": 1500018,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 28.976252522468567,
+          "result": {
+            "statistic": 47.79978773355484,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.5811172500057726e-25,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.396165547382436,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 19,
+          "policy_seed": 800049,
+          "masking_seed": 800049,
+          "endpoint_key": "strength_1_trial_19",
+          "data": {
+            "train_seed": 500019,
+            "evaluation_seed": 1500019,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 22.46937800168991,
+          "result": {
+            "statistic": 41.23666334788005,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.479520476674435e-18,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 8.694633183007339,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 20,
+          "policy_seed": 800050,
+          "masking_seed": 800050,
+          "endpoint_key": "strength_1_trial_20",
+          "data": {
+            "train_seed": 500020,
+            "evaluation_seed": 1500020,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 24.97791956424713,
+          "result": {
+            "statistic": 46.033745595614114,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.8360397169850287e-23,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.938307722667847,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 21,
+          "policy_seed": 800051,
+          "masking_seed": 800051,
+          "endpoint_key": "strength_1_trial_21",
+          "data": {
+            "train_seed": 500021,
+            "evaluation_seed": 1500021,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 5.510002568562825,
+          "result": {
+            "statistic": 27.193537105719248,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 4.3296438338911185e-07,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 5.053862051167044,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 22,
+          "policy_seed": 800052,
+          "masking_seed": 800052,
+          "endpoint_key": "strength_1_trial_22",
+          "data": {
+            "train_seed": 500022,
+            "evaluation_seed": 1500022,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 25.631669279734293,
+          "result": {
+            "statistic": 49.8393694059054,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.759802350813854e-28,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 10.924940262191374,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 23,
+          "policy_seed": 800053,
+          "masking_seed": 800053,
+          "endpoint_key": "strength_1_trial_23",
+          "data": {
+            "train_seed": 500023,
+            "evaluation_seed": 1500023,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 14.288752442995706,
+          "result": {
+            "statistic": 32.1716623878479,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.2318788270390479e-10,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 6.34447316619392,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 24,
+          "policy_seed": 800054,
+          "masking_seed": 800054,
+          "endpoint_key": "strength_1_trial_24",
+          "data": {
+            "train_seed": 500024,
+            "evaluation_seed": 1500024,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 24.461252325375874,
+          "result": {
+            "statistic": 43.34062056144079,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.4627232848541883e-20,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.24009767244288,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 25,
+          "policy_seed": 800055,
+          "masking_seed": 800055,
+          "endpoint_key": "strength_1_trial_25",
+          "data": {
+            "train_seed": 500025,
+            "evaluation_seed": 1500025,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 23.568752201398215,
+          "result": {
+            "statistic": 44.26666151682536,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.5384537610551724e-21,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.480179768062294,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 26,
+          "policy_seed": 800056,
+          "masking_seed": 800056,
+          "endpoint_key": "strength_1_trial_26",
+          "data": {
+            "train_seed": 500026,
+            "evaluation_seed": 1500026,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 2.2595860465367634,
+          "result": {
+            "statistic": 19.833746994336448,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 0.0016563948292455497,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 3.1457889546310116,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 27,
+          "policy_seed": 800057,
+          "masking_seed": 800057,
+          "endpoint_key": "strength_1_trial_27",
+          "data": {
+            "train_seed": 500027,
+            "evaluation_seed": 1500027,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 25.373335660298665,
+          "result": {
+            "statistic": 45.96957863330841,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.3509499126027545e-23,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 9.921672023468682,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 28,
+          "policy_seed": 800058,
+          "masking_seed": 800058,
+          "endpoint_key": "strength_1_trial_28",
+          "data": {
+            "train_seed": 500028,
+            "evaluation_seed": 1500028,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 32.32500225702922,
+          "result": {
+            "statistic": 53.339161780675255,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.6580899362063425e-32,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 11.832284027801238,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 29,
+          "policy_seed": 800059,
+          "masking_seed": 800059,
+          "endpoint_key": "strength_1_trial_29",
+          "data": {
+            "train_seed": 500029,
+            "evaluation_seed": 1500029,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 10.115836038589478,
+          "result": {
+            "statistic": 27.73666302998861,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.050822451022405e-07,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 5.194670953112064,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        }
+      ]
+    },
+    {
+      "signal_strength": 1.0,
+      "n_trials": 30,
+      "n_resolved": 30,
+      "n_unresolved": 0,
+      "n_rejected": 30,
+      "n_positive_rejections": 30,
+      "rejection_rate_resolved": 1.0,
+      "rejection_rate_ci95": [
+        0.8864866068260312,
+        0.9999999999999999
+      ],
+      "positive_detection_rate_resolved": 1.0,
+      "positive_detection_ci95": [
+        0.8864866068260312,
+        0.9999999999999999
+      ],
+      "rank_comparators": {
+        "greater": {
+          "n_trials": 30,
+          "n_rejected": 30,
+          "rejection_rate": 1.0,
+          "rejection_rate_ci95": [
+            0.8864866068260312,
+            0.9999999999999999
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        },
+        "two-sided": {
+          "n_trials": 30,
+          "n_rejected": 30,
+          "rejection_rate": 1.0,
+          "rejection_rate_ci95": [
+            0.8864866068260312,
+            0.9999999999999999
+          ],
+          "rank_floor": 0.04,
+          "rank_floor_at_or_below_alpha": true
+        }
+      },
+      "trials": [
+        {
+          "trial": 0,
+          "policy_seed": 800060,
+          "masking_seed": 800060,
+          "endpoint_key": "strength_2_trial_0",
+          "data": {
+            "train_seed": 500000,
+            "evaluation_seed": 1500000,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.84125106652578,
+          "result": {
+            "statistic": 74.70228343248368,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.3727146687304146e-67,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.370811222863242,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 1,
+          "policy_seed": 800061,
+          "masking_seed": 800061,
+          "endpoint_key": "strength_2_trial_1",
+          "data": {
+            "train_seed": 500001,
+            "evaluation_seed": 1500001,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.51666787465413,
+          "result": {
+            "statistic": 75.43624193032582,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 4.892257390458056e-69,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.56109470140166,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 2,
+          "policy_seed": 800062,
+          "masking_seed": 800062,
+          "endpoint_key": "strength_2_trial_2",
+          "data": {
+            "train_seed": 500002,
+            "evaluation_seed": 1500002,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.65333446502686,
+          "result": {
+            "statistic": 82.54519677241643,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 7.120391369763237e-84,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 19.404137135139504,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 3,
+          "policy_seed": 800063,
+          "masking_seed": 800063,
+          "endpoint_key": "strength_2_trial_3",
+          "data": {
+            "train_seed": 500003,
+            "evaluation_seed": 1500003,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.77791778405508,
+          "result": {
+            "statistic": 72.68936711708704,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.0679453773520061e-63,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.848949673979327,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 4,
+          "policy_seed": 800064,
+          "masking_seed": 800064,
+          "endpoint_key": "strength_2_trial_4",
+          "data": {
+            "train_seed": 500004,
+            "evaluation_seed": 1500004,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.46750110944112,
+          "result": {
+            "statistic": 73.26353251536688,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.525174148436112e-65,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.997805759932817,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 5,
+          "policy_seed": 800065,
+          "masking_seed": 800065,
+          "endpoint_key": "strength_2_trial_5",
+          "data": {
+            "train_seed": 500005,
+            "evaluation_seed": 1500005,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.429584571520486,
+          "result": {
+            "statistic": 73.02728441794713,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.4187328770067058e-64,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.93655691560813,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 6,
+          "policy_seed": 800066,
+          "masking_seed": 800066,
+          "endpoint_key": "strength_2_trial_6",
+          "data": {
+            "train_seed": 500006,
+            "evaluation_seed": 1500006,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.14000099182129,
+          "result": {
+            "statistic": 75.00915839831035,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.4200690671065244e-68,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.45037053874491,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 7,
+          "policy_seed": 800067,
+          "masking_seed": 800067,
+          "endpoint_key": "strength_2_trial_7",
+          "data": {
+            "train_seed": 500007,
+            "evaluation_seed": 1500007,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.18583430926005,
+          "result": {
+            "statistic": 76.03832447687785,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.089734501131364e-70,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.71718848826021,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 8,
+          "policy_seed": 800068,
+          "masking_seed": 800068,
+          "endpoint_key": "strength_2_trial_8",
+          "data": {
+            "train_seed": 500008,
+            "evaluation_seed": 1500008,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.49375121593475,
+          "result": {
+            "statistic": 74.75832471847534,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.0655301666597683e-67,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.38534028802375,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 9,
+          "policy_seed": 800069,
+          "masking_seed": 800069,
+          "endpoint_key": "strength_2_trial_9",
+          "data": {
+            "train_seed": 500009,
+            "evaluation_seed": 1500009,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.99208449204763,
+          "result": {
+            "statistic": 82.96623850981395,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.464635022359194e-85,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 19.513294923539537,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 10,
+          "policy_seed": 800070,
+          "masking_seed": 800070,
+          "endpoint_key": "strength_2_trial_10",
+          "data": {
+            "train_seed": 500010,
+            "evaluation_seed": 1500010,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.135417660077415,
+          "result": {
+            "statistic": 74.84561660051347,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 7.178293759095791e-68,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.407971271943435,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 11,
+          "policy_seed": 800071,
+          "masking_seed": 800071,
+          "endpoint_key": "strength_2_trial_11",
+          "data": {
+            "train_seed": 500011,
+            "evaluation_seed": 1500011,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.190417641003926,
+          "result": {
+            "statistic": 76.814366004467,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.47572354164011e-72,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.918382263922023,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 12,
+          "policy_seed": 800072,
+          "masking_seed": 800072,
+          "endpoint_key": "strength_2_trial_12",
+          "data": {
+            "train_seed": 500012,
+            "evaluation_seed": 1500012,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.10708430767059,
+          "result": {
+            "statistic": 75.36519981145858,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 6.766401130129824e-69,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.542676573482247,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 13,
+          "policy_seed": 800073,
+          "masking_seed": 800073,
+          "endpoint_key": "strength_2_trial_13",
+          "data": {
+            "train_seed": 500013,
+            "evaluation_seed": 1500013,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.86416772524516,
+          "result": {
+            "statistic": 72.97145012140274,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.093031507903214e-64,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.922081513798016,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 14,
+          "policy_seed": 800074,
+          "masking_seed": 800074,
+          "endpoint_key": "strength_2_trial_14",
+          "data": {
+            "train_seed": 500014,
+            "evaluation_seed": 1500014,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.03000102996826,
+          "result": {
+            "statistic": 73.50395060141881,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.9387176118791936e-65,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.06013570072921,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 15,
+          "policy_seed": 800075,
+          "masking_seed": 800075,
+          "endpoint_key": "strength_2_trial_15",
+          "data": {
+            "train_seed": 500015,
+            "evaluation_seed": 1500015,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.79708479086558,
+          "result": {
+            "statistic": 71.41811750014624,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.6616374354795327e-61,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.519370004402205,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 16,
+          "policy_seed": 800076,
+          "masking_seed": 800076,
+          "endpoint_key": "strength_2_trial_16",
+          "data": {
+            "train_seed": 500016,
+            "evaluation_seed": 1500016,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.210001169840496,
+          "result": {
+            "statistic": 70.94436728874842,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 2.0242064058309213e-60,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.39654720386495,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 17,
+          "policy_seed": 800077,
+          "masking_seed": 800077,
+          "endpoint_key": "strength_2_trial_17",
+          "data": {
+            "train_seed": 500017,
+            "evaluation_seed": 1500017,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.43166781743368,
+          "result": {
+            "statistic": 77.36832277297974,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 6.34813932195592e-73,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 18.061999132154234,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 18,
+          "policy_seed": 800078,
+          "masking_seed": 800078,
+          "endpoint_key": "strength_2_trial_18",
+          "data": {
+            "train_seed": 500018,
+            "evaluation_seed": 1500018,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.54708447297414,
+          "result": {
+            "statistic": 75.16103344678879,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.7152264937982162e-68,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.489745125472407,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 19,
+          "policy_seed": 800079,
+          "masking_seed": 800079,
+          "endpoint_key": "strength_2_trial_19",
+          "data": {
+            "train_seed": 500019,
+            "evaluation_seed": 1500019,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.656251072883606,
+          "result": {
+            "statistic": 76.8068654290835,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 8.777183685936954e-72,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.91643769133487,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 20,
+          "policy_seed": 800080,
+          "masking_seed": 800080,
+          "endpoint_key": "strength_2_trial_20",
+          "data": {
+            "train_seed": 500020,
+            "evaluation_seed": 1500020,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 44.95625120004018,
+          "result": {
+            "statistic": 71.33228376309077,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.8483208482745464e-61,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.49711705398214,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 21,
+          "policy_seed": 800081,
+          "masking_seed": 800081,
+          "endpoint_key": "strength_2_trial_21",
+          "data": {
+            "train_seed": 500021,
+            "evaluation_seed": 1500021,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.195000972747806,
+          "result": {
+            "statistic": 72.13874188899995,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.1813431285244611e-62,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 16.706196529108784,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 22,
+          "policy_seed": 800082,
+          "masking_seed": 800082,
+          "endpoint_key": "strength_2_trial_22",
+          "data": {
+            "train_seed": 500022,
+            "evaluation_seed": 1500022,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 45.75583448727926,
+          "result": {
+            "statistic": 80.5916558265686,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.1920376124234285e-79,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 18.897669034101025,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 23,
+          "policy_seed": 800083,
+          "masking_seed": 800083,
+          "endpoint_key": "strength_2_trial_23",
+          "data": {
+            "train_seed": 500023,
+            "evaluation_seed": 1500023,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.725834410985314,
+          "result": {
+            "statistic": 73.65061689933141,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.5316434204541875e-65,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.098159885248105,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 24,
+          "policy_seed": 800084,
+          "masking_seed": 800084,
+          "endpoint_key": "strength_2_trial_24",
+          "data": {
+            "train_seed": 500024,
+            "evaluation_seed": 1500024,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.07208469549815,
+          "result": {
+            "statistic": 66.51916033109029,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.6644898998571762e-52,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 15.249283733748804,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 25,
+          "policy_seed": 800085,
+          "masking_seed": 800085,
+          "endpoint_key": "strength_2_trial_25",
+          "data": {
+            "train_seed": 500025,
+            "evaluation_seed": 1500025,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 43.16958454608917,
+          "result": {
+            "statistic": 77.03686474243798,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 3.0003821928780017e-72,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.97606649805243,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 26,
+          "policy_seed": 800086,
+          "masking_seed": 800086,
+          "endpoint_key": "strength_2_trial_26",
+          "data": {
+            "train_seed": 500026,
+            "evaluation_seed": 1500026,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 47.12625099658966,
+          "result": {
+            "statistic": 74.31165861129762,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 7.977682133083362e-67,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.26953921634344,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 27,
+          "policy_seed": 800087,
+          "masking_seed": 800087,
+          "endpoint_key": "strength_2_trial_27",
+          "data": {
+            "train_seed": 500027,
+            "evaluation_seed": 1500027,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.92916773160299,
+          "result": {
+            "statistic": 76.70499082565308,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 1.410424252151583e-71,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.890026042757388,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 28,
+          "policy_seed": 800088,
+          "masking_seed": 800088,
+          "endpoint_key": "strength_2_trial_28",
+          "data": {
+            "train_seed": 500028,
+            "evaluation_seed": 1500028,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 43.0750013033549,
+          "result": {
+            "statistic": 79.84415527661642,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 4.603480367388818e-78,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 18.703874691134136,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        },
+        {
+          "trial": 29,
+          "policy_seed": 800089,
+          "masking_seed": 800089,
+          "endpoint_key": "strength_2_trial_29",
+          "data": {
+            "train_seed": 500029,
+            "evaluation_seed": 1500029,
+            "train_episodes": 1200,
+            "evaluation_episodes": 1200
+          },
+          "rank_comparators": {
+            "greater": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            },
+            "two-sided": {
+              "p_value": 0.04,
+              "rejected": true,
+              "alpha": 0.05,
+              "rank_floor": 0.04,
+              "rank_floor_at_or_below_alpha": true
+            }
+          },
+          "return": 46.80666765848795,
+          "result": {
+            "statistic": 74.8454073858261,
+            "null_mean": 7.699858369827271,
+            "null_std": 3.857184572616198,
+            "p_rank": 0.04,
+            "p_normal": 7.185097028814451e-68,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 17.40791703168518,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          }
+        }
+      ]
+    }
+  ]
+}

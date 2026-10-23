@@ -1,0 +1,275 @@
+{
+  "model_input_sha256": {
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo/seed0.pt": "8a45364bb7563936a44c0e3344b92de1b9929fa5c2a7f291546ef9a78e6059c6",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo/seed1.pt": "117b1cc43d1194423cc6ba11a5cd9ce1a396261d8f9dfdd7bd5225c1f877ee19",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo/seed2.pt": "bd5a2ebac5c183bce7ce4e86a786bb2a348dbc10e9109bddc9323570784fbc53",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo/seed3.pt": "4e992f516e598c87735dfebb187a8f56e1b60579507a85f1ea073a793c5c4c20",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo/seed4.pt": "0335c5b9cf7cb48614828099cc21e55428f5d1d653d358fe60a33f0a41348818",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo_nofric/seed0_nofric.pt": "4fb9351baac79fd21c171d31622bc9cfe4e4c6baed15df0efa4702c44a22a686",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo_nofric/seed1_nofric.pt": "2f6dd1bdbc2de0f0572fa4ef5c3493978b4a17ce6e4be7ebaac42675fd403dae",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo_nofric/seed2_nofric.pt": "e8a46340c4deb9f2f6edfb0d2d0492e21df8f30d01e574268be960fa3220ebdb",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo_nofric/seed3_nofric.pt": "2bd50556696c2eaa313d17aed04a0d9dbef49d42adf8807df023f1d06de2fb43",
+    "/Users/aaryansingh/Documents/nano-l1/runs/reproductions/corrected-release-v1/checkpoints/ppo_nofric/seed4_nofric.pt": "50eaefd662960030518db67e150e0f2b8c9a4f193473fef0b9af974d5212d482"
+  },
+  "test_episodes": 1284,
+  "split": {
+    "train": 3854,
+    "val": 1283,
+    "test": 1284,
+    "purged": 4
+  },
+  "baselines": {
+    "always-flat": {
+      "n_episodes": 1284,
+      "total_pnl": 0.0,
+      "mean_pnl": 0.0,
+      "std_pnl": 0.0,
+      "sharpe": 0.0,
+      "sharpe_annualised": 0.0,
+      "max_drawdown": 0.0,
+      "hit_rate": 0.0,
+      "zero_rate": 1.0,
+      "mean_trades": 0.0,
+      "turnover": 0.0,
+      "mean_fees": 0.0
+    },
+    "buy-and-hold": {
+      "n_episodes": 1284,
+      "total_pnl": -2064.9298586773875,
+      "mean_pnl": -1.6082008245150994,
+      "std_pnl": 48.6981678752363,
+      "sharpe": -0.03302384657745804,
+      "sharpe_annualised": -6.1817253639022915,
+      "max_drawdown": 2976.2998689889946,
+      "hit_rate": 0.5031152647975078,
+      "zero_rate": 0.0,
+      "mean_trades": 1.0,
+      "turnover": 100.0,
+      "mean_fees": 1.661939252336449
+    },
+    "random": {
+      "n_episodes": 1284,
+      "total_pnl": -23794.76994678069,
+      "mean_pnl": -18.531752295000537,
+      "std_pnl": 37.44625812733819,
+      "sharpe": -0.4948892952663583,
+      "sharpe_annualised": -92.63820014716346,
+      "max_drawdown": 23760.029943919657,
+      "hit_rate": 0.28894080996884736,
+      "zero_rate": 0.0,
+      "mean_trades": 9.326323987538942,
+      "turnover": 932.6323987538942,
+      "mean_fees": 13.34584890965732
+    },
+    "mean-reversion": {
+      "n_episodes": 1284,
+      "total_pnl": -14913.089510331822,
+      "mean_pnl": -11.614555693404846,
+      "std_pnl": 31.742370610794275,
+      "sharpe": -0.3659007021188018,
+      "sharpe_annualised": -68.4928585061141,
+      "max_drawdown": 14996.379503943679,
+      "hit_rate": 0.2811526479750779,
+      "zero_rate": 0.03894080996884735,
+      "mean_trades": 4.938473520249222,
+      "turnover": 493.84735202492215,
+      "mean_fees": 7.704665109034267
+    },
+    "momentum-fallback": {
+      "n_episodes": 1284,
+      "total_pnl": -20660.66956418946,
+      "mean_pnl": -16.090864146565,
+      "std_pnl": 47.49664759871097,
+      "sharpe": -0.3387789446218031,
+      "sharpe_annualised": -63.41594368216843,
+      "max_drawdown": 20710.199562538397,
+      "hit_rate": 0.34890965732087226,
+      "zero_rate": 0.0,
+      "mean_trades": 5.725077881619938,
+      "turnover": 572.5077881619937,
+      "mean_fees": 11.747406542056074
+    },
+    "logistic-refit": {
+      "n_episodes": 1284,
+      "total_pnl": -7356.210856024399,
+      "mean_pnl": -5.72913618070436,
+      "std_pnl": 49.65248740014699,
+      "sharpe": -0.11538467619020835,
+      "sharpe_annualised": -21.59882791780966,
+      "max_drawdown": 7557.210823396805,
+      "hit_rate": 0.5342679127725857,
+      "zero_rate": 0.0,
+      "mean_trades": 2.520249221183801,
+      "turnover": 252.0249221183801,
+      "mean_fees": 5.912780373831776
+    }
+  },
+  "ppo_per_seed": [
+    {
+      "n_episodes": 1284,
+      "total_pnl": -1232.720009260699,
+      "mean_pnl": -0.9600623125083326,
+      "std_pnl": 23.252817406751902,
+      "sharpe": -0.04128799945891976,
+      "sharpe_annualised": -7.7286900204474716,
+      "max_drawdown": 1494.2199933134777,
+      "hit_rate": 0.7951713395638629,
+      "zero_rate": 0.011682242990654205,
+      "mean_trades": 1.5926791277258567,
+      "turnover": 159.26791277258567,
+      "mean_fees": 0.9202647975077881
+    },
+    {
+      "n_episodes": 1284,
+      "total_pnl": -1611.2300463807953,
+      "mean_pnl": -1.254852061044233,
+      "std_pnl": 17.530295431725932,
+      "sharpe": -0.07158191177846497,
+      "sharpe_annualised": -13.399399691361266,
+      "max_drawdown": 1658.7100344755095,
+      "hit_rate": 0.7087227414330218,
+      "zero_rate": 0.11059190031152648,
+      "mean_trades": 1.7531152647975077,
+      "turnover": 175.31152647975077,
+      "mean_fees": 0.6699610591900311
+    },
+    {
+      "n_episodes": 1284,
+      "total_pnl": -899.8700353491862,
+      "mean_pnl": -0.7008333608638522,
+      "std_pnl": 25.14403063855202,
+      "sharpe": -0.027872753216793382,
+      "sharpe_annualised": -5.2174935199600085,
+      "max_drawdown": 1540.1200838973555,
+      "hit_rate": 0.7320872274143302,
+      "zero_rate": 0.016355140186915886,
+      "mean_trades": 2.4026479750778815,
+      "turnover": 240.26479750778816,
+      "mean_fees": 1.3153971962616822
+    },
+    {
+      "n_episodes": 1284,
+      "total_pnl": -411.95011789519344,
+      "mean_pnl": -0.3208334251520198,
+      "std_pnl": 13.744246623695025,
+      "sharpe": -0.023343107406040304,
+      "sharpe_annualised": -4.3695902833655325,
+      "max_drawdown": 602.5201287380233,
+      "hit_rate": 0.7102803738317757,
+      "zero_rate": 0.14719626168224298,
+      "mean_trades": 1.7468847352024923,
+      "turnover": 174.68847352024923,
+      "mean_fees": 0.5435747663551402
+    },
+    {
+      "n_episodes": 1284,
+      "total_pnl": -789.0100566865316,
+      "mean_pnl": -0.6144938136187941,
+      "std_pnl": 19.187466019312104,
+      "sharpe": -0.03202579293171431,
+      "sharpe_annualised": -5.994899958147148,
+      "max_drawdown": 1179.1500380729326,
+      "hit_rate": 0.7858255451713395,
+      "zero_rate": 0.045171339563862926,
+      "mean_trades": 1.7990654205607477,
+      "turnover": 179.90654205607478,
+      "mean_fees": 0.7650389408099688
+    }
+  ],
+  "ppo_across_seeds": {
+    "mean_pnl_mean": -0.7702149946374464,
+    "mean_pnl_std": 0.3168349041864762,
+    "sharpe_mean": -0.03922231295838655,
+    "sharpe_std": 0.01722882626478575
+  },
+  "paired_bootstrap_p_vs_flat": {
+    "buy-and-hold": 0.1678832116788321,
+    "random": 9.999000099990002e-05,
+    "mean-reversion": 9.999000099990002e-05,
+    "momentum-fallback": 9.999000099990002e-05,
+    "logistic-refit": 9.999000099990002e-05,
+    "ppo": 0.0202979702029797
+  },
+  "paired_bootstrap_design": {
+    "blocks": "UTC days",
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "conditional on fitted policies; PPO row averages fixed seeds; primary PPO inference additionally resamples seeds"
+  },
+  "zero_cost_ablation": {
+    "ppo": 0.05550627551343279,
+    "always-flat": 0.0,
+    "buy-and-hold": 0.5595795665156804,
+    "random": -0.4761293505712317,
+    "mean-reversion": -1.2520636599967865,
+    "momentum-fallback": -0.11168197558059813,
+    "logistic-refit": 2.2017906541244137
+  },
+  "critic_calibration_error": 1.061319052031171,
+  "critic_calibration": {
+    "target": "stochastic on-policy return in dollars",
+    "repetitions": 8,
+    "bins": [
+      [
+        -8.981269836425781,
+        -8.432558103997707,
+        129
+      ],
+      [
+        -8.938349723815918,
+        -6.947393426258611,
+        129
+      ],
+      [
+        -8.89102840423584,
+        -8.262625793992406,
+        129
+      ],
+      [
+        -8.84010124206543,
+        -7.780755513892184,
+        129
+      ],
+      [
+        -8.771745681762695,
+        -9.01159149356152,
+        128
+      ],
+      [
+        -8.704524993896484,
+        -10.51415017038249,
+        128
+      ],
+      [
+        -8.60030746459961,
+        -10.764638503848765,
+        128
+      ],
+      [
+        -8.446155548095703,
+        -8.379823981160333,
+        128
+      ],
+      [
+        -8.161556243896484,
+        -7.676611075019899,
+        128
+      ],
+      [
+        -7.099399566650391,
+        -8.720234485211932,
+        128
+      ]
+    ]
+  },
+  "ppo_seed_day_bootstrap": {
+    "p_value": 0.0466953304669533,
+    "ci95": [
+      -1.5088269166836077,
+      0.011433828992952172
+    ],
+    "n_seeds": 5,
+    "n_utc_days": 14,
+    "design": "crossed seeds and shared UTC-day episode blocks"
+  }
+}

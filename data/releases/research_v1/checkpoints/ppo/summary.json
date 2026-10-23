@@ -1,0 +1,82 @@
+[
+  {
+    "seed": 0,
+    "frictionless": false,
+    "val_return_mean": -1.8133515187005773,
+    "val_return_std": 24.024386484525824,
+    "val_trades_mean": 1.612626656274357,
+    "val_fees_mean": 0.9877864380358534,
+    "final_entropy": 0.7839997112751007,
+    "final_explained_var": 0.014050769797085527,
+    "final_action_freq": [
+      0.13504464285714285,
+      0.6171875,
+      0.24776785714285715
+    ],
+    "train_seconds": 11.1
+  },
+  {
+    "seed": 1,
+    "frictionless": false,
+    "val_return_mean": -1.1848247267316887,
+    "val_return_std": 17.618655160517104,
+    "val_trades_mean": 1.6601714731098987,
+    "val_fees_mean": 0.6528682774746687,
+    "final_entropy": 0.6593175791203976,
+    "final_explained_var": 0.010753806396817334,
+    "final_action_freq": [
+      0.15290178571428573,
+      0.6752232142857143,
+      0.171875
+    ],
+    "train_seconds": 10.9
+  },
+  {
+    "seed": 2,
+    "frictionless": false,
+    "val_return_mean": -2.0079579826845375,
+    "val_return_std": 24.058923663814728,
+    "val_trades_mean": 2.275915822291504,
+    "val_fees_mean": 1.2206625097427903,
+    "final_entropy": 0.9427748546004295,
+    "final_explained_var": 0.059496086878859655,
+    "final_action_freq": [
+      0.3470982142857143,
+      0.49107142857142855,
+      0.16183035714285715
+    ],
+    "train_seconds": 11.1
+  },
+  {
+    "seed": 3,
+    "frictionless": false,
+    "val_return_mean": -0.006407054161111879,
+    "val_return_std": 11.732493907371019,
+    "val_trades_mean": 1.858144972720187,
+    "val_fees_mean": 0.5226188620420888,
+    "final_entropy": 0.6392918080091476,
+    "final_explained_var": 0.0034408077769112477,
+    "final_action_freq": [
+      0.15178571428571427,
+      0.6941964285714286,
+      0.15401785714285715
+    ],
+    "train_seconds": 11.0
+  },
+  {
+    "seed": 4,
+    "frictionless": false,
+    "val_return_mean": -1.0335464569866015,
+    "val_return_std": 19.536385526364153,
+    "val_trades_mean": 1.907248636009353,
+    "val_fees_mean": 0.7501480904130944,
+    "final_entropy": 0.6760842278599739,
+    "final_explained_var": 0.0001266949436055098,
+    "final_action_freq": [
+      0.14285714285714285,
+      0.6930803571428571,
+      0.1640625
+    ],
+    "train_seconds": 11.0
+  }
+]

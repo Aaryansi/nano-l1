@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "corpus_sha256": "6d2cb4e4c923b946fe4daf7ed682347f47edc4cb75172c7b73d153fc28c53aac",
+  "audit_script_sha256": "495c114dce2830a51ea8a70f8f6c1be5def8f1dc6bb05ecebdbd75d6ee40dbf0",
+  "scope": "all acted-on observations and greedy actions; all episode accounts; all supplied market checkpoints",
+  "checkpoints": [
+    {
+      "checkpoint": "ppo/seed0.pt",
+      "checkpoint_sha256": "8a45364bb7563936a44c0e3344b92de1b9929fa5c2a7f291546ef9a78e6059c6",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 2.842170943040401e-14,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo/seed1.pt",
+      "checkpoint_sha256": "117b1cc43d1194423cc6ba11a5cd9ce1a396261d8f9dfdd7bd5225c1f877ee19",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 2.842170943040401e-14,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo/seed2.pt",
+      "checkpoint_sha256": "bd5a2ebac5c183bce7ce4e86a786bb2a348dbc10e9109bddc9323570784fbc53",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 2.842170943040401e-14,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo/seed3.pt",
+      "checkpoint_sha256": "4e992f516e598c87735dfebb187a8f56e1b60579507a85f1ea073a793c5c4c20",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 2.842170943040401e-14,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo/seed4.pt",
+      "checkpoint_sha256": "0335c5b9cf7cb48614828099cc21e55428f5d1d653d358fe60a33f0a41348818",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 2.842170943040401e-14,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo_nofric/seed0_nofric.pt",
+      "checkpoint_sha256": "4fb9351baac79fd21c171d31622bc9cfe4e4c6baed15df0efa4702c44a22a686",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 0.0,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo_nofric/seed1_nofric.pt",
+      "checkpoint_sha256": "2f6dd1bdbc2de0f0572fa4ef5c3493978b4a17ce6e4be7ebaac42675fd403dae",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 0.0,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo_nofric/seed2_nofric.pt",
+      "checkpoint_sha256": "e8a46340c4deb9f2f6edfb0d2d0492e21df8f30d01e574268be960fa3220ebdb",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 0.0,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo_nofric/seed3_nofric.pt",
+      "checkpoint_sha256": "2bd50556696c2eaa313d17aed04a0d9dbef49d42adf8807df023f1d06de2fb43",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 0.0,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    },
+    {
+      "checkpoint": "ppo_nofric/seed4_nofric.pt",
+      "checkpoint_sha256": "50eaefd662960030518db67e150e0f2b8c9a4f193473fef0b9af974d5212d482",
+      "episodes": 1284,
+      "steps": 14,
+      "acted_on_observations_checked": 17976,
+      "actions_checked": 17976,
+      "maximum_observation_error": 0.0,
+      "maximum_accounting_errors": {
+        "returns": 0.0,
+        "trades": 0.0,
+        "fees": 0.0,
+        "final_position": 0.0
+      },
+      "matches_saved_evaluation": true
+    }
+  ]
+}

@@ -118,7 +118,7 @@ class TestThePipelineCanDecide:
 # would have silently produced different numbers from the ones the paper
 # reports. that is a reproducibility failure invisible to every other test here.
 
-REPORTS = Path(__file__).resolve().parents[3] / "reports"
+REPORTS = Path(__file__).resolve().parents[3] / "data/releases/research_v1/reports"
 
 # which artifact each step writes, and how to dig the recorded budget out of it
 ARTIFACTS = {

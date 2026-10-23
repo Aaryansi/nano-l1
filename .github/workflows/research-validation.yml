@@ -23,6 +23,8 @@ jobs:
       PYTHONHASHSEED: "0"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
@@ -43,6 +45,11 @@ jobs:
         env:
           SMOKE_OUT: ${{ runner.temp }}/research-smoke
         run: bash services/agent-rl/scripts/ci_smoke.sh
+      - name: Verify selected release and manuscripts
+        run: |
+          python services/agent-rl/scripts/verify_release.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz
+          python services/agent-rl/scripts/audit_market_rollouts.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz --out "$RUNNER_TEMP/selected-rollout-parity.json"
+          python services/agent-rl/scripts/verify_paper_numbers.py
       - name: Retain smoke artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -1,0 +1,60 @@
+\newcommand{\MarketTable}{\begin{tabular}{lrrr}\toprule
+Training objective & Seeds & Mean & Seed SD \\ \midrule
+Fees and spread & 5 & \ensuremath{-0.770} & \ensuremath{0.354} \\
+Zero cost & 5 & \ensuremath{0.056} & \ensuremath{0.984} \\
+\bottomrule\end{tabular}}
+\newcommand{\HeadlineTable}{\begin{tabular}{lrrrl}\toprule
+Case & Span & Ref. SD & $z$ & Decision \\ \midrule
+Planted signal & \ensuremath{75.627} & \ensuremath{3.857} & \ensuremath{17.61} & outside \\
+Zero strength & \ensuremath{12.436} & \ensuremath{3.857} & \ensuremath{1.23} & within \\
+Market seed 0 & \ensuremath{8.848} & \ensuremath{3.857} & \ensuremath{0.30} & within \\
+\bottomrule\end{tabular}}
+\newcommand{\MarketSeedTable}{\begin{tabular}{rrrl}\toprule
+Seed & Span & $z$ & Decision \\ \midrule
+0 & \ensuremath{8.848} & \ensuremath{0.30} & within \\
+1 & \ensuremath{7.409} & \ensuremath{-0.08} & within \\
+2 & \ensuremath{11.846} & \ensuremath{1.08} & within \\
+3 & \ensuremath{8.003} & \ensuremath{0.08} & within \\
+4 & \ensuremath{8.634} & \ensuremath{0.24} & within \\
+\bottomrule\end{tabular}}
+\newcommand{\ControlTable}{\begin{tabular}{lrrrr}\toprule
+Task & Return & Elig. & Env. O/U & Param. O/U \\ \midrule
+CartPole & \ensuremath{500.0} & 5/5 & 5/0 & 1/0 \\
+Acrobot & \ensuremath{-75.8} & 5/5 & 5/0 & 5/0 \\
+MountainCar & \ensuremath{-185.4} & 0/5 & 0/5 & 0/5 \\
+Pendulum & \ensuremath{-166.9} & 5/5 & 5/0 & 5/0 \\
+FrozenLake & \ensuremath{1.0} & 5/5 & 5/0 & 5/0 \\
+CliffWalking & \ensuremath{-200.0} & 0/5 & 0/5 & 0/0 \\
+\bottomrule\end{tabular}}
+\newcommand{\BaselineTable}{\begin{tabular}{lr}\toprule
+Policy & Mean return \\ \midrule
+always-flat & \ensuremath{0.000} \\
+buy-and-hold & \ensuremath{-1.608} \\
+random & \ensuremath{-18.532} \\
+mean-reversion & \ensuremath{-11.615} \\
+momentum-fallback & \ensuremath{-16.091} \\
+logistic-refit & \ensuremath{-5.729} \\
+\bottomrule\end{tabular}}
+\newcommand{\SteeringTable}{\begin{tabular}{lrrrr}\toprule
+Population & $\lambda$ & Share & Return & Change CI \\ \midrule
+Market & \ensuremath{0} & 43.0\% & \ensuremath{-1.59} & baseline \\
+Market & \ensuremath{1} & 12.6\% & \ensuremath{-2.30} & \ensuremath{[-1.81,\,0.64]} \\
+Market & \ensuremath{5} & 5.3\% & \ensuremath{-2.40} & \ensuremath{[-1.90,\,0.47]} \\
+Market & \ensuremath{20} & 2.9\% & \ensuremath{-1.66} & \ensuremath{[-1.07,\,1.07]} \\
+Signal & \ensuremath{0} & 44.7\% & \ensuremath{45.46} & baseline \\
+Signal & \ensuremath{1} & 11.4\% & \ensuremath{28.74} & \ensuremath{[-27.70,\,-6.38]} \\
+Signal & \ensuremath{5} & 5.3\% & \ensuremath{-0.43} & \ensuremath{[-51.12,\,-39.83]} \\
+Signal & \ensuremath{20} & 2.4\% & \ensuremath{-12.64} & \ensuremath{[-64.56,\,-52.46]} \\
+\bottomrule\end{tabular}}
+\newcommand{\StateTable}{\begin{tabular}{llrr}\toprule
+Case & Intervention & Span & 95\% CI \\ \midrule
+market & Full inputs & \ensuremath{8.06} & \ensuremath{[6.58,\,9.82]} \\
+market & Market rows & \ensuremath{2.42} & \ensuremath{[0.84,\,3.87]} \\
+market & Donor trajectory & \ensuremath{0.44} & \ensuremath{[-0.96,\,1.63]} \\
+null & Full inputs & \ensuremath{9.86} & \ensuremath{[4.07,\,16.18]} \\
+null & Market rows & \ensuremath{-0.16} & \ensuremath{[-0.88,\,0.28]} \\
+null & Donor trajectory & \ensuremath{-0.12} & \ensuremath{[-0.79,\,0.36]} \\
+signal & Full inputs & \ensuremath{73.78} & \ensuremath{[70.55,\,76.81]} \\
+signal & Market rows & \ensuremath{63.12} & \ensuremath{[61.11,\,65.05]} \\
+signal & Donor trajectory & \ensuremath{47.38} & \ensuremath{[45.16,\,49.60]} \\
+\bottomrule\end{tabular}}
