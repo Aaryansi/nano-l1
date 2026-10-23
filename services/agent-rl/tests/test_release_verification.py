@@ -80,6 +80,11 @@ def test_trajectory_auditor_checks_both_objectives_and_rejects_altered_saved_ret
     result = audit(corpus, tmp_path)
     assert len(result["checkpoints"]) == 2
     assert all(row["actions_checked"] == len(split.test) * 3 for row in result["checkpoints"])
+    view = tmp_path / "view"
+    view.mkdir()
+    (view / "checkpoints").symlink_to(tmp_path / "checkpoints", target_is_directory=True)
+    (view / "reports").symlink_to(tmp_path / "reports", target_is_directory=True)
+    assert audit(corpus, view) == result
     original = raw["ppo_pnl"]
     raw["ppo_pnl"] = original[:, :, None]
     np.savez_compressed(path, **raw)

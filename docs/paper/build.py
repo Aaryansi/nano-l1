@@ -1,367 +1,194 @@
-"""build every venue target from main.tex, so no two versions can drift.
+"""Build three manuscript profiles from shared source and a verified full run.
 
-this project has already shipped three documents that drifted into
-contradicting the paper (PAPER.md, main.md, REPORT.md). the fix is not
-discipline, it is refusing to keep a second editable copy.
-
-targets:
-  arxiv     the full argument, two-column, self-contained. also what the xAI
-            World Conference full-article track (14-24pp) wants.
-  core      8 pages of main body with everything else after the references.
-            8pp is the binding constraint across venues: ICML auto-rejects
-            over 8, ICLR allows 9, NeurIPS 9-10, TMLR Regular 12. writing to
-            8 means one file is submittable to all of them.
-  tmlr      the core body in TMLR's stylefile, for a Regular resubmission.
-
-the appendix split is a claim about what a reviewer must read to agree with
-the paper, not about what is worth keeping. every relocated section leaves a
-sentence in the body saying what it establishes and where it went.
+Temporary layout fixtures use an internal API, are watermarked, and cannot
+pass publication verification. No execution-only override exists in the CLI.
 """
-
 from __future__ import annotations
 
+import argparse
+import json
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass, field
-from pathlib import Path
+import tempfile
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(ROOT / 'services/agent-rl/scripts'))
+from paper_assets import write_assets
+from publication_statistics import derive
+from verify_release import digest, require, verify, verify_hashes
 
-# sections whose evidence supports the argument but is not required to follow
-# it. ordered as they should appear in the appendix.
-RELOCATE = [
-    "Reproducibility",
-    "Reproduction from scratch",
-    "A positive control, under the blinded reference",
-    "How much edge is required",
-    "Estimation guarantees do not substitute",
-    "The canonical check, and what it answers instead",
-    "What survives the choice of null",
-    "What did not survive",
-]
-
-# how the relocated material is grouped in the appendix. a flat dump in source
-# order put "Reproducibility" under a heading called "Secondary analyses",
-# which is not what it is. subsections listed here are promoted under the
-# named parent; sections keep their own heading and appear in order after.
-APPENDIX_GROUPS = [
-    ("Experimental detail", [
-        "Reproducibility",
-        "Reproduction from scratch",
-    ]),
-    ("Additional results", [
-        "A positive control, under the blinded reference",
-        "How much edge is required",
-        "Estimation guarantees do not substitute",
-        "The canonical check, and what it answers instead",
-    ]),
-]
-
-# what the body says in place of each relocated section. these are claims, not
-# signposts: a reader who never opens the appendix should still learn the
-# result. keyed by the section title above.
-STUBS = {
-    "Reproducibility": r"""
-\paragraph{Reproducibility.} All results derive from public endpoints with no
-API keys and run on CPU. Hyperparameters were fixed a priori on synthetic
-sweeps with analytically known answers. The full pipeline is one command; 312
-tests cover the environment and the attribution implementations, and every
-numerical claim in this paper is asserted against its source artifact by a
-script that runs as the pipeline's final stage. Budgets, hardware, the exact
-commands, and a from-scratch rebuild on a different sample of the moving
-market window are in \\elsewhere{sec:repro}.
-""",
-    "A positive control, under the blinded reference": r"""
-A positive control on the same real episodes, holding corpus, features,
-normalizer and split fixed and varying only the objective, shows the test
-separates tasks and not datasets: an agent scored for \emph{calling} the
-settlement fires at $z=+3.39$ where the trading agent does not. It uses the
-blinded reference that Section~\ref{sec:matched} goes on to reject, so we
-report it as a controlled comparison and not as evidence the reference is
-sound (\\elsewhere{sec:positive}).
-""",
-    "How much edge is required": r"""
-Sweeping planted signal strength puts the detection threshold near $+3.45$ per
-episode of measured edge, an order of magnitude above anything the market agent
-achieves (\\elsewhere{sec:edge}).
-""",
-    "Estimation guarantees do not substitute": r"""
-Monte Carlo certification of a top-$k$ ranking~\citep{goldwasser2024significance}
-is orthogonal to this: the market agent's top-5 ranking is fully certified and
-its span is still indistinguishable from an explanation of nothing
-(\\elsewhere{sec:certified}).
-""",
-    "The canonical check, and what it answers instead": r"""
-Parameter randomisation is also used a second way, as
-\citet{adebayo2018sanity} propose it: degrade one explanation and ask whether
-it moves. We ran that too. It clears the empty explanation on both explanatory
-targets we tried ($\rho=0.38$ on behaviour, $\rho=-0.02$ on outcomes), so
-passing it is not evidence that there is anything to explain. What it flags
-depends on the target, which is a second instance of this paper's thesis
-(\\elsewhere{sec:canonical}).
-""",
-    "What survives the choice of null": r"""
-\paragraph{What survives, and what does not.}
-Holding the null fixed, the verdict is robust to choices that move the ranking
-a great deal. It is unchanged across attribution family, across
-credit-assignment scheme, and under a $k$-nearest-neighbour conditional masker
-that substantially reduces off-manifold states, while the per-feature ranking
-moves under all three, to the point of disagreeing on which feature matters
-most. The verdict is \emph{not} robust to the null construction, which is the
-result of this section. Separately, an auxiliary training penalty drives a
-feature's attribution from $39.9\%$ to $3.2\%$ of total mass at no measurable
-cost in return, so attribution is not identified by task performance.
-Bootstrapping the reference leaves every verdict unchanged in $100\%$ of
-replicates except the two blinded-real comparisons, at $64\%$ and $65\%$
-(\\elsewhere{sec:survives}).
-""",
-    "What did not survive": r"""
-Seven predictions this project made were rejected on its own evidence,
-including our own expectation that instability would be the tell for an empty
-explanation and that the canonical check would agree with the null test. None
-of the surviving results depends on any of them
-(\\elsewhere{sec:rejected}).
-""",
-}
+PROFILES = {'full': 'main.tex', 'core': 'core/main.tex', 'workshop': 'workshop.tex'}
+SOURCE_NAMES = ('article.tex', 'main.tex', 'workshop.tex', 'core/main.tex',
+                'references.bib', 'build.py', 'paper_assets.py')
+ASSET_NAMES = ('metrics.tex', 'tables.tex', 'statistics.json', 'figures/calibration.png',
+               'figures/state_interventions.png', 'figures/steering.png')
 
 
-BLOCK_STUBS = {
-    "The stratified permutation": r"""
-The obvious repair is to stratify, shuffling outcomes only among contracts the
-market priced alike so each price bucket keeps its base rate and the arbitrage
-never appears. It works, and it is vacuous here: from eight buckets on the
-calibration error returns to the real corpus's $0.007$, but the relabelling then
-moves only $5$--$6\%$ of outcomes and the permuted labels stay correlated at
-$0.88$--$0.90$ with the true ones at every resolution. The terminal price
-correlates $0.950$ with the outcome and $88.7\%$ of episodes end within $0.1$ of
-a bound, so information beyond the price lives in a small minority of episodes
-and a relabelling that removes only that cannot differ much from the real data.
-The construction removes the right thing; there is almost none of it here to
-remove. Unlike the other three this failure is contingent on the domain
-(\\elsewhere{sec:permuted}).
-""",
-}
+def load(path):
+    return json.loads(path.read_text())
 
 
-@dataclass
-class Block:
-    level: int          # 1 = section, 2 = subsection
-    title: str
-    lines: list[str] = field(default_factory=list)
-
-    def text(self) -> str:
-        return "\n".join(self.lines)
+def source_hashes():
+    return {str((HERE / name).relative_to(ROOT)): digest(HERE / name)
+            for name in SOURCE_NAMES}
 
 
-def parse(src: str) -> tuple[str, list[Block]]:
-    """split the body into section blocks, keeping the preamble intact."""
-    lines = src.split("\n")
-    start = next(i for i, l in enumerate(lines) if l.startswith("\\section{Introduction}"))
-    preamble = "\n".join(lines[:start])
-
-    blocks: list[Block] = []
-    for line in lines[start:]:
-        m = re.match(r"\\(sub)?section\{(.+)\}\s*$", line)
-        if m:
-            blocks.append(Block(2 if m.group(1) else 1, m.group(2)))
-        if blocks:
-            blocks[-1].lines.append(line)
-    return preamble, blocks
+def input_statistics(run, corpus):
+    evidence = verify(run, corpus)
+    reports = run / 'reports'
+    statistics = {'schema_version': 1, 'verification': evidence,
+                  'input_manifest_sha256': digest(reports / 'run_manifest.json'),
+                  'statistics_source_sha256': digest(ROOT / 'services/agent-rl/scripts/publication_statistics.py'),
+                  **derive(reports)}
+    context = {'manifest': load(reports / 'run_manifest.json'),
+               'parity': load(reports / 'rollout_parity.json')}
+    return statistics, context
 
 
-def split_body(blocks: list[Block]) -> tuple[list[Block], list[Block]]:
-    """partition into body and appendix, keeping subsections with their parent."""
-    body, appendix = [], []
-    # relocation is scoped: naming a section moves it and its subsections,
-    # naming a subsection moves only that subsection. the earlier version was
-    # sticky and swept 6.3 to 6.5 into the appendix, which are the result.
-    active: int | None = None
-    for b in blocks:
-        if b.title in RELOCATE:
-            active = b.level
-        elif active is not None and b.level <= active:
-            active = None
-        (appendix if active is not None else body).append(b)
-    return body, appendix
-
-
-def emit(blocks: list[Block]) -> tuple[str, str]:
-    """render body and appendix, inserting each stub where its section was.
-
-    a stub is attached where the relocation happened, so the reader meets the
-    claim at the point in the argument where it was originally made rather than
-    discovering a gap. the appendix is grouped by APPENDIX_GROUPS rather than
-    emitted in source order, so related material sits together under a heading
-    that describes it.
-    """
-    body: list[str] = []
-    held: dict[str, str] = {}
-    loose: list[Block] = []
-    active: int | None = None
-
-    for b in blocks:
-        relocate = b.title in RELOCATE
-        if relocate:
-            active = b.level
-        elif active is not None and b.level <= active:
-            active = None
-
-        if active is None:
-            body.append(b.text())
+def stage_sources(destination, *, fixture=False):
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in SOURCE_NAMES:
+        if name.endswith('.py'):
             continue
-
-        if relocate and b.title in STUBS:
-            body.append(STUBS[b.title].strip() + "\n")
-
-        grouped = any(b.title in titles for _, titles in APPENDIX_GROUPS)
-        if grouped:
-            held[b.title] = b.text()
-        else:
-            loose.append(b)
-
-    app: list[str] = ["\n\\appendix\n"]
-    for heading, titles in APPENDIX_GROUPS:
-        present = [t for t in titles if t in held]
-        if not present:
-            continue
-        app.append(f"\\section{{{heading}}}\n")
-        for t in present:
-            app.append(held[t])
-    for b in loose:
-        app.append(b.text())
-
-    return "\n".join(body), "\n".join(app)
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        contents = (HERE / name).read_text()
+        if fixture and name in PROFILES.values():
+            contents = '\\def\\layoutfixture{1}\n' + contents
+        target.write_text(contents)
 
 
-def main() -> None:
-    src = (HERE / "main.tex").read_text()
-    preamble, blocks = parse(src)
-    body, appendix = emit(blocks)
-
-    out = HERE / "core"
-    out.mkdir(exist_ok=True)
-
-    # figures marked %%% MOVE-FIGURE support the argument without carrying it.
-    # they follow their section's evidence into the appendix, which is worth
-    # roughly 0.4 of a page each in single column.
-    moved_figs: list[str] = []
-
-    def _lift(text: str) -> str:
-        pat = re.compile(r"%%% MOVE-FIGURE\n(\\begin\{figure\*?\}.*?\\end\{figure\*?\})\n",
-                         re.S)
-        def take(m):
-            moved_figs.append(m.group(1))
-            return ""
-        return pat.sub(take, text)
-
-    body = _lift(body)
-
-    # whole sub-analyses marked %%% MOVE-BLOCK ... %%% MOVE-END are secondary
-    # evidence within a section that stays. they follow the figures into the
-    # appendix and leave a stub in their place.
-    moved_blocks: list[str] = []
-
-    def _lift_block(text: str) -> str:
-        pat = re.compile(r"%%% MOVE-BLOCK: ([^\n]+)\n(.*?)%%% MOVE-END\n", re.S)
-        def take(m):
-            moved_blocks.append((m.group(1).strip(), m.group(2)))
-            return BLOCK_STUBS.get(m.group(1).strip(), "")
-        return pat.sub(take, text)
-
-    body = _lift_block(body)
-
-    doc = body + "\n" + appendix
-
-    # single-column transforms. starred floats span both columns and are a
-    # syntax error here; \columnwidth is \textwidth; tmlr.sty owns anonymity,
-    # so \ifanon is undefined and every guard collapses to its anon branch.
-    doc = re.sub(r"\\(begin|end)\{(figure|table)\*\}", r"\\\1{\2}", doc)
-    doc = doc.replace("\\columnwidth", "\\textwidth")
-    doc = re.sub(r"\\ifanon(.*?)\\else.*?\\fi", lambda m: m.group(1), doc, flags=re.S)
-    if "\\ifanon" in doc or "github.com/Aaryansi" in doc:
-        raise SystemExit("anonymity guard failed: identifying content survived")
-    # the bibliography must precede the appendix: main content is everything
-    # before the references, which is the quantity every page limit counts.
-    doc = doc.replace("\\bibliographystyle{plainnat}\n\\bibliography{references}", "")
-    doc = doc.replace("\\end{document}", "")
-    if moved_blocks:
-        parts = "\n\n".join(f"\\subsection{{{t}}}\n{c}" for t, c in moved_blocks)
-        doc = doc.replace("\\section{Additional results}\n",
-                          "\\section{Additional results}\n" + parts + "\n", 1)
-
-    if moved_figs:
-        figs = "\n\n".join(moved_figs)
-        doc = doc.replace("\n\\appendix\n",
-                          "\n\\appendix\n\n\\section{Supporting figures}\n"
-                          "\\label{app:figures}\n\n" + figs + "\n", 1)
-    doc = doc.replace("\n\\appendix\n",
-                      "\n\\bibliographystyle{tmlr}\n\\bibliography{references}\n\n\\appendix\n")
-    doc += "\n\\end{document}\n"
-
-    m = re.search(r"\\textbf\{Abstract\.\}\s*(.*?)\s*\\end\{quote\}", src, re.S)
-    if not m:
-        raise SystemExit("could not find the abstract in main.tex")
-    abstract = m.group(1).strip()
-    doc = re.sub(r"\n{3,}", "\n\n", doc)
-    (out / "main.tex").write_text(
-        tmlr_preamble().replace("ABSTRACT_PLACEHOLDER", abstract) + doc)
-
-    for asset in ("references.bib",):
-        shutil.copy(HERE / asset, out / asset)
-    if (out / "figures").exists():
-        shutil.rmtree(out / "figures")
-    shutil.copytree(HERE / "figures", out / "figures")
-    for sty in ("tmlr.sty", "tmlr.bst", "fancyhdr.sty"):
-        src_sty = HERE / "tmlr" / sty
-        if src_sty.exists():
-            shutil.copy(src_sty, out / sty)
-
-    print(f"wrote {out / 'main.tex'}")
+def render_profiles(stage, targets):
+    require(shutil.which('tectonic') is not None, 'tectonic is required to compile the manuscripts')
+    require(shutil.which('pdfinfo') is not None, 'pdfinfo is required to verify PDF page counts')
+    profiles = {}
+    for target in targets:
+        tex = stage / PROFILES[target]
+        result = subprocess.run(['tectonic', '--keep-logs', tex.name], cwd=tex.parent,
+                                capture_output=True, text=True)
+        log = tex.with_suffix('.log')
+        messages = result.stdout + result.stderr + (log.read_text(errors='replace') if log.exists() else '')
+        require(result.returncode == 0, f'LaTeX compilation failed for {target}:\n{messages[-9000:]}')
+        final_log = log.read_text(errors='replace') if log.exists() else messages
+        defects = re.findall(r'[^\n]*(?:Overfull \\[hv]box|[Cc]itation[^\n]*undefined|undefined references)[^\n]*', final_log)
+        require(not defects, f'unresolved manuscript layout/citation defects in {target}: {defects}')
+        pdf = tex.with_suffix('.pdf')
+        info = subprocess.run(['pdfinfo', str(pdf)], check=True, capture_output=True, text=True).stdout
+        count = re.search(r'^Pages:\s+(\d+)', info, flags=re.M)
+        require(count is not None and int(count[1]) > 0, f'invalid PDF for {target}')
+        profiles[target] = {'pdf': str(pdf.relative_to(stage)), 'pages': int(count[1])}
+    return profiles
 
 
-def tmlr_preamble() -> str:
-    return r"""% GENERATED by build.py from main.tex. Do not edit; edit main.tex.
-\documentclass[10pt]{article}
-\usepackage{tmlr}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{microtype}
-\usepackage{caption}
-\usepackage{enumitem}
-\usepackage{url}
-\captionsetup{font=small,labelfont=bf,skip=4pt}
-% at the default topfraction of 0.7 a page carrying a figure and a table cannot
-% also carry enough text, which is what leaves visible gaps mid-document.
-\renewcommand{\topfraction}{0.9}
-\renewcommand{\bottomfraction}{0.7}
-\renewcommand{\floatpagefraction}{0.8}
-\renewcommand{\textfraction}{0.07}
-\setcounter{topnumber}{3}
-\setcounter{totalnumber}{5}
-\setlength{\tabcolsep}{4pt}
-\newcommand{\vfn}{v}
-\newcommand{\elsewhere}[1]{Appendix~\ref{#1}}
-\title{No Free Null: Reference Distributions for Explaining\\
-Reinforcement Learning Agents}
-\author{\name Aaryan Singh \email singha9@rose-hulman.edu \\
-      \addr Independent Researcher}
-\def\month{MM}
-\def\year{2026}
-\def\openreview{\url{https://openreview.net/forum}}
-\begin{document}
-\maketitle
-\begin{abstract}
-ABSTRACT_PLACEHOLDER
-\end{abstract}
-
-"""
+def build_from_statistics(statistics, context, output, targets, *, fixture=False):
+    require(targets and set(targets) <= set(PROFILES), 'unknown or empty manuscript profiles')
+    require(statistics['verification']['scientific_budgets_checked'] is True or fixture,
+            'manuscripts require completed scientific budgets')
+    manuscript_sources = source_hashes()
+    with tempfile.TemporaryDirectory(prefix='nano-l1-manuscript-') as temporary:
+        stage = Path(temporary)
+        stage_sources(stage, fixture=fixture)
+        write_assets(statistics, context, stage, fixture=fixture)
+        (stage / 'statistics.json').write_text(json.dumps(statistics, indent=2, allow_nan=False) + '\n')
+        profiles = render_profiles(stage, targets)
+        require(source_hashes() == manuscript_sources,
+                'manuscript source changed during compilation')
+        names = list(ASSET_NAMES)
+        names += [row['pdf'] for row in profiles.values()]
+        # Copy only after every requested profile compiles without defects.
+        output.mkdir(parents=True, exist_ok=True)
+        for name in names:
+            destination = output / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(stage / name, destination)
+        manifest = {'schema_version': 1, 'profiles': profiles,
+                    'scientific_budgets_checked': statistics['verification']['scientific_budgets_checked'],
+                    'layout_fixture': fixture, 'input_manifest_sha256': statistics['input_manifest_sha256'],
+                    'manuscript_source_sha256': manuscript_sources,
+                    'artifacts_sha256': {name: digest(output / name) for name in names}}
+        (output / 'manuscript_manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    return manifest
 
 
-if __name__ == "__main__":
+def verify_artifacts(output):
+    manifest = load(output / 'manuscript_manifest.json')
+    require(manifest['schema_version'] == 1, 'unsupported manuscript manifest')
+    require(manifest['scientific_budgets_checked'] is True and manifest['layout_fixture'] is False,
+            'layout or smoke artifacts cannot verify a publication')
+    profiles = manifest['profiles']
+    require(profiles and set(profiles) <= set(PROFILES), 'invalid manuscript profiles')
+    for target, row in profiles.items():
+        require(row['pdf'] == str(Path(PROFILES[target]).with_suffix('.pdf'))
+                and isinstance(row['pages'], int) and not isinstance(row['pages'], bool)
+                and row['pages'] > 0, f'invalid manuscript profile: {target}')
+    require(set(manifest['manuscript_source_sha256']) ==
+            {str((HERE / name).relative_to(ROOT)) for name in SOURCE_NAMES},
+            'manuscript source membership differs')
+    require(set(manifest['artifacts_sha256']) ==
+            set(ASSET_NAMES) | {row['pdf'] for row in profiles.values()},
+            'manuscript artifact membership differs')
+    verify_hashes(ROOT, manifest['manuscript_source_sha256'])
+    verify_hashes(output, manifest['artifacts_sha256'])
+    return manifest
+
+
+def verify_build(run, corpus, output):
+    expected, _ = input_statistics(run, corpus)
+    manifest = verify_artifacts(output)
+    require(manifest['input_manifest_sha256'] == expected['input_manifest_sha256'],
+            'manuscript and selected experiment manifests differ')
+    require(load(output / 'statistics.json') == expected,
+            'manuscript statistics differ from reconstructed experiment inputs')
+    return manifest
+
+
+def numerical_claims(statistics):
+    return {key: value for key, value in statistics.items()
+            if key not in {'verification', 'input_manifest_sha256', 'statistics_source_sha256'}}
+
+
+def compare_claims(current, published, path='statistics'):
+    """Compare a new complete run with the recorded numerical claim values."""
+    if isinstance(published, dict):
+        require(isinstance(current, dict) and current.keys() == published.keys(), f'claim keys differ: {path}')
+        for key in published:
+            compare_claims(current[key], published[key], f'{path}/{key}')
+    elif isinstance(published, list):
+        require(isinstance(current, list) and len(current) == len(published), f'claim count differs: {path}')
+        for index, (a, b) in enumerate(zip(current, published, strict=True)):
+            compare_claims(a, b, f'{path}/{index}')
+    elif isinstance(published, (int, float)) and not isinstance(published, bool):
+        require(isinstance(current, (int, float)) and not isinstance(current, bool)
+                and abs(current - published) <= 1e-9,
+                f'numerical claim differs: {path}')
+    elif isinstance(published, bool):
+        require(isinstance(current, bool) and current is published, f'claim differs: {path}')
+    else:
+        require(current == published, f'claim differs: {path}')
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--run', type=Path, default=ROOT / 'data/releases/research_v1')
+    ap.add_argument('--corpus', type=Path, default=ROOT / 'data/releases/market_snapshot_v1/corpus.npz')
+    ap.add_argument('--out', type=Path, default=HERE)
+    ap.add_argument('--targets', nargs='+', choices=tuple(PROFILES), default=list(PROFILES))
+    ap.add_argument('--verify-only', action='store_true')
+    args = ap.parse_args()
+    if args.verify_only:
+        manifest = verify_build(args.run, args.corpus, args.out)
+    else:
+        statistics, context = input_statistics(args.run, args.corpus)
+        manifest = build_from_statistics(statistics, context, args.out, args.targets)
+        verify_build(args.run, args.corpus, args.out)
+    print(json.dumps({'profiles': manifest['profiles'],
+                      'scientific_budgets_checked': manifest['scientific_budgets_checked']}, indent=2))
+
+
+if __name__ == '__main__':
     main()

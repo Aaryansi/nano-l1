@@ -203,9 +203,15 @@ def derive(reports):
                           "mean_return": float(np.mean([row["return"] for row in rows])),
                           "returns": [row["return"] for row in rows],
                           "reference_counts": by_reference, "width_ratio": task["width_ratio"],
+                          "units": [{"eligible": row["competence"]["eligible_for_sensitivity_claim"],
+                                     "environment_verdict": row["verdict_env"],
+                                     "weight_verdict": row["verdict_weight"]} for row in rows],
                           "weight_reference_sd": task["weight_null"]["std"],
                           "environment_reference_sd": task["env_null"]["std"]})
         controls[str(directory.relative_to(reports))] = tasks
+    larger = reports / "n99/sanity_test.json"
+    primary["larger_bank_market"] = ([comparison(row) for row in read(larger)["real_results_per_seed"]]
+                                      if larger.exists() else None)
     return {"market": market, "headline": primary, "conditional_calibration": rates,
             "controls": controls, "state_interventions": state_statistics(
                 reports, market_returns=market_returns, market_epochs=market_epochs),

@@ -250,7 +250,7 @@ def main() -> None:
     target_real = feature_index("time_to_expiry_frac")
 
     real_rows = run_corpus(
-        "REAL MARKET (agent has no measurable edge)",
+        "REAL MARKET",
         split.train, split.test, split.normalizer, target_real,
         args.coefs, args.updates, args.seeds, args.n_states, args.seed,
         "measure suppression and held-out return cost",

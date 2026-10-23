@@ -1,0 +1,463 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.78in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,amsmath,amssymb,amsthm,booktabs,graphicx}
+\usepackage[round,authoryear]{natbib}
+\usepackage{xcolor,xurl}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\setlength{\columnsep}{0.25in}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{1.5em}
+\ifdefined\layoutfixture
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyfoot[C]{\scriptsize LAYOUT CHECK: SYNTHETIC NUMBERS \quad \thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fi
+\newtheorem{proposition}{Proposition}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\input{\paperroot/metrics.tex}
+\input{\paperroot/tables.tex}
+\title{Auditing Reference Distributions for\newline Observation-Replacement Return Spans}
+\author{Aaryan Singh\\\small\texttt{singha9@rose-hulman.edu}}
+\date{}
+\begin{document}
+\raggedbottom
+\maketitle
+\ifdefined\layoutfixture
+\begin{center}\fbox{\textbf{LAYOUT CHECK: SYNTHETIC NUMBERS}}\end{center}
+\fi
+\begin{abstract}
+An observation-replacement return span measures how a specified input
+intervention changes a policy's return. Interpreting that span requires choices
+about the reference population, replacement distribution and evaluation process.
+We audit these choices in a binary-contract simulator, controlled synthetic
+populations and six control-task configurations. We retain training-seed
+variation, raw endpoint returns, failed competence gates and unresolved
+references. In the historical market example, five policies have mean return
+\MarketMean\ dollars per episode with a crossed seed/day interval
+\MarketInterval. Reference comparisons remain descriptive because market
+policies are not exchangeable with the synthetic bank. Conditional synthetic
+calibration and the control-task results are reported with their denominators.
+An exact finite-pool example shows why the legacy reference-centered
+rank/normal rule lacks a general exchangeability guarantee; standard symmetric
+ranks address that separate statistical requirement. The audit supports
+careful interpretation of particular interventions, without inferring
+feature-level fidelity, absent information or explanation meaning from a
+single return-span comparison.
+\end{abstract}
+
+\section{Question and scope}
+An explanation can describe a policy's decisions, its predictions, or the
+consequences of its actions. These are different targets, including when the
+policy performs poorly. SVERL makes this distinction explicit and assigns
+feature contributions to specified characteristic functions
+\citep{beechey2023,beechey2025}. A faithful explanation of a costly decision can
+be useful for debugging it. Low return alone does not make the explanation
+empty.
+
+Our question concerns a narrower diagnostic: how should an observed
+observation-replacement return span be compared with spans from a bank of
+reference policies? We examine the implemented comparison, the financial state
+retained by an intervention, and the evidence needed to interpret reference
+widths and classifications. The contributions are a reproducible computational
+audit, explicit examples of interpretation failures, and empirical comparisons
+under declared training budgets. We do not propose a universal null for
+reinforcement learning or a new general rank-test theorem.
+
+The study is retrospective. Its configuration was fixed for the selected
+rerun after exploratory development on this historical data. Repeating that
+window does not create a prospective holdout. All numerical tables are
+generated from the selected release; the training source is
+\texttt{\TrainingCommit}. Reduced-budget execution runs cannot supply these
+tables.
+
+\section{What the endpoint statistic identifies}
+Let $\pi$ be a fixed policy, $M$ an environment, $D$ an evaluation population,
+and $I$ a specified replacement intervention. For a feature set $S$, let
+$v_{\pi,M,D,I}(S)$ denote expected episode return when the intervention retains
+the coordinates in $S$. The endpoint span is
+\begin{equation}
+\Delta(\pi,M,D,I)=v(N)-v(\emptyset).
+\label{eq:span}
+\end{equation}
+We estimate both endpoints by replaying the same held-out episodes. The full
+endpoint supplies original policy inputs; the empty endpoint applies the
+declared replacement at every decision. The intervention also changes the
+policy's actions and subsequent inventory. Therefore this is a property of the
+policy, environment, intervention and evaluation distribution together.
+
+For an efficient Shapley decomposition, $\sum_i\phi_i=v(N)-v(\emptyset)$
+\citep{lundberg2017}. Reading the endpoints avoids estimating individual
+coordinates merely to recover their sum. It does not validate that
+decomposition: allocations with the same sum receive the same diagnostic
+regardless of how they assign feature credit. Estimation accuracy for a
+ranking is another question; our implementation's gap diagnostic does not
+implement the formal ranking procedures of \citet{goldwasser2024}.
+
+The intervention is also distinct from SVERL's conditional policy-occupancy
+construction. The extended framework defines outcome explanations through
+partial-information behaviour at the state being explained, with the original
+policy elsewhere \citep{beechey2025}. Our empirical flat-inventory background
+and repeated replacement at all steps differ in distribution and locality.
+The experiments do not test or refute that theoretical construction.
+
+\ifdefined\shortversion
+Parameter sensitivity and probability attribution address separate targets;
+completeness does not make a probability difference a return intervention
+\citep{adebayo2018,sundararajan2017}.
+\else
+\subsection{Dependence, fidelity and task utility}
+Parameter-randomization sensitivity asks whether an explanation depends on
+learned parameters \citep{adebayo2018}. It does not, by itself, establish
+feature-level fidelity or useful task performance. Limitations of such checks
+and refinements to their evaluation are established topics
+\citep{binder2022,hedstrom2024}. A bank of independently initialized policy
+spans is a different experiment from progressively reinitializing the layers
+of one trained model.
+
+Integrated gradients satisfy completeness for their chosen model output
+\citep{sundararajan2017}. Our auxiliary IG implementation explains a
+chosen-action probability relative to a zero normalized input. That
+probability difference is not the return intervention in
+Equation~\ref{eq:span}. We therefore do not claim cross-family return-test
+agreement from these auxiliary profiles.
+\fi
+
+\section{Reference diagnostics and rank validity}
+The legacy rule compares an observed span $T$ with $B$ reference spans
+$T_1,\ldots,T_B$. It combines a reference-centered empirical tail score
+\begin{equation}
+p_{\rm legacy}=\frac{1+\sum_{b=1}^B
+\mathbf{1}\{|T_b-\bar T_{\rm ref}|\geq|T-\bar T_{\rm ref}|\}}{B+1}
+\label{eq:legacy}
+\end{equation}
+with a two-sided normal approximation to
+$z=(T-\bar T_{\rm ref})/s_{\rm ref}$. Both criteria must meet the declared
+level $\alpha=0.05$. We retain this rule as a diagnostic of the original
+workflow, not as an assumption-free test. Insufficient rank resolution or
+$s_{\rm ref}\leq10^{-12}$ makes its comparison unresolved. This convention
+does not mean that every test against a point-mass reference is invalid.
+
+\begin{proposition}
+The legacy combined rule does not have a general finite-sample
+exchangeability guarantee.
+\end{proposition}
+\begin{proof}
+Uniformly designate one observation in a fixed pool containing $-1,+1$ and
+18 zeros; the remaining 19 entries are references. The resulting observation
+and references are jointly exchangeable. Either extreme receives legacy tail
+score $1/20=0.05$ and $|z|=20/\sqrt{19}>4.58$, so both meet the normal
+criterion. The rejection probability is $2/20=0.10$. This is a finite-pool
+example, not an error estimate for the independent synthetic benchmark.
+\end{proof}
+
+For comparison, let $T_0=T$ and compute the pooled center
+$\bar T_{\rm pool}=(B+1)^{-1}\sum_{b=0}^{B}T_b$. The symmetric two-sided
+rank uses scores $A_b=|T_b-\bar T_{\rm pool}|$ and
+\begin{equation}
+p_{\rm sym}=\frac{\sum_{b=0}^{B}\mathbf{1}\{A_b\geq A_0\}}{B+1}.
+\label{eq:symmetric}
+\end{equation}
+We also report the upper-tail raw-span rank. Both include the observation and
+count ties conservatively. Under joint exchangeability and permutation-equivariant
+scoring, their ranks are super-uniform by the established finite-rank argument
+\citep{kuchibhotla2020,hemerik2018}. Conditional on an unordered score multiset,
+at most an $\alpha$ fraction of indices can have an inclusive upper-tail rank
+at most $\alpha$; exchangeability makes the observed index uniform.
+The symmetric rank assigns each extreme in the example $2/20=0.10$.
+
+That guarantee is marginal over the bank and the observed draw. It does not
+bound error conditional on each realized reference bank. It also does not
+supply exchangeability between a historical market agent and policies trained
+on synthetic populations or corrupted inputs. Connections between attribution
+and conditional-independence testing require explicit modeling assumptions,
+as in SHAP-XRT \citep{teneggi2023}; the return setting does not inherit those
+guarantees automatically.
+
+\section{Implemented experiments}
+\subsection{Market accounting and evaluation}
+The pinned corpus contains \EpisodeCount\ binary-contract episodes with 14
+decision rows each. Chronological training, validation and test counts are
+\TrainCount, \ValidationCount\ and \TestCount, with four boundary episodes
+purged. The 18 inputs comprise 14 market/spot coordinates normalized using
+training statistics and four active-inventory coordinates. Actions target
+$-100,0,+100$ signed yes-equivalent contracts. A reversal can trade 200.
+
+The assumed execution model buys at the supplied ask and sells at the bid.
+It charges the per-order fee
+$\operatorname{ceil}_{\rm cents}[0.07|C|p(1-p)]$, with zero impact by default,
+full fills and no funding or queue simulation. Candle-derived quotes are
+coarse proxies; these assumptions do not establish exact historical fees or
+live executable performance. The default terminal mark is the recorded binary
+settlement, with no additional settlement fee in the model. Equity increments
+telescope to final profit and loss at $\gamma=1$.
+
+Five market seeds train for 100 PPO updates under each cost objective. Their
+greedy policies are evaluated on every held-out episode. The critic predicts
+stochastic policy return in dollars, not settlement probability; its auxiliary
+calibration uses eight policy rollouts per episode. Both rollout implementations
+agree on every acted-on observation and greedy action for all ten checkpoints,
+with maximum accounting discrepancy \ParityError. Primary uncertainty crosses
+training-seed resampling with shared UTC-day blocks. There are only
+\DayCount\ test-day blocks, limiting inference about temporal variation.
+
+\subsection{Synthetic populations and reference banks}
+The balanced synthetic population has independent binary settlements, constant
+price 0.5, spread 0.02, and noisy features independent of settlement. Flat earns
+zero. The planted population adds a noisy settlement signal, repeated across
+the 14 steps. Its first-observation sign-and-hold strategy is a reference
+policy, not a proven optimum when aggregation, delayed entry and abstention
+are possible.
+
+The primary bank has 24 independently seeded policies, each trained for 40
+updates on 1,200 synthetic episodes and evaluated on an independent draw of
+1,200 episodes with its own training normalizer. A 99-draw sensitivity retains
+the same procedure. The conditional calibration uses 30 independent observed
+trials at each strength $0,0.2,1$, reusing the primary bank. Each trial retains
+both endpoint returns. We report pointwise Wilson intervals conditional on
+that bank, alongside unresolved counts and both standard rank comparators.
+These rates include the specified learning procedure and budget. They do not
+isolate test sensitivity from learning success or quantify bank-to-bank error.
+
+\subsection{Control tasks and competence gates}
+We evaluate CartPole, Acrobot, MountainCar, Pendulum with nine discrete torques,
+deterministic $4\times4$ FrozenLake, and CliffWalking capped at 200 steps.
+The control trainer is Stable-Baselines3 PPO \citep{raffin2021}, with separate
+two-layer 64-unit actor/value trunks and four environment copies. Observed
+agents request 400,000 interactions; each blinded reference requests 30,000.
+Complete rollout batches can exceed those requests. Each construction has 24
+reference draws, and endpoint evaluation uses 20 episodes. Five independently
+trained observed seeds are separate from correlated training checkpoints.
+
+Declared competence thresholds are respectively 475, $-100$, $-110$, $-300$,
+0.8 and $-20$, measured on 25 episodes, together with an absolute measured
+endpoint span above $10^{-6}$. A failed gate does not establish low detection power. Neither
+reference-width ratios nor standardized distances are power multipliers.
+All failed and unresolved cases remain in the results.
+
+\section{Empirical results}
+\subsection{Historical market and primary references}
+\begin{table}[t]
+\centering\small
+\MarketTable
+\caption{Held-out market return in dollars per episode. Seed spread is the
+sample SD across seed means, not episode SD or a standard error. Cost and
+zero-cost agents were trained separately. The primary crossed seed/day
+interval is \MarketInterval. Non-rejection would not establish equivalence.}
+\label{tab:market}
+\end{table}
+The market policies have mean return \MarketMean\ dollars per episode
+(Table~\ref{tab:market}). The primary centered-bootstrap probability is
+\MarketProbability. This approximate probability and the percentile interval
+are different summaries and need not be dual near the decision level. We
+report both, without selecting one to support a stronger claim. Neither a
+negative mean nor a comparison with flat proves absence of predictive
+information or makes a policy's explanation meaningless.
+
+\begin{table}[t]
+\centering\small
+\HeadlineTable
+\caption{Primary synthetic-bank diagnostics. ``Outside'' denotes the legacy
+two-part classification, not a finding of explanation fidelity. Market
+comparisons are descriptive. Undefined distances are shown explicitly.}
+\label{tab:headline}
+\end{table}
+Table~\ref{tab:headline} compares the fixed primary cases against the declared
+bank. All five market-seed comparisons and the larger-bank sensitivity are
+retained in the release. \MarketSeedParagraph{}
+\SensitivityParagraph{}
+Changing a bank can change its center, width and
+classification while also changing training or evaluation distributions.
+Those differences do not identify a unique information-removal mechanism.
+
+\subsection{Conditional calibration and controls}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{\paperroot/figures/calibration.png}
+\caption{Conditional trial rates with pointwise intervals for one reused
+reference bank. A standard rank guarantee under exchangeability is marginal
+over banks; these intervals do not establish such a guarantee on the market.}
+\label{fig:calibration}
+\end{figure}
+\CalibrationParagraph{}
+With 30 trials, even zero flags leave a substantial upper uncertainty bound.
+One positive-control success is therefore not a power estimate. The signal
+strength sweep also changes what the learning procedure can acquire within
+its fixed budget.
+
+\begin{table}[t]
+\centering\scriptsize
+\ControlTable
+\caption{Independent control seeds. Eligibility requires both the declared
+return gate and measured endpoint dependence. Classification counts retain
+all seeds and report unresolved references separately. Each task uses its
+native reward units. O/U denotes outside/unresolved counts out of five seeds.}
+\label{tab:controls}
+\end{table}
+\ControlParagraph{}
+This table supports statements about these configurations and reference banks.
+It does not establish a universal ranking of reference constructions. A
+reference can collapse when its policies have identical returns, and the
+legacy normal-scale rule then cannot decide. That outcome differs from a
+resolved non-rejection and from a trained observed agent failing to learn.
+
+\subsection{State preservation and attribution suppression}
+Full replacement changes inventory inputs as well as market inputs. The
+market-row and donor-trajectory controls retain the real clock and all four
+inventory coordinates of the intervened rollout. A donor row preserves empirical row support, and a
+donor trajectory preserves its own market sequence. Neither guarantees joint
+consistency with the recipient's financial state or reward.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{\paperroot/figures/state_interventions.png}
+\caption{Market return spans under three specified interventions. Intervals
+cross training seeds and common UTC-day blocks, conditional on fixed masking
+draws. Differences do not isolate inventory as their sole cause.}
+\label{fig:state}
+\end{figure}
+\StateParagraph{}
+Retaining inventory also retains some price information. If $z=q/100$ is
+scaled nonzero position, $e$ its entry price and $u=q(P-e)/100$ scaled
+unrealized profit, then
+\begin{equation}
+P=e+u/z.
+\end{equation}
+The identity holds up to feature precision. Thus a financially consistent control retaining these coordinates cannot
+also hide all current-price information when $z\neq0$. Conditional information
+beyond retained inventory can still be a legitimate target; this identity is
+not an impossibility result for conditional explanations.
+
+The steering experiment penalizes input gradients during training and measures
+the resulting behaviour-attribution share and held-out return separately.
+An auxiliary single-seed comparison examines greedy behaviour; it cannot
+establish behavioural equivalence across the full experiment.
+The penalty targets the expiry clock in the market and the planted
+signal in the synthetic case, with ten seeds and penalty 20 fixed for the
+reported comparison. All penalties are retained. \SteeringParagraph{}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{\paperroot/figures/steering.png}
+\caption{All declared penalties. Upper panel shows seed-specific target shares
+and their means; lower panel shows paired return changes with crossed seed/block
+intervals. The two populations target different features.}
+\label{fig:steering}
+\end{figure}
+A non-significant return contrast is not equivalence or noninferiority, and
+changed task return alone cannot establish that the resulting policies are
+behaviourally identical.
+
+\ifdefined\shortversion\else
+\section{Why settlement shuffling changes the question}
+Global settlement permutation preserves feature arrays and the marginal
+settlement rate. It changes their relationship to rewards. This matters even
+in a calibrated one-period example with no incremental price-measurable edge.
+Suppose $Y\in\{0,1\}$, $P\in[0,1]$ and $\E[Y\mid P]=P$. Every bounded
+price-measurable position $q(P)$ has frictionless gross expected payoff
+\begin{equation}
+\E[q(P)(Y-P)]=0.
+\end{equation}
+If $Y^*$ is replaced by an independent draw from its marginal settlement law,
+with mean $\mu=\E[P]$, choosing
+$q^*(P)=\operatorname{sign}(\mu-P)$ instead gives
+\begin{equation}
+\E[q^*(P)(Y^*-P)]=\E|\mu-P|,
+\end{equation}
+which is positive for a nonconstant price. Fees and execution constraints can
+reduce this gross payoff. The example does not establish live profit or
+efficiency of the historical corpus. It shows that independence of settlement
+and price is a different hypothesis from calibrated prices with no additional
+edge. Price remains reward-relevant through acquisition cost even after losing
+settlement-predictive information.
+
+Within-price-bucket label changes and correlations are descriptive diagnostics,
+not estimates of conditional information removal. A conditional null may
+legitimately retain predictive information in its conditioning price. Failure
+to meet a finite set of heuristic bucket thresholds does not prove conditional
+randomization impossible or vacuous. A sequential test would need a justified
+joint conditional law for paths and outcomes.
+\fi
+
+\section{Limitations and next experiments}
+The financial model uses assumed costs and coarse quotes, the market period
+is fixed, and seed/day inference rests on few time blocks. Synthetic
+calibration is conditional on one bank and has limited precision at rare
+error rates. Control competence is configuration-specific; failed tasks remain
+evidence about training rather than about detection sensitivity. No reference
+width alone identifies an explanatory mechanism.
+
+\ifdefined\shortversion
+Complete replay and hash checks verify computations, without establishing
+feature-level fidelity. Additional raw evidence and implementation limits
+remain documented in the full profile and release.
+\else
+This audit distinguishes computational correctness from scientific
+identification. Complete replay parity, corrected KernelSHAP coalition-size
+mass and exact-game tests strengthen the implementation evidence. They do
+not turn the endpoint sum into a feature-fidelity test. Auxiliary ranking,
+IG and parameter-randomization diagnostics address different targets and
+assumptions. The same applies to the secondary objective control: its
+unmodified returns are archived, but masked spans retain means without
+per-episode masked arrays, limiting independent endpoint reconstruction.
+\fi
+
+The next useful experiments are repeated independent reference banks with
+more null trials, competence-controlled comparisons with matched learning
+budgets, and conditional path randomization in a simulator with a known joint
+law. A separately frozen temporal market holdout would test external
+robustness. These additions would strengthen calibration and generalization;
+they are not prerequisites for honestly reporting the present descriptive
+audit.
+
+\paragraph{Reproducibility.}
+The repository pins the corpus and splits, retains raw returns and model
+hashes, records numerical runtime and package versions, and verifies source
+against the training commit. The full runner and release verifier are separate
+from execution-only smoke checks. Manuscript tables, figures and summaries
+share one derived statistics artifact; the three document profiles share this
+source. No claim of compliance with a particular venue's format is made.
+
+\bibliographystyle{plainnat}
+\bibliography{\paperroot/references}
+
+\ifdefined\extendedversion
+\appendix
+\section{Additional numerical records}
+\begin{table}[!ht]
+\centering\small
+\MarketSeedTable
+\caption{Every market-seed comparison against the primary bank. These remain
+descriptive comparisons with a synthetic reference population.}
+\end{table}
+\begin{table}[!ht]
+\centering\small
+\BaselineTable
+\caption{Descriptive cost-enabled baseline returns on the same held-out
+episodes. A lower mean is not a statement about which model has a faithful
+explanation. The momentum fallback is labeled explicitly.}
+\end{table}
+\begin{table}[!ht]
+\centering\scriptsize
+\SteeringTable
+\caption{All steering penalties. Attribution shares concern the specified
+behaviour proxy. Return differences use common evaluation blocks and paired
+training seeds. An interval containing zero does not establish equivalence.}
+\end{table}
+\begin{table}[!ht]
+\centering\small
+\StateTable
+\caption{State-preservation spans and crossed seed/block intervals.}
+\end{table}
+\paragraph{Stored auxiliary analyses.}
+The release also retains the reference-training budget sweep, the larger-bank
+sensitivity, nearest-neighbor masking, explanatory target proxies, layer
+randomization and horizon-width studies. Nearest-neighbor replacements do not
+provide a known conditional law. Horizon lengths change clock inputs and
+trading opportunities together; their log-log fits are descriptive. Unresolved
+comparisons and undefined correlations are retained rather than converted to
+agreement, no signal or equivalence.
+\fi
+\end{document}
