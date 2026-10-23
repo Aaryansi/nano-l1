@@ -48,6 +48,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: research-smoke
-          path: ${{ runner.temp }}/research-smoke/reports
+          path: |
+            ${{ runner.temp }}/research-smoke/reports
+            ${{ runner.temp }}/research-smoke/publication
           if-no-files-found: ignore
           retention-days: 7

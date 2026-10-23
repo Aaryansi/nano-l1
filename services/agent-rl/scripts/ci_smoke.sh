@@ -42,6 +42,10 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/second_method.py --corpus "$CORPUS" \
 "$PY" scripts/parameter_randomization.py --corpus "$CORPUS" \
   --runs "$OUT/checkpoints/ppo" --out "$OUT/reports" --n-states 2 --seeds 1 --updates 1 \
   --outcome-seeds 1 --outcome-coalitions 8 --outcome-episodes 8
+"$PY" scripts/steer_explanation.py --corpus "$CORPUS" --out "$OUT/reports" \
+  --coefs 0 20 --updates 1 --seeds 2 --n-states 2
+ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/positive_control.py --corpus "$CORPUS" \
+  --out "$OUT/reports" --n-null 2 --seeds 2 --budgets 1 2
 "$PY" - "$OUT/reports" <<'PY'
 import json
 import sys
@@ -76,4 +80,6 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 Cl
 "$PY" scripts/run_manifest.py --corpus "$CORPUS" --checkpoints "$OUT/checkpoints" \
   --out "$OUT/reports" --phase complete --quick 1
 "$PY" scripts/verify_release.py --run "$OUT" --corpus "$CORPUS" --allow-quick
+"$PY" scripts/publication_statistics.py --run "$OUT" --corpus "$CORPUS" \
+  --out "$OUT/publication/statistics.json" --allow-quick
 echo "smoke execution verified; reduced budgets do not support publication claims"
