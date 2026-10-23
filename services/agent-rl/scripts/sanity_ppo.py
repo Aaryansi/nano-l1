@@ -106,7 +106,7 @@ def main() -> None:
     if not (ok_learn and ok_null):
         print("\nPPO SANITY FAILED: the env is known good, so this is the agent")
         raise SystemExit(1)
-    print("\nppo implementation is sound on both known-answer corpora")
+    print("\nPPO passed these two configured synthetic learning checks")
 
 
 if __name__ == "__main__":

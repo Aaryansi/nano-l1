@@ -71,6 +71,9 @@ CORPUS="${CORPUS:-$SNAPSHOT/corpus.npz}"
 if [ "$QUICK" = 1 ] && [ "$VERIFY_PAPER" = 1 ]; then
   echo "quick mode cannot verify publication claims"; exit 1
 fi
+if [ "$EXPLAIN_ONLY" = 1 ] && [ "$VERIFY_PAPER" = 1 ]; then
+  echo "explanation-only runs cannot verify the full publication protocol"; exit 1
+fi
 if [ "$EXPLAIN_ONLY" = 1 ] && [ ! -d "$RUNS" ]; then
   echo "explain-only requires CHECKPOINTS pointing to an existing run"; exit 1
 fi
@@ -340,9 +343,16 @@ step "redrawing the paper's figures at publication size"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$FIGURES" )
 
-if [ "$VERIFY_PAPER" = 1 ]; then
-  step "verifying manuscript claims against this run"
-  ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py --reports "$REPORTS" )
+if [ "$EXPLAIN_ONLY" = 0 ]; then
+  # A temporary view supports explicit output-directory overrides without
+  # copying checkpoints or changing the immutable run layout.
+  RELEASE_VERIFY_VIEW="$(mktemp -d)"
+  trap 'rm -rf "${RELEASE_VERIFY_VIEW:?}"' EXIT
+  ln -s "$(cd "$CHECKPOINTS" && pwd)" "$RELEASE_VERIFY_VIEW/checkpoints"
+  ln -s "$(cd "$REPORTS" && pwd)" "$RELEASE_VERIFY_VIEW/reports"
+  step "auditing every held-out market checkpoint trajectory"
+  ( cd "$RL" && "$PY" scripts/audit_market_rollouts.py --corpus "$CORPUS" \
+      --run "$RELEASE_VERIFY_VIEW" --out "$REPORTS/rollout_parity.json" )
 fi
 
 # the paper states a wall-clock figure. record the real one rather than leaving
@@ -362,6 +372,12 @@ JSON
 step "recording and validating the generated run"
 ( cd "$RL" && "$PY" scripts/run_manifest.py --corpus "$CORPUS" \
     --checkpoints "$CHECKPOINTS" --out "$REPORTS" --phase complete --quick "$QUICK" )
+
+if [ "$VERIFY_PAPER" = 1 ]; then
+  step "comparing completed run evidence with the published numerical claims"
+  ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py --reports "$RELEASE_VERIFY_VIEW/reports" \
+      --corpus "$CORPUS" )
+fi
 
 step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"
 echo "figures and json in $REPORTS:"

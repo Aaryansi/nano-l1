@@ -95,7 +95,6 @@ docs/paper/tmlr/supplementary.zip
 docs/paper/tmlr/abstract.txt
 
 # generated build targets
-docs/paper/core/main.tex
 docs/paper/core/figures/
 docs/paper/core/references.bib
 docs/paper/core/*.sty

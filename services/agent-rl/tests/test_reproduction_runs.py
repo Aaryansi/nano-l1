@@ -44,6 +44,12 @@ def test_smoke_run_cannot_claim_publication_verification():
     assert "cannot verify publication" in result.stdout
 
 
+def test_partial_explanation_run_cannot_claim_full_publication_verification():
+    result = config("--explain-only", "--verify-paper")
+    assert result.returncode != 0
+    assert "cannot verify the full publication protocol" in result.stdout
+
+
 def test_explain_only_requires_explicit_existing_checkpoints(tmp_path):
     result = config("--explain-only", CHECKPOINTS=tmp_path / "missing")
     assert result.returncode != 0
@@ -55,7 +61,7 @@ def test_verifier_does_not_fall_back_to_published_artifacts(tmp_path):
     result = subprocess.run([sys.executable, str(ROOT / "services/agent-rl/scripts/verify_paper_numbers.py"),
                              "--reports", str(tmp_path)], capture_output=True, text=True)
     assert result.returncode != 0
-    assert "results.json: artifact missing" in result.stdout
+    assert "run_manifest.json" in result.stderr
 
 
 def test_raw_return_validation_catches_stale_summary(tmp_path):

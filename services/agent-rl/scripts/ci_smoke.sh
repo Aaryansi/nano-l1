@@ -8,6 +8,8 @@ if [ -d "$OUT" ] && [ -n "$(ls -A "$OUT")" ]; then
   echo "refusing nonempty smoke output: $OUT"
   exit 1
 fi
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 CORPUS="$ROOT/data/releases/market_snapshot_v1/corpus.npz"
 cd "$ROOT/services/agent-rl"
 "$PY" scripts/verify_snapshot.py "$ROOT/data/releases/market_snapshot_v1"
@@ -79,7 +81,10 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 Cl
   --out "$OUT/reports/rollout_parity.json"
 "$PY" scripts/run_manifest.py --corpus "$CORPUS" --checkpoints "$OUT/checkpoints" \
   --out "$OUT/reports" --phase complete --quick 1
-"$PY" scripts/verify_release.py --run "$OUT" --corpus "$CORPUS" --allow-quick
-"$PY" scripts/publication_statistics.py --run "$OUT" --corpus "$CORPUS" \
+mkdir -p "$OUT/view"
+ln -s "$OUT/checkpoints" "$OUT/view/checkpoints"
+ln -s "$OUT/reports" "$OUT/view/reports"
+"$PY" scripts/verify_release.py --run "$OUT/view" --corpus "$CORPUS" --allow-quick
+"$PY" scripts/publication_statistics.py --run "$OUT/view" --corpus "$CORPUS" \
   --out "$OUT/publication/statistics.json" --allow-quick
 echo "smoke execution verified; reduced budgets do not support publication claims"

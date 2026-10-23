@@ -119,7 +119,7 @@ def main() -> None:
     if not (ok_learn and ok_null):
         print("\nSANITY CHECK FAILED: do not trust any ppo result until this passes")
         raise SystemExit(1)
-    print("\nboth pass: env, reward accounting, and feature plumbing are sound")
+    print("\nboth configured synthetic learning checks passed")
 
 
 if __name__ == "__main__":
