@@ -33,6 +33,11 @@ def load(path):
     return json.loads(path.read_text())
 
 
+def source_hashes():
+    return {str((HERE / name).relative_to(ROOT)): digest(HERE / name)
+            for name in SOURCE_NAMES}
+
+
 def input_statistics(run, corpus):
     evidence = verify(run, corpus)
     reports = run / 'reports'
@@ -84,12 +89,15 @@ def build_from_statistics(statistics, context, output, targets, *, fixture=False
     require(targets and set(targets) <= set(PROFILES), 'unknown or empty manuscript profiles')
     require(statistics['verification']['scientific_budgets_checked'] is True or fixture,
             'manuscripts require completed scientific budgets')
+    manuscript_sources = source_hashes()
     with tempfile.TemporaryDirectory(prefix='nano-l1-manuscript-') as temporary:
         stage = Path(temporary)
         stage_sources(stage, fixture=fixture)
         write_assets(statistics, context, stage, fixture=fixture)
         (stage / 'statistics.json').write_text(json.dumps(statistics, indent=2, allow_nan=False) + '\n')
         profiles = render_profiles(stage, targets)
+        require(source_hashes() == manuscript_sources,
+                'manuscript source changed during compilation')
         names = list(ASSET_NAMES)
         names += [row['pdf'] for row in profiles.values()]
         # Copy only after every requested profile compiles without defects.
@@ -98,8 +106,6 @@ def build_from_statistics(statistics, context, output, targets, *, fixture=False
             destination = output / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(stage / name, destination)
-        manuscript_sources = {str((HERE / name).relative_to(ROOT)): digest(HERE / name)
-                              for name in SOURCE_NAMES}
         manifest = {'schema_version': 1, 'profiles': profiles,
                     'scientific_budgets_checked': statistics['verification']['scientific_budgets_checked'],
                     'layout_fixture': fixture, 'input_manifest_sha256': statistics['input_manifest_sha256'],

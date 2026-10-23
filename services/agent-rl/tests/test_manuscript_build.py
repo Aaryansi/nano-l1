@@ -110,6 +110,26 @@ def test_every_layout_profile_is_marked_and_inputs_share_one_article(tmp_path):
     assert "\\input{\\paperroot/metrics.tex}" in article
 
 
+def test_source_changes_during_compilation_cannot_publish_old_pdf_with_new_hash(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "article.tex").write_text("original source")
+    monkeypatch.setattr(paper, "HERE", source)
+    monkeypatch.setattr(paper, "ROOT", tmp_path)
+    monkeypatch.setattr(paper, "SOURCE_NAMES", ("article.tex",))
+    monkeypatch.setattr(paper, "write_assets", lambda *args, **kwargs: None)
+    def render(stage, targets):
+        (stage / "main.pdf").write_bytes(b"compiled from original source")
+        (source / "article.tex").write_text("modified source")
+        return {"full": {"pdf": "main.pdf", "pages": 1}}
+    monkeypatch.setattr(paper, "render_profiles", render)
+    output = tmp_path / "output"
+    with pytest.raises(ValueError, match="source changed during compilation"):
+        paper.build_from_statistics({"verification": {"scientific_budgets_checked": True}},
+                                    {}, output, ["full"])
+    assert not output.exists()
+
+
 @pytest.mark.parametrize("current", [
     {"mean": 2., "resolved": True},
     {"mean": 1., "resolved": 1},
@@ -135,10 +155,13 @@ def test_claim_comparison_retains_null_and_tolerates_only_roundoff():
 
 
 def test_unresolved_legend_and_intervals_are_drawn_without_changing_their_bounds(tmp_path, monkeypatch):
-    rank = {"rejection_rate": 0., "rejection_rate_ci95": [0., .2]}
     calibration = [{"signal_strength": strength, "rejection_rate_resolved": None,
                     "rejection_rate_ci95": None,
-                    "rank_comparators": {"greater": rank, "two-sided": rank}}
+                    "rank_comparators": {kind: {
+                        "rejection_rate": float(strength > 0),
+                        "rejection_rate_ci95": ([0., .2] if strength == 0 else
+                                                 [.8, np.nextafter(1., 0.)])}
+                        for kind in ("greater", "two-sided")}}
                    for strength in (0., .2, 1.)]
     # A percentile interval need not contain the point estimate.
     intervention = {"mean_span": 1., "ci95": [2., 3.]}

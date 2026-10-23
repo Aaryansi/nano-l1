@@ -217,9 +217,11 @@ def scientific_figures(statistics, output):
                 ax.text(index + offset, .05, "unresolved", rotation=90, fontsize=6,
                         color=color, ha="center", va="bottom")
                 continue
-            ax.errorbar(index + offset, mean, yerr=np.array([[mean-bounds[0]], [bounds[1]-mean]]),
-                        color=color, marker=marker, markersize=3.5, linewidth=.8, capsize=2,
-                        label=label if index == 0 else None)
+            position = index + offset
+            ax.plot([position] * 2, bounds, color=color, linewidth=.8)
+            ax.plot([position] * 2, bounds, color=color, marker="_",
+                    linestyle="none", markersize=4)
+            ax.plot(position, mean, color=color, marker=marker, markersize=3.5)
     ax.axhline(.05, color=gray, linestyle=":", linewidth=.7)
     ax.set(xticks=range(len(cases)), xticklabels=[f"{case['signal_strength']:g}" for case in cases],
            xlabel="planted signal strength", ylabel="conditional flag rate", ylim=(-.03, 1.04))
