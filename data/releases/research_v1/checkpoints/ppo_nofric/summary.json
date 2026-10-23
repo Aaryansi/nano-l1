@@ -1,0 +1,82 @@
+[
+  {
+    "seed": 0,
+    "frictionless": true,
+    "val_return_mean": 0.5655886380808371,
+    "val_return_std": 44.782244324923994,
+    "val_trades_mean": 3.1262665627435697,
+    "val_fees_mean": 0.0,
+    "final_entropy": 1.0794501826167107,
+    "final_explained_var": -4.870046651950233e-05,
+    "final_action_freq": [
+      0.27901785714285715,
+      0.32142857142857145,
+      0.39955357142857145
+    ],
+    "train_seconds": 11.2
+  },
+  {
+    "seed": 1,
+    "frictionless": true,
+    "val_return_mean": 0.1410370195735992,
+    "val_return_std": 45.830238474510935,
+    "val_trades_mean": 7.6905689789555725,
+    "val_fees_mean": 0.0,
+    "final_entropy": 1.0893229618668556,
+    "final_explained_var": 0.0010270348738504742,
+    "final_action_freq": [
+      0.33705357142857145,
+      0.3247767857142857,
+      0.33816964285714285
+    ],
+    "train_seconds": 10.9
+  },
+  {
+    "seed": 2,
+    "frictionless": true,
+    "val_return_mean": 1.581761430104576,
+    "val_return_std": 43.265233887042164,
+    "val_trades_mean": 3.2034294621979735,
+    "val_fees_mean": 0.0,
+    "final_entropy": 1.0693295449018478,
+    "final_explained_var": -0.0007743872911094574,
+    "final_action_freq": [
+      0.3482142857142857,
+      0.31473214285714285,
+      0.33705357142857145
+    ],
+    "train_seconds": 10.8
+  },
+  {
+    "seed": 3,
+    "frictionless": true,
+    "val_return_mean": 1.924434875602495,
+    "val_return_std": 46.94563651668631,
+    "val_trades_mean": 4.010132501948558,
+    "val_fees_mean": 0.0,
+    "final_entropy": 1.090999074280262,
+    "final_explained_var": 0.005057654405559275,
+    "final_action_freq": [
+      0.3169642857142857,
+      0.33370535714285715,
+      0.34933035714285715
+    ],
+    "train_seconds": 10.8
+  },
+  {
+    "seed": 4,
+    "frictionless": true,
+    "val_return_mean": 1.025214446089735,
+    "val_return_std": 40.76587596795572,
+    "val_trades_mean": 4.296960249415433,
+    "val_fees_mean": 0.0,
+    "final_entropy": 1.0808674320578575,
+    "final_explained_var": 0.001940364450600196,
+    "final_action_freq": [
+      0.3091517857142857,
+      0.34486607142857145,
+      0.34598214285714285
+    ],
+    "train_seconds": 10.8
+  }
+]

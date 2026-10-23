@@ -142,8 +142,9 @@ def verify_build(run, corpus, output):
     manifest = verify_artifacts(output)
     require(manifest['input_manifest_sha256'] == expected['input_manifest_sha256'],
             'manuscript and selected experiment manifests differ')
-    require(load(output / 'statistics.json') == expected,
-            'manuscript statistics differ from reconstructed experiment inputs')
+    # Raw evidence and outputs retain exact hashes. Reconstruction permits only
+    # numerical roundoff across supported CPU platforms, with exact metadata.
+    compare_claims(load(output / 'statistics.json'), expected, 'manuscript statistics')
     return manifest
 
 

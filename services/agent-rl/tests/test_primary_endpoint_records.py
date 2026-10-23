@@ -8,6 +8,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from run_manifest import validate_primary_endpoints
+from portable_validation import (reconstructed, validate_primary_endpoints as portable_primary,
+                                 validate_reference_bootstraps as portable_bootstraps)
 from calibrate_detection import summarize
 from nano_rl.agents.ppo import PPOAgent, PPOConfig
 from nano_rl.env.features import fit_normalizer
@@ -71,6 +73,8 @@ def test_validation_catches_modified_raw_endpoints(tmp_path, changed):
     np.savez(tmp_path / "endpoints.npz", **raw)
     with pytest.raises(ValueError):
         validate_primary_endpoints(tmp_path)
+    with pytest.raises(ValueError):
+        portable_primary(tmp_path)
 
 
 @pytest.mark.parametrize("changed", ["decision", "rate", "rank"])
@@ -86,3 +90,54 @@ def test_validation_catches_modified_calibration_claims(tmp_path, changed):
     (tmp_path / "detection_calibration.json").write_text(json.dumps(payload))
     with pytest.raises(ValueError):
         validate_primary_endpoints(tmp_path)
+    with pytest.raises(ValueError):
+        portable_primary(tmp_path)
+
+
+def test_portable_reader_accepts_normal_tail_roundoff_without_changing_evidence(tmp_path):
+    _, payload, _ = fixture(tmp_path)
+    row = payload["results"]["planted_signal"]
+    row["p_normal"] = float(np.nextafter(row["p_normal"], 1.))
+    path = tmp_path / "sanity_test.json"
+    path.write_text(json.dumps(payload))
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="primary comparison"):
+        validate_primary_endpoints(tmp_path)
+    differences = []
+    portable_primary(tmp_path, differences)
+    assert path.read_bytes() == before
+    assert any(context.endswith("p_normal") for _, context, _, _ in differences)
+
+
+def test_portable_bootstrap_reader_permits_roundoff_but_rejects_changed_state_counts(tmp_path):
+    from bootstrap_z import bootstrap, collect
+    from run_manifest import validate_reference_bootstraps
+    fixture(tmp_path)
+    payload = {label: bootstrap(observed, nulls, 25, 0)
+               for label, observed, nulls in collect(tmp_path)}
+    first = next(iter(payload.values()))
+    first["z_lo"] = float(np.nextafter(first["z_lo"], float("inf")))
+    path = tmp_path / "z_intervals.json"
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="reference resampling"):
+        validate_reference_bootstraps(tmp_path)
+    portable_bootstraps(tmp_path)
+    first["n_defined_z"] += 1
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="n_defined_z"):
+        portable_bootstraps(tmp_path)
+
+
+@pytest.mark.parametrize("actual,recorded", [
+    (1. + 1e-6, 1.),
+    (1., float("inf")),
+    (float("nan"), float("nan")),
+    (1, True),
+    (2., 2),
+    ({"value": 1.}, {"value": 1., "count": 2}),
+    ([1.], [1., 2.]),
+    ("within", "unresolved"),
+])
+def test_portable_numeric_tolerance_never_changes_metadata_or_decisions(actual, recorded):
+    with pytest.raises(ValueError, match="reconstruction differs"):
+        reconstructed(actual, recorded, "test")

@@ -1,0 +1,998 @@
+{
+  "updates": 40,
+  "tasks": [
+    {
+      "task": "prediction",
+      "updates": 40,
+      "n_seeds": 5,
+      "return": 7.406542056074766,
+      "span": 7.459501557632398,
+      "result": {
+        "statistic": 7.459501557632398,
+        "null_mean": 0.13833722741433027,
+        "null_std": 2.4506306598298497,
+        "p_rank": 0.04,
+        "p_normal": 0.002813048797954849,
+        "min_achievable_p_rank": 0.04,
+        "z_score": 2.9874613299445074,
+        "passes": true,
+        "verdict": "INFORMATIVE",
+        "n_null_samples": 24
+      },
+      "fires": true,
+      "verdict": "informative",
+      "per_seed": [
+        {
+          "seed": 0,
+          "return": 7.406542056074766,
+          "span": 7.459501557632398,
+          "result": {
+            "statistic": 7.459501557632398,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.002813048797954849,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.9874613299445074,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 1,
+          "return": 7.359813084112149,
+          "span": 7.3660436137071645,
+          "result": {
+            "statistic": 7.3660436137071645,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.0031846882905521407,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.949325047126711,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 2,
+          "return": 7.220404984423676,
+          "span": 7.1534267912772584,
+          "result": {
+            "statistic": 7.1534267912772584,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.004202270513398385,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.8625650037162247,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 3,
+          "return": 7.3193146417445485,
+          "span": 7.325545171339564,
+          "result": {
+            "statistic": 7.325545171339564,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.003359209397573311,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.9327993245723327,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 4,
+          "return": 7.290498442367602,
+          "span": 7.200155763239875,
+          "result": {
+            "statistic": 7.200155763239875,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.003956200488784934,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.881633145125123,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        }
+      ],
+      "return_mean_across_seeds": 7.319314641744548,
+      "span_mean_across_seeds": 7.300934579439252,
+      "null_spans": [
+        -0.7422118380062305,
+        2.8707165109034265,
+        -0.06542056074766356,
+        -0.2718068535825545,
+        -0.20872274143302177,
+        -2.45404984423676,
+        -3.487538940809969,
+        -0.5716510903426791,
+        1.6331775700934579,
+        -0.016355140186915886,
+        3.595794392523364,
+        2.822429906542056,
+        -0.8356697819314642,
+        -4.861370716510903,
+        1.0319314641744548,
+        3.000778816199377,
+        1.0116822429906542,
+        -2.329439252336449,
+        0.1674454828660436,
+        3.5210280373831773,
+        0.09345794392523364,
+        4.557632398753895,
+        -2.9727414330218065,
+        -2.1690031152647977
+      ],
+      "null_mean": 0.13833722741433027,
+      "null_std": 2.4506306598298497
+    },
+    {
+      "task": "trading",
+      "updates": 40,
+      "n_seeds": 5,
+      "return": -4.709548205714934,
+      "span": 10.311292773614582,
+      "result": {
+        "statistic": 10.311292773614582,
+        "null_mean": 2.6138778192503365,
+        "null_std": 1.8358587674781741,
+        "p_rank": 0.04,
+        "p_normal": 2.7551493120360075e-05,
+        "min_achievable_p_rank": 0.04,
+        "z_score": 4.192814333391121,
+        "passes": true,
+        "verdict": "INFORMATIVE",
+        "n_null_samples": 24
+      },
+      "fires": true,
+      "verdict": "informative",
+      "per_seed": [
+        {
+          "seed": 0,
+          "return": -4.709548205714934,
+          "span": 10.311292773614582,
+          "result": {
+            "statistic": 10.311292773614582,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 2.7551493120360075e-05,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 4.192814333391121,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 1,
+          "return": -3.426074654531877,
+          "span": 7.45452500305691,
+          "result": {
+            "statistic": 7.45452500305691,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 0.008371167560048841,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.6367209011703685,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 2,
+          "return": -3.027445467664741,
+          "span": 14.491463942147583,
+          "result": {
+            "statistic": 14.491463942147583,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 9.815144212892743e-11,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 6.469771168297919,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 3,
+          "return": -2.253839444316723,
+          "span": 7.447071658526271,
+          "result": {
+            "statistic": 7.447071658526271,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 0.008471885129482578,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.632661033024369,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        },
+        {
+          "seed": 4,
+          "return": -1.3400544949314146,
+          "span": 7.770046628061421,
+          "result": {
+            "statistic": 7.770046628061421,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 0.004975945743196543,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.8085868587232623,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative"
+        }
+      ],
+      "return_mean_across_seeds": -2.951392453431938,
+      "span_mean_across_seeds": 9.494880001081352,
+      "null_spans": [
+        2.0173364574607824,
+        0.5975155802067469,
+        3.193909660685674,
+        2.0507632603909602,
+        4.037803749333113,
+        1.518356721590961,
+        3.7423283762948447,
+        6.326923620915955,
+        5.1584890145751885,
+        1.4827258483916408,
+        2.583084069637775,
+        2.9782164470610466,
+        3.97626944012924,
+        0.5965498410748332,
+        0.7281307855755745,
+        -0.4192677767994182,
+        2.979992007440769,
+        -0.5853119456009512,
+        4.855327173805914,
+        5.192313212982604,
+        3.9320093822394964,
+        2.499026328319035,
+        2.624439517259641,
+        0.6661368890366486
+      ],
+      "null_mean": 2.6138778192503365,
+      "null_std": 1.8358587674781741
+    }
+  ],
+  "contrast": {
+    "estimand": "prediction minus trading standardized span, conditional on estimated references",
+    "per_seed": [
+      {
+        "seed": 0,
+        "difference": -1.2053530034466138
+      },
+      {
+        "seed": 1,
+        "difference": 0.31260414595634245
+      },
+      {
+        "seed": 2,
+        "difference": -3.6072061645816946
+      },
+      {
+        "seed": 3,
+        "difference": 0.30013829154796356
+      },
+      {
+        "seed": 4,
+        "difference": 0.07304628640186062
+      }
+    ],
+    "n_defined": 5,
+    "mean_difference": -0.8253540888244284,
+    "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+  },
+  "separated": false,
+  "undecided_tasks": [],
+  "budget_sweep": [
+    {
+      "updates": 40,
+      "tasks": [
+        {
+          "task": "prediction",
+          "updates": 40,
+          "n_seeds": 5,
+          "return": 7.406542056074766,
+          "span": 7.459501557632398,
+          "result": {
+            "statistic": 7.459501557632398,
+            "null_mean": 0.13833722741433027,
+            "null_std": 2.4506306598298497,
+            "p_rank": 0.04,
+            "p_normal": 0.002813048797954849,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 2.9874613299445074,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative",
+          "per_seed": [
+            {
+              "seed": 0,
+              "return": 7.406542056074766,
+              "span": 7.459501557632398,
+              "result": {
+                "statistic": 7.459501557632398,
+                "null_mean": 0.13833722741433027,
+                "null_std": 2.4506306598298497,
+                "p_rank": 0.04,
+                "p_normal": 0.002813048797954849,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.9874613299445074,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 1,
+              "return": 7.359813084112149,
+              "span": 7.3660436137071645,
+              "result": {
+                "statistic": 7.3660436137071645,
+                "null_mean": 0.13833722741433027,
+                "null_std": 2.4506306598298497,
+                "p_rank": 0.04,
+                "p_normal": 0.0031846882905521407,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.949325047126711,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 2,
+              "return": 7.220404984423676,
+              "span": 7.1534267912772584,
+              "result": {
+                "statistic": 7.1534267912772584,
+                "null_mean": 0.13833722741433027,
+                "null_std": 2.4506306598298497,
+                "p_rank": 0.04,
+                "p_normal": 0.004202270513398385,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.8625650037162247,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 3,
+              "return": 7.3193146417445485,
+              "span": 7.325545171339564,
+              "result": {
+                "statistic": 7.325545171339564,
+                "null_mean": 0.13833722741433027,
+                "null_std": 2.4506306598298497,
+                "p_rank": 0.04,
+                "p_normal": 0.003359209397573311,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.9327993245723327,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 4,
+              "return": 7.290498442367602,
+              "span": 7.200155763239875,
+              "result": {
+                "statistic": 7.200155763239875,
+                "null_mean": 0.13833722741433027,
+                "null_std": 2.4506306598298497,
+                "p_rank": 0.04,
+                "p_normal": 0.003956200488784934,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.881633145125123,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            }
+          ],
+          "return_mean_across_seeds": 7.319314641744548,
+          "span_mean_across_seeds": 7.300934579439252,
+          "null_spans": [
+            -0.7422118380062305,
+            2.8707165109034265,
+            -0.06542056074766356,
+            -0.2718068535825545,
+            -0.20872274143302177,
+            -2.45404984423676,
+            -3.487538940809969,
+            -0.5716510903426791,
+            1.6331775700934579,
+            -0.016355140186915886,
+            3.595794392523364,
+            2.822429906542056,
+            -0.8356697819314642,
+            -4.861370716510903,
+            1.0319314641744548,
+            3.000778816199377,
+            1.0116822429906542,
+            -2.329439252336449,
+            0.1674454828660436,
+            3.5210280373831773,
+            0.09345794392523364,
+            4.557632398753895,
+            -2.9727414330218065,
+            -2.1690031152647977
+          ],
+          "null_mean": 0.13833722741433027,
+          "null_std": 2.4506306598298497
+        },
+        {
+          "task": "trading",
+          "updates": 40,
+          "n_seeds": 5,
+          "return": -4.709548205714934,
+          "span": 10.311292773614582,
+          "result": {
+            "statistic": 10.311292773614582,
+            "null_mean": 2.6138778192503365,
+            "null_std": 1.8358587674781741,
+            "p_rank": 0.04,
+            "p_normal": 2.7551493120360075e-05,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 4.192814333391121,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative",
+          "per_seed": [
+            {
+              "seed": 0,
+              "return": -4.709548205714934,
+              "span": 10.311292773614582,
+              "result": {
+                "statistic": 10.311292773614582,
+                "null_mean": 2.6138778192503365,
+                "null_std": 1.8358587674781741,
+                "p_rank": 0.04,
+                "p_normal": 2.7551493120360075e-05,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 4.192814333391121,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 1,
+              "return": -3.426074654531877,
+              "span": 7.45452500305691,
+              "result": {
+                "statistic": 7.45452500305691,
+                "null_mean": 2.6138778192503365,
+                "null_std": 1.8358587674781741,
+                "p_rank": 0.04,
+                "p_normal": 0.008371167560048841,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.6367209011703685,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 2,
+              "return": -3.027445467664741,
+              "span": 14.491463942147583,
+              "result": {
+                "statistic": 14.491463942147583,
+                "null_mean": 2.6138778192503365,
+                "null_std": 1.8358587674781741,
+                "p_rank": 0.04,
+                "p_normal": 9.815144212892743e-11,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 6.469771168297919,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 3,
+              "return": -2.253839444316723,
+              "span": 7.447071658526271,
+              "result": {
+                "statistic": 7.447071658526271,
+                "null_mean": 2.6138778192503365,
+                "null_std": 1.8358587674781741,
+                "p_rank": 0.04,
+                "p_normal": 0.008471885129482578,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.632661033024369,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 4,
+              "return": -1.3400544949314146,
+              "span": 7.770046628061421,
+              "result": {
+                "statistic": 7.770046628061421,
+                "null_mean": 2.6138778192503365,
+                "null_std": 1.8358587674781741,
+                "p_rank": 0.04,
+                "p_normal": 0.004975945743196543,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 2.8085868587232623,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            }
+          ],
+          "return_mean_across_seeds": -2.951392453431938,
+          "span_mean_across_seeds": 9.494880001081352,
+          "null_spans": [
+            2.0173364574607824,
+            0.5975155802067469,
+            3.193909660685674,
+            2.0507632603909602,
+            4.037803749333113,
+            1.518356721590961,
+            3.7423283762948447,
+            6.326923620915955,
+            5.1584890145751885,
+            1.4827258483916408,
+            2.583084069637775,
+            2.9782164470610466,
+            3.97626944012924,
+            0.5965498410748332,
+            0.7281307855755745,
+            -0.4192677767994182,
+            2.979992007440769,
+            -0.5853119456009512,
+            4.855327173805914,
+            5.192313212982604,
+            3.9320093822394964,
+            2.499026328319035,
+            2.624439517259641,
+            0.6661368890366486
+          ],
+          "null_mean": 2.6138778192503365,
+          "null_std": 1.8358587674781741
+        }
+      ],
+      "contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -1.2053530034466138
+          },
+          {
+            "seed": 1,
+            "difference": 0.31260414595634245
+          },
+          {
+            "seed": 2,
+            "difference": -3.6072061645816946
+          },
+          {
+            "seed": 3,
+            "difference": 0.30013829154796356
+          },
+          {
+            "seed": 4,
+            "difference": 0.07304628640186062
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -0.8253540888244284,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      },
+      "separated": false,
+      "undecided_tasks": []
+    },
+    {
+      "updates": 100,
+      "tasks": [
+        {
+          "task": "prediction",
+          "updates": 100,
+          "n_seeds": 5,
+          "return": 7.40809968847352,
+          "span": 7.414330218068535,
+          "result": {
+            "statistic": 7.414330218068535,
+            "null_mean": -0.08119158878504673,
+            "null_std": 2.373155717207287,
+            "p_rank": 0.04,
+            "p_normal": 0.0015860406449542564,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 3.1584618541906133,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative",
+          "per_seed": [
+            {
+              "seed": 0,
+              "return": 7.40809968847352,
+              "span": 7.414330218068535,
+              "result": {
+                "statistic": 7.414330218068535,
+                "null_mean": -0.08119158878504673,
+                "null_std": 2.373155717207287,
+                "p_rank": 0.04,
+                "p_normal": 0.0015860406449542564,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 3.1584618541906133,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 1,
+              "return": 7.36214953271028,
+              "span": 7.335669781931464,
+              "result": {
+                "statistic": 7.335669781931464,
+                "null_mean": -0.08119158878504673,
+                "null_std": 2.373155717207287,
+                "p_rank": 0.04,
+                "p_normal": 0.001776141888109662,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 3.125315931414994,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 2,
+              "return": 7.337227414330218,
+              "span": 7.360591900311526,
+              "result": {
+                "statistic": 7.360591900311526,
+                "null_mean": -0.08119158878504673,
+                "null_std": 2.373155717207287,
+                "p_rank": 0.04,
+                "p_normal": 0.0017137574837008747,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 3.1358176099181607,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 3,
+              "return": 7.378504672897196,
+              "span": 7.372274143302181,
+              "result": {
+                "statistic": 7.372274143302181,
+                "null_mean": -0.08119158878504673,
+                "null_std": 2.373155717207287,
+                "p_rank": 0.04,
+                "p_normal": 0.0016852141073972434,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 3.14074027171652,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 4,
+              "return": 7.446261682242991,
+              "span": 7.436915887850468,
+              "result": {
+                "statistic": 7.436915887850468,
+                "null_mean": -0.08119158878504673,
+                "null_std": 2.373155717207287,
+                "p_rank": 0.04,
+                "p_normal": 0.0015350260785470993,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 3.167979000334108,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            }
+          ],
+          "return_mean_across_seeds": 7.3864485981308405,
+          "span_mean_across_seeds": 7.383956386292835,
+          "null_spans": [
+            1.0981308411214954,
+            1.7998442367601246,
+            0.12850467289719625,
+            -0.9914330218068537,
+            1.151090342679128,
+            -1.2001557632398754,
+            -2.364485981308411,
+            2.3956386292834893,
+            2.7827102803738315,
+            -2.5661993769470404,
+            3.5381619937694704,
+            2.118380062305296,
+            -3.892523364485981,
+            -4.875389408099689,
+            0.9470404984423676,
+            1.9182242990654206,
+            -0.34190031152647976,
+            -1.1822429906542056,
+            -1.8769470404984425,
+            3.5054517133956384,
+            -1.3489096573208723,
+            2.0794392523364484,
+            -2.8691588785046727,
+            -1.9018691588785046
+          ],
+          "null_mean": -0.08119158878504673,
+          "null_std": 2.373155717207287
+        },
+        {
+          "task": "trading",
+          "updates": 100,
+          "n_seeds": 5,
+          "return": -0.9600623125083327,
+          "span": 7.61703254930562,
+          "result": {
+            "statistic": 7.61703254930562,
+            "null_mean": 0.01714985742349505,
+            "null_std": 0.1347380457548688,
+            "p_rank": 0.04,
+            "p_normal": 0.0,
+            "min_achievable_p_rank": 0.04,
+            "z_score": 56.40487547005632,
+            "passes": true,
+            "verdict": "INFORMATIVE",
+            "n_null_samples": 24
+          },
+          "fires": true,
+          "verdict": "informative",
+          "per_seed": [
+            {
+              "seed": 0,
+              "return": -0.9600623125083327,
+              "span": 7.61703254930562,
+              "result": {
+                "statistic": 7.61703254930562,
+                "null_mean": 0.01714985742349505,
+                "null_std": 0.1347380457548688,
+                "p_rank": 0.04,
+                "p_normal": 0.0,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 56.40487547005632,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 1,
+              "return": -1.254852061044233,
+              "span": 5.754205427252662,
+              "result": {
+                "statistic": 5.754205427252662,
+                "null_mean": 0.01714985742349505,
+                "null_std": 0.1347380457548688,
+                "p_rank": 0.04,
+                "p_normal": 0.0,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 42.57932893183481,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 2,
+              "return": -0.7008333608638523,
+              "span": 8.293224205375457,
+              "result": {
+                "statistic": 8.293224205375457,
+                "null_mean": 0.01714985742349505,
+                "null_std": 0.1347380457548688,
+                "p_rank": 0.04,
+                "p_normal": 0.0,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 61.42344058491663,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 3,
+              "return": -0.32083342515201985,
+              "span": 6.519618137434569,
+              "result": {
+                "statistic": 6.519618137434569,
+                "null_mean": 0.01714985742349505,
+                "null_std": 0.1347380457548688,
+                "p_rank": 0.04,
+                "p_normal": 0.0,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 48.26007564219184,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            },
+            {
+              "seed": 4,
+              "return": -0.614493813618794,
+              "span": 6.544275469473283,
+              "result": {
+                "statistic": 6.544275469473283,
+                "null_mean": 0.01714985742349505,
+                "null_std": 0.1347380457548688,
+                "p_rank": 0.04,
+                "p_normal": 0.0,
+                "min_achievable_p_rank": 0.04,
+                "z_score": 48.44307764359814,
+                "passes": true,
+                "verdict": "INFORMATIVE",
+                "n_null_samples": 24
+              },
+              "fires": true,
+              "verdict": "informative"
+            }
+          ],
+          "return_mean_across_seeds": -0.7702149946374465,
+          "span_mean_across_seeds": 6.945671157768318,
+          "null_spans": [
+            -0.010334891300181332,
+            0.020179128778744428,
+            0.5692445305879938,
+            -0.051884736734387295,
+            -0.0071806822387600324,
+            -0.004945478794626268,
+            -0.0012383173127452683,
+            0.0024844208164749885,
+            -0.011954828817179759,
+            -0.0145794411718474,
+            0.02058411205705324,
+            0.00307632501250151,
+            -0.10758566647450325,
+            -0.006471962180464439,
+            -0.01852804034317312,
+            0.0029517129953294963,
+            -0.0106152667239819,
+            0.0009423687920914358,
+            -0.0364719622413921,
+            0.2644159011184775,
+            -0.027118378215834984,
+            -0.07864486411653425,
+            -0.005942363887561067,
+            -0.07878504144161291
+          ],
+          "null_mean": 0.01714985742349505,
+          "null_std": 0.1347380457548688
+        }
+      ],
+      "contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -53.246413615865706
+          },
+          {
+            "seed": 1,
+            "difference": -39.45401300041981
+          },
+          {
+            "seed": 2,
+            "difference": -58.28762297499846
+          },
+          {
+            "seed": 3,
+            "difference": -45.119335370475326
+          },
+          {
+            "seed": 4,
+            "difference": -45.27509864326403
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -48.27649672100466,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      },
+      "separated": false,
+      "undecided_tasks": []
+    }
+  ],
+  "n_train": 3854,
+  "n_test": 1284,
+  "design": "matched objectives and budgets; freshly trained policies"
+}

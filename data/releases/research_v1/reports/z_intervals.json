@@ -1,0 +1,344 @@
+{
+  "permuted: planted signal": {
+    "z": 12.291092372522224,
+    "z_lo": 9.199503546217137,
+    "z_hi": 19.059627860740495,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "permuted: null corpus": {
+    "z": 1.7044279500171275,
+    "z_lo": 1.2520640957115732,
+    "z_hi": 2.555239789221897,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9061,
+    "verdict_counts": {
+      "informative": 939,
+      "not distinguishable from null": 9061,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "permuted: real market": {
+    "z": -15.725596495445448,
+    "z_lo": -25.67810313235836,
+    "z_hi": -11.803191494571063,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "matched: planted signal": {
+    "z": null,
+    "z_lo": null,
+    "z_hi": null,
+    "verdict": "unresolved",
+    "verdict_stability": null,
+    "verdict_counts": {
+      "informative": 0,
+      "not distinguishable from null": 0,
+      "unresolved": 10000
+    },
+    "n_defined_z": 0,
+    "degenerate_fraction": 1.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "matched: null corpus": {
+    "z": null,
+    "z_lo": null,
+    "z_hi": null,
+    "verdict": "unresolved",
+    "verdict_stability": null,
+    "verdict_counts": {
+      "informative": 0,
+      "not distinguishable from null": 0,
+      "unresolved": 10000
+    },
+    "n_defined_z": 0,
+    "degenerate_fraction": 1.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "matched: real market": {
+    "z": 2.0452195189512214,
+    "z_lo": 1.5460949245423394,
+    "z_hi": 2.955736229539943,
+    "verdict": "informative",
+    "verdict_stability": 0.6471,
+    "verdict_counts": {
+      "informative": 6471,
+      "not distinguishable from null": 3529,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "shared-null: planted signal": {
+    "z": 17.610515367398445,
+    "z_lo": 13.886690948008262,
+    "z_hi": 27.350907348864993,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "shared-null: null corpus": {
+    "z": 1.2277768582802722,
+    "z_lo": 0.707993320666204,
+    "z_hi": 2.3166451499276652,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9867,
+    "verdict_counts": {
+      "informative": 133,
+      "not distinguishable from null": 9867,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "shared-null: real market": {
+    "z": 0.2976909647077017,
+    "z_lo": -0.09966909187505071,
+    "z_hi": 0.9383786398192357,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9998,
+    "verdict_counts": {
+      "informative": 2,
+      "not distinguishable from null": 9998,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "planted, conditional masking": {
+    "z": 10.967876891469984,
+    "z_lo": 7.589799464413433,
+    "z_hi": 19.280080663007947,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "real market, conditional masking": {
+    "z": 0.03512284943477126,
+    "z_lo": -0.31686082323155595,
+    "z_hi": 0.5938615865990193,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 0,
+      "not distinguishable from null": 10000,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "real prediction": {
+    "z": 2.9874613299445074,
+    "z_lo": 2.4283543081126386,
+    "z_hi": 4.179539116479444,
+    "verdict": "informative",
+    "verdict_stability": 0.9981,
+    "verdict_counts": {
+      "informative": 9981,
+      "not distinguishable from null": 19,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "real trading": {
+    "z": 4.192814333391121,
+    "z_lo": 3.4326068489203667,
+    "z_hi": 5.7787966590642545,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "blinded-real, 20 updates": {
+    "z": 0.8595780672714541,
+    "z_lo": 0.4210896356441214,
+    "z_hi": 1.6026086163131434,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.9986,
+    "verdict_counts": {
+      "informative": 14,
+      "not distinguishable from null": 9986,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "blinded-real, 40 updates": {
+    "z": 2.0452195189512214,
+    "z_lo": 1.5460949245423394,
+    "z_hi": 2.955736229539943,
+    "verdict": "informative",
+    "verdict_stability": 0.6471,
+    "verdict_counts": {
+      "informative": 6471,
+      "not distinguishable from null": 3529,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "blinded-real, 80 updates": {
+    "z": 6.823854971799913,
+    "z_lo": 3.8891960786987867,
+    "z_hi": 120.41435293513229,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "blinded-real, 160 updates": {
+    "z": 17.135885949227895,
+    "z_lo": 10.098981093918972,
+    "z_hi": 390.63638410597673,
+    "verdict": "informative",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 10000,
+      "not distinguishable from null": 0,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 24,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "market vs synthetic-corpus null": {
+    "z": -0.19348897994674963,
+    "z_lo": -0.5414083871210406,
+    "z_hi": 0.15316710470428546,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 1.0,
+    "verdict_counts": {
+      "informative": 0,
+      "not distinguishable from null": 10000,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 32,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  },
+  "market vs blinded-real null": {
+    "z": 2.5187779695294097,
+    "z_lo": 1.7681668925304013,
+    "z_hi": 4.125215750475591,
+    "verdict": "not distinguishable from null",
+    "verdict_stability": 0.6356,
+    "verdict_counts": {
+      "informative": 3644,
+      "not distinguishable from null": 6356,
+      "unresolved": 0
+    },
+    "n_defined_z": 10000,
+    "degenerate_fraction": 0.0,
+    "n_null": 32,
+    "n_boot": 10000,
+    "seed": 0,
+    "scope": "reference-bank resampling conditional on fixed observed span; z interval conditional on finite-scale resamples; unresolved resamples do not retain a resolved decision"
+  }
+}

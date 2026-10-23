@@ -154,6 +154,22 @@ def test_claim_comparison_retains_null_and_tolerates_only_roundoff():
         assets.interval([3., 2.])
 
 
+def test_selected_build_accepts_cpu_roundoff_but_rejects_changed_reconstruction(tmp_path, monkeypatch):
+    expected = {"mean": 1., "verified": True, "source": "recorded hash"}
+    manifest = {"input_manifest_sha256": "same experiment"}
+    monkeypatch.setattr(paper, "input_statistics", lambda *args: (
+        expected | {"input_manifest_sha256": "same experiment"}, {}))
+    monkeypatch.setattr(paper, "verify_artifacts", lambda *args: manifest)
+    path = tmp_path / "statistics.json"
+    path.write_text(json.dumps(expected | {"mean": 1. + 1e-12,
+                                          "input_manifest_sha256": "same experiment"}))
+    assert paper.verify_build(Path("run"), Path("corpus"), tmp_path) == manifest
+    path.write_text(json.dumps(expected | {"mean": 1. + 1e-5,
+                                          "input_manifest_sha256": "same experiment"}))
+    with pytest.raises(ValueError, match="numerical claim differs"):
+        paper.verify_build(Path("run"), Path("corpus"), tmp_path)
+
+
 def test_unresolved_legend_and_intervals_are_drawn_without_changing_their_bounds(tmp_path, monkeypatch):
     calibration = [{"signal_strength": strength, "rejection_rate_resolved": None,
                     "rejection_rate_ci95": None,

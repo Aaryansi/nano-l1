@@ -1,150 +1,78 @@
 # nano-l1
 
-**no free null.** deciding whether an explanation of an RL agent means anything
-requires a reference distribution: what it would have looked like had the agent
-learned nothing. reinforcement learning has no agreed way to build one. this
-builds four, on a deep-RL agent trading Kalshi 15-minute binary contracts, and
-each one fails in its own way. built alongside an existing Go matching engine,
-which is left intact.
+A reproducible audit of reference distributions for observation-replacement return spans in reinforcement learning. The experiments use a binary-contract simulator, synthetic populations with declared signal, and six control-task configurations.
 
-[**the paper**](docs/paper/main.pdf) &middot;
-[4-page version](docs/paper/workshop.pdf) &middot;
-[source](docs/paper/main.tex)
+[Full paper](docs/paper/main.pdf) | [Core profile](docs/paper/core/main.pdf) | [Short profile](docs/paper/workshop.pdf) | [Shared source](docs/paper/article.tex)
 
----
+## What the study supports
 
-### why this exists
+A return span measures the effect of a specified input intervention on a particular policy. Its interpretation depends on the replacement distribution, financial state, reference training procedure and evaluation population. The endpoint sum alone cannot establish feature-level explanation fidelity.
 
-Interpretability is proposed as a basis for oversight: if we can see which
-inputs drive a policy, we can decide whether to trust it. That argument needs
-attributions to carry information about the agent. This project shows they need
-not, and that the reference distribution you compare against decides the answer.
+The corrected release retains negative market performance, training-seed variation, failed competence gates and unresolved references. Market comparisons with synthetic policies are descriptive. Synthetic calibration is conditional on one reference bank, and the control configurations do not establish a universal ranking of reference constructions. The paper includes an exact finite-pool counterexample to the legacy reference-centered rank/normal rule and states the assumptions of standard exchangeable ranks.
 
-### what it finds
+Tables, numerical paragraphs and publication figures are generated from one verified statistics artifact. The three manuscript profiles share one article. They are general article layouts, without a claim of compliance with a particular venue's submission format.
 
-**the trading result is negative and that is not the interesting part.** the
-market is efficient (calibration error 0.0172), Kalshi's fee schedule imposes a
-9% round-trip hurdle, and nothing beats doing nothing. the agent's own shortfall
-is shown to be its measured bias rather than a fact about the market.
+## Selected evidence
 
-**an explanation can pass every check we could apply and still be empty.** the agent
-has no measurable edge, yet its attributions are stable across seeds (0.850 rank
-correlation, unanimous top feature), separated beyond their own estimation
-error, and read plausibly. against agents trained where there is provably
-nothing to learn, the test cannot tell them apart (z = +0.72 on a held-out null
-corpus) while correctly flagging a planted signal (z = +12.27).
+| Location | Contents |
+|---|---|
+| [Research release](data/releases/research_v1/) | Immutable full-run reports, raw episode arrays, market checkpoints and training logs |
+| [Generated statistics](docs/paper/statistics.json) | Reconstructed manuscript inputs, explicit undefined values and verification scope |
+| [Manuscript manifest](docs/paper/manuscript_manifest.json) | Publication source and artifact hashes |
+| [Fixed market snapshot](data/releases/market_snapshot_v1/) | Corpus, episode identifiers, hashes and chronological split membership |
+| [Experiment protocol](docs/EXPERIMENT_PROTOCOL.md) | Budgets, replication units, competence gates and interpretation limits |
+| [Implemented model](docs/MDP.md) | Observations, transitions, rewards and assumed execution costs |
+| [Artifact guide](docs/REPORT.md) | Verification commands and limitations |
+| [Research code](services/agent-rl/) | Environment, trainers, explanations, experiment scripts and tests |
 
-**explanations are cheap to forge.** an auxiliary training penalty drives the
-agent's dominant feature from 39.9% to 3.2% of attribution mass at no measurable
-cost in return. the same intervention on a feature that genuinely carries signal
-destroys 81% of return. no deception and no attack on the explainer is required;
-it falls out of ordinary training whenever the feature is not load-bearing.
+The historical market window was used during development. The selected rerun is retrospective and does not create a prospective temporal holdout. Simulated costs and candle-derived quotes do not establish live executable profit or exact historical transaction costs.
 
-**the test separates tasks, not datasets.** every case where it fires would
-otherwise be synthetic, which invites the objection that it detects planted
-signal rather than information. holding the corpus, features, normalizer, split
-and null construction fixed and varying only the objective: on the same real
-episodes, an agent scored for *calling* the settlement fires at z = +3.39, while
-the trading agent does not. the market data is not uninformative; a calibrated
-price is very informative. the information is not monetizable against a 9%
-round-trip fee, and an attribution of the trading agent cannot tell those two
-situations apart.
+## Verify the selected release
 
-**every null construction perturbs something besides the information.** the
-signal-free corpus varies the corpus. blinding the observation channel removes
-the agent's capacity to respond, collapsing the reference to a point mass and
-firing on a corpus built to contain no signal. permuting the outcomes leaves the
-price forecasting a label it no longer matches and hands the null agents a $49
-per episode arbitrage, so the agent under test lands fifteen standard deviations
-*below* its own null. which perturbation you accept decides the verdict.
-
-**parameter randomization is an underpowered reference in RL.** across sixteen
-checkpoints on four control tasks, using randomized weights to generate
-reference draws never exceeds z = 2.45, including on a converged agent. its
-reference distribution is, to three significant figures, the spread of
-random-initialization return, so it measures the variance of initialization and
-not the explanation.
-
-**the canonical version of that check clears the empty explanation.** run as
-adebayo et al. actually propose, degrading one explanation by progressively
-randomizing layers, it clears the empty market explanation on both explanatory
-targets we tried (rank correlation 0.38 on behaviour, -0.02 on outcomes, so the
-explanation does depend on the weights) while our null test finds nothing
-outcome-relevant to explain. passing it is not evidence there is anything to
-explain. on behaviour it also flags the informative planted-signal agent (0.996,
-barely moved), but that inversion does not survive the change of target (0.46),
-so what the check flags depends on which explanation you degrade.
-
-**the span survives off-manifold masking; the ranking does not.** the test
-statistic is built from two coalitions that are both on the data manifold, so it
-is immune by construction. the per-feature ranking is not: under conditional
-masking it correlates at only 0.767 and disagrees on which feature matters most.
-
-### honesty
-
-we applied the paper's own thesis to the paper. it argues that the choice of
-null decides the verdict and that nobody checks; so we checked ours, found the
-published null was measuring spans on a different corpus from the observation,
-rebuilt it the way the method section actually defines, and reported that the
-headline survives but only borderline (64% of bootstrap resamples). an earlier
-run at n = 12 had the two constructions on opposite sides of the threshold.
-
-the paper carries a ledger of seven predictions this project made and then
-rejected on its own evidence, and separates them from the one claim that is
-structural rather than empirical. numbers in the paper are not
-transcribed by hand: `verify_paper_numbers.py` asserts every one of them against
-the artifact that produced it and fails the build on a mismatch.
-
-### running it
+Use Python 3.12 and the pinned dependencies. The runner uses `uv` to create the environment when needed.
 
 ```sh
-./reproduce.sh          # full experiment run in a new isolated directory
-./reproduce.sh --quick  # isolated smoke run with reduced budgets
-./reproduce.sh --print-config  # inspect output paths without running experiments
+uv venv --python 3.12 services/agent-rl/.venv
+uv pip install --python services/agent-rl/.venv/bin/python -r services/agent-rl/requirements.txt
+PY=services/agent-rl/.venv/bin/python
+"$PY" services/agent-rl/scripts/verify_release.py \
+  --run data/releases/research_v1 \
+  --corpus data/releases/market_snapshot_v1/corpus.npz
+"$PY" services/agent-rl/scripts/verify_paper_numbers.py
 ```
 
-The default input is the tracked [fixed corpus snapshot](data/releases/market_snapshot_v1/).
-Its content hashes and exact split membership are checked before training.
-`CORPUS=/path/to/corpus.npz` selects another existing dataset for a new experiment.
+Verification checks the recorded training commit in Git history, corpus and artifact hashes, declared full budgets, raw-summary reconstruction and complete market replay evidence. A normal Git clone includes that history. The publication verifier also checks every generated file and its source hash.
 
-Every invocation writes checkpoints, reports, figures, and an input manifest
-under a new `runs/reproductions/` directory. `RUN_ROOT` chooses a named output
-location; existing nonempty output directories are refused. Evaluation retains
-per-episode returns alongside the summaries. Source files, corpus contents,
-split membership, dependencies, checkpoints, and artifacts are identified in
-`run_manifest.json`.
+To rebuild the three PDFs, install Tectonic and Poppler, then run:
 
-Use `CHECKPOINTS=/path/to/run/checkpoints ./reproduce.sh --explain-only` to
-explain an existing run into fresh output directories. Publication comparison
-is explicit: `--verify-paper` compares the selected run with the manuscript.
-Smoke runs cannot verify publication claims. Promoting a run into the paper's
-tracked artifacts is a separate, reviewed operation.
+```sh
+services/agent-rl/.venv/bin/python docs/paper/build.py
+```
 
-### what is where
+The build stages compilation before replacing outputs and refuses incomplete or reduced-budget evidence. Temporary layout fixtures cannot verify a publication.
 
-this repository holds two bodies of work. the paper uses only the first.
+## Run a new experiment
 
-**the research**
+```sh
+./reproduce.sh --tests-only
+./reproduce.sh --print-config
+./reproduce.sh --quick
+./reproduce.sh
+```
 
-| | |
-|---|---|
-| **[docs/paper/](docs/paper/)** | the paper, its 4-page version, LaTeX source, and anonymised builds |
-| [docs/paper/core/main.pdf](docs/paper/core/main.pdf) | the anonymised submission build (14pp body + appendices), generated by `build.py` |
-| **[services/agent-rl/](services/agent-rl/)** | everything the paper runs: env, PPO agent, attribution, null constructions, 312 tests |
-| [reproduce.sh](reproduce.sh) | one command, every figure and number, CPU only |
-| `reports/` | json artifacts and figures, regenerated by reproduce.sh |
-| [docs/REPORT.md](docs/REPORT.md) | the trading result the research was built on |
-| [docs/MDP.md](docs/MDP.md) | the problem formulation |
-| [docs/AGENT_NOTES.md](docs/AGENT_NOTES.md) | supporting measurements behind REPORT.md |
-| [services/agent-rl/README.md](services/agent-rl/README.md) | what each module and script does |
+Each invocation uses a new directory under `runs/reproductions/`. `RUN_ROOT` selects a named output location; nonempty output directories are refused. The fixed snapshot is verified before training. `CORPUS=/path/to/corpus.npz` selects a different dataset for a separately identified experiment. Source, corpus, splits, package versions, runtime settings, checkpoints and outputs are recorded in its manifest.
 
-**the matching engine**, which this repository started as and which the research
-was built alongside. unchanged by it.
+Quick and CI smoke runs check execution with deliberately insufficient scientific budgets. They cannot support publication claims. `./reproduce.sh --verify-paper` compares a newly completed full run with the selected numerical claims. A different runtime or dataset can produce different results and must remain separately identified.
 
-| | |
-|---|---|
-| **[docs/ENGINE.md](docs/ENGINE.md)** | architecture, benchmarks, API, how to run the stack |
-| `services/engine-go/` | Go order book and matching engine |
-| `services/agent-py/`, `services/backtest-py/` | sklearn agent and backtester |
-| `services/dashboard-react/`, `services/feed-sim/` | dashboard and feed simulator |
-| `infra/`, `shared/` | docker, kafka, postgres, JSON schemas |
+`CHECKPOINTS=/path/to/run/checkpoints ./reproduce.sh --explain-only` runs auxiliary explanations into fresh output directories. It does not repeat the full protocol. Publication artifact promotion is separate from experiment execution.
+
+## Next scientific tests
+
+1. Repeat calibration across independent reference banks, with enough null trials to constrain rare error rates.
+2. Compare reference procedures using competent agents and matched learning budgets, retaining failures.
+3. Validate sequential conditional interventions in a simulator with a known joint path/outcome law.
+4. Freeze a new temporal market holdout before further model selection.
+
+## Matching engine
+
+The repository also contains a Go matching engine, sklearn agent, backtester, dashboard and feed simulator. The research paper evaluates the reinforcement-learning experiments. Matching-engine architecture, APIs and benchmarks are documented in [docs/ENGINE.md](docs/ENGINE.md).

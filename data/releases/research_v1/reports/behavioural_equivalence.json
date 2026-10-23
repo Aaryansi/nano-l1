@@ -1,0 +1,250 @@
+{
+  "coef": 20.0,
+  "n_states": 4096,
+  "per_seed": [
+    {
+      "seed": 0,
+      "action_agreement": 0.693115234375,
+      "mean_kl": 0.04841237887740135,
+      "mean_js": 0.012744439765810966,
+      "marginal_base": [
+        0.2554330825805664,
+        0.4083543121814728,
+        0.3362131714820862
+      ],
+      "marginal_steered": [
+        0.3216647803783417,
+        0.3602745234966278,
+        0.3180605471134186
+      ],
+      "base": {
+        "return_mean": -1.376324898488167,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.38417492227205075,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 1,
+      "action_agreement": 0.79443359375,
+      "mean_kl": 0.11935228109359741,
+      "mean_js": 0.029869284480810165,
+      "marginal_base": [
+        0.24778202176094055,
+        0.49464020133018494,
+        0.25757744908332825
+      ],
+      "marginal_steered": [
+        0.3215850293636322,
+        0.3498552143573761,
+        0.3285594880580902
+      ],
+      "base": {
+        "return_mean": -1.6018498990497543,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -2.8472746756459584,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 2,
+      "action_agreement": 0.499755859375,
+      "mean_kl": 0.04437963292002678,
+      "mean_js": 0.011606665328145027,
+      "marginal_base": [
+        0.3646296560764313,
+        0.3707692325115204,
+        0.26460000872612
+      ],
+      "marginal_steered": [
+        0.31766536831855774,
+        0.3589530885219574,
+        0.32338207960128784
+      ],
+      "base": {
+        "return_mean": -5.758149963240232,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -2.5102499348791323,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 3,
+      "action_agreement": 0.79541015625,
+      "mean_kl": 0.1219303235411644,
+      "mean_js": 0.03122917003929615,
+      "marginal_base": [
+        0.24799086153507233,
+        0.5091303586959839,
+        0.24287843704223633
+      ],
+      "marginal_steered": [
+        0.3017544448375702,
+        0.3702737092971802,
+        0.3279711902141571
+      ],
+      "base": {
+        "return_mean": -2.610300036224257,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.3514750045939812,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 4,
+      "action_agreement": 0.800537109375,
+      "mean_kl": 0.1690971553325653,
+      "mean_js": 0.043743301182985306,
+      "marginal_base": [
+        0.221144437789917,
+        0.5609338283538818,
+        0.21792300045490265
+      ],
+      "marginal_steered": [
+        0.31309834122657776,
+        0.38226497173309326,
+        0.3046361207962036
+      ],
+      "base": {
+        "return_mean": -0.7337750162585632,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.6330249711248093,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 5,
+      "action_agreement": 0.810791015625,
+      "mean_kl": 0.13658775389194489,
+      "mean_js": 0.03471209108829498,
+      "marginal_base": [
+        0.2345852553844452,
+        0.5253761410713196,
+        0.24003785848617554
+      ],
+      "marginal_steered": [
+        0.32516154646873474,
+        0.36400601267814636,
+        0.31083208322525024
+      ],
+      "base": {
+        "return_mean": -0.24984998316890583,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.40054992974475,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 6,
+      "action_agreement": 0.72216796875,
+      "mean_kl": 0.08320950716733932,
+      "mean_js": 0.021750103682279587,
+      "marginal_base": [
+        0.3120049238204956,
+        0.4237384498119354,
+        0.26425638794898987
+      ],
+      "marginal_steered": [
+        0.32453712821006775,
+        0.35417863726615906,
+        0.3212848901748657
+      ],
+      "base": {
+        "return_mean": -1.9481750083246265,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -1.0873500232853925,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 7,
+      "action_agreement": 0.865478515625,
+      "mean_kl": 0.22400030493736267,
+      "mean_js": 0.05796485394239426,
+      "marginal_base": [
+        0.20760302245616913,
+        0.570658266544342,
+        0.22173872590065002
+      ],
+      "marginal_steered": [
+        0.3162413537502289,
+        0.3627035915851593,
+        0.3210546374320984
+      ],
+      "base": {
+        "return_mean": -1.0923249474396457,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -0.6259999200468879,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 8,
+      "action_agreement": 0.802734375,
+      "mean_kl": 0.1448587328195572,
+      "mean_js": 0.03673280030488968,
+      "marginal_base": [
+        0.23616358637809753,
+        0.5163027048110962,
+        0.24753378331661224
+      ],
+      "marginal_steered": [
+        0.3187304139137268,
+        0.359232634305954,
+        0.32203662395477295
+      ],
+      "base": {
+        "return_mean": -2.6783250288295553,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -2.0657498783483166,
+        "trades_per_episode": NaN
+      }
+    },
+    {
+      "seed": 9,
+      "action_agreement": 0.814208984375,
+      "mean_kl": 0.2169666886329651,
+      "mean_js": 0.05601562559604645,
+      "marginal_base": [
+        0.21917669475078583,
+        0.5771834254264832,
+        0.20363987982273102
+      ],
+      "marginal_steered": [
+        0.32843923568725586,
+        0.3616659343242645,
+        0.309894859790802
+      ],
+      "base": {
+        "return_mean": -0.8997749503167347,
+        "trades_per_episode": NaN
+      },
+      "steered": {
+        "return_mean": -2.452025078711425,
+        "trades_per_episode": NaN
+      }
+    }
+  ],
+  "action_agreement": 0.75986328125,
+  "mean_kl": 0.13087947592139243,
+  "mean_js": 0.03363683354109526,
+  "behaviourally_equivalent": false
+}

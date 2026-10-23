@@ -41,6 +41,8 @@ references. In the historical market example, five policies have mean return
 \MarketInterval. Reference comparisons remain descriptive because market
 policies are not exchangeable with the synthetic bank. Conditional synthetic
 calibration and the control-task results are reported with their denominators.
+The zero-strength population still has positive full-input replacement spans,
+illustrating that return sensitivity can arise without settlement-predictive inputs.
 An exact finite-pool example shows why the legacy reference-centered
 rank/normal rule lacks a general exchangeability guarantee; standard symmetric
 ranks address that separate statistical requirement. The audit supports
@@ -186,6 +188,12 @@ purged. The 18 inputs comprise 14 market/spot coordinates normalized using
 training statistics and four active-inventory coordinates. Actions target
 $-100,0,+100$ signed yes-equivalent contracts. A reversal can trade 200.
 
+The full-input replacement background contains 256 rows sampled from all
+evaluation steps while inventory is held flat. Each intervened episode draws
+a fresh whole background row at every decision. This replaces the clock as
+well as market and inventory coordinates; it is an empirical intervention,
+without a guarantee of compatibility with the recipient's state.
+
 The assumed execution model buys at the supplied ask and sells at the bid.
 It charges the per-order fee
 $\operatorname{ceil}_{\rm cents}[0.07|C|p(1-p)]$, with zero impact by default,
@@ -231,6 +239,18 @@ agents request 400,000 interactions; each blinded reference requests 30,000.
 Complete rollout batches can exceed those requests. Each construction has 24
 reference draws, and endpoint evaluation uses 20 episodes. Five independently
 trained observed seeds are separate from correlated training checkpoints.
+
+The parameter reference uses fresh orthogonally initialized actors, with no
+learning. The environment reference trains agents with independent
+coordinate-wise Gaussian observations whose moments are estimated from a
+random-policy rollout, leaving transitions and rewards intact. Both are
+evaluated on the original task with full inputs and with repeated background
+replacement; the background contains 512 random-policy observation rows.
+Gaussian blinding can violate within-state constraints. A separate whole-row
+resampling sensitivity preserves donor row support, without guaranteeing
+consistency with the recipient trajectory. Initialization and blinded learning
+are different reference procedures, without an established exchangeability
+relationship to competent observed agents.
 
 Declared competence thresholds are respectively 475, $-100$, $-110$, $-300$,
 0.8 and $-20$, measured on 25 episodes, together with an absolute measured
@@ -305,6 +325,9 @@ legacy normal-scale rule then cannot decide. That outcome differs from a
 resolved non-rejection and from a trained observed agent failing to learn.
 
 \subsection{State preservation and attribution suppression}
+The market state controls use the five saved cost-enabled checkpoints. Each
+synthetic case trains five new policies for 60 updates, using 1,200 episodes
+per training draw and 1,200 common independent evaluation episodes.
 Full replacement changes inventory inputs as well as market inputs. The
 market-row and donor-trajectory controls retain the real clock and all four
 inventory coordinates of the intervened rollout. A donor row preserves empirical row support, and a
@@ -320,6 +343,12 @@ draws. Differences do not isolate inventory as their sole cause.}
 \label{fig:state}
 \end{figure}
 \StateParagraph{}
+These runs fix masking draws within each analysis; their recorded seeds differ
+from the primary comparison's draws for some policies. \NullStateParagraph{}
+Positive sensitivity in this generator need not indicate settlement-predictive
+information: replacement can change trading and its costs. These controls do
+not isolate one cause of the span differences.
+
 Retaining inventory also retains some price information. If $z=q/100$ is
 scaled nonzero position, $e$ its entry price and $u=q(P-e)/100$ scaled
 unrealized profit, then
@@ -337,7 +366,9 @@ An auxiliary single-seed comparison examines greedy behaviour; it cannot
 establish behavioural equivalence across the full experiment.
 The penalty targets the expiry clock in the market and the planted
 signal in the synthetic case, with ten seeds and penalty 20 fixed for the
-reported comparison. All penalties are retained. \SteeringParagraph{}
+reported comparison. Each steering policy trains for 60 updates. Synthetic
+training and independent evaluation each use 1,500 episodes; market evaluation
+uses the complete test partition. All penalties are retained. \SteeringParagraph{}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{\paperroot/figures/steering.png}
@@ -399,9 +430,9 @@ identification. Complete replay parity, corrected KernelSHAP coalition-size
 mass and exact-game tests strengthen the implementation evidence. They do
 not turn the endpoint sum into a feature-fidelity test. Auxiliary ranking,
 IG and parameter-randomization diagnostics address different targets and
-assumptions. The same applies to the secondary objective control: its
-unmodified returns are archived, but masked spans retain means without
-per-episode masked arrays, limiting independent endpoint reconstruction.
+assumptions. The same applies to secondary objective and reference sensitivities:
+some masked spans retain means without per-episode masked arrays, limiting
+independent endpoint reconstruction.
 \fi
 
 The next useful experiments are repeated independent reference banks with
@@ -419,9 +450,6 @@ against the training commit. The full runner and release verifier are separate
 from execution-only smoke checks. Manuscript tables, figures and summaries
 share one derived statistics artifact; the three document profiles share this
 source. No claim of compliance with a particular venue's format is made.
-
-\bibliographystyle{plainnat}
-\bibliography{\paperroot/references}
 
 \ifdefined\extendedversion
 \appendix
@@ -460,4 +488,6 @@ trading opportunities together; their log-log fits are descriptive. Unresolved
 comparisons and undefined correlations are retained rather than converted to
 agreement, no signal or equivalence.
 \fi
+\bibliographystyle{plainnat}
+\bibliography{\paperroot/references}
 \end{document}

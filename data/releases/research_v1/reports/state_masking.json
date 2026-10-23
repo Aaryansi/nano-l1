@@ -1,0 +1,360 @@
+{
+  "cases": [
+    {
+      "case": "market",
+      "n_episodes": 1284,
+      "per_seed": [
+        {
+          "seed": 0,
+          "masking_seed": 0,
+          "background_samples": 256,
+          "unmodified_return": -0.9600623125083327,
+          "spans": {
+            "full_observation": 8.84810736630505,
+            "market_rows": 1.9863783236119656,
+            "market_trajectories": 0.09443133400645812
+          }
+        },
+        {
+          "seed": 1,
+          "masking_seed": 1,
+          "background_samples": 256,
+          "unmodified_return": -1.254852061044233,
+          "spans": {
+            "full_observation": 6.530879934983273,
+            "market_rows": 1.7135279581425682,
+            "market_trajectories": 0.2619313693956279
+          }
+        },
+        {
+          "seed": 2,
+          "masking_seed": 2,
+          "background_samples": 256,
+          "unmodified_return": -0.7008333608638523,
+          "spans": {
+            "full_observation": 10.33678330822401,
+            "market_rows": 2.527780251871095,
+            "market_trajectories": 0.8900388717268685
+          }
+        },
+        {
+          "seed": 3,
+          "masking_seed": 3,
+          "background_samples": 256,
+          "unmodified_return": -0.32083342515201985,
+          "spans": {
+            "full_observation": 8.076004616788275,
+            "market_rows": 2.366526246544124,
+            "market_trajectories": 1.098590109783567
+          }
+        },
+        {
+          "seed": 4,
+          "masking_seed": 4,
+          "background_samples": 256,
+          "unmodified_return": -0.614493813618794,
+          "spans": {
+            "full_observation": 6.532375256206993,
+            "market_rows": 3.493099679553858,
+            "market_trajectories": -0.12829452273488126
+          }
+        }
+      ],
+      "interventions": {
+        "full_observation": {
+          "mean_span": 8.06483009650152,
+          "per_seed_spans": [
+            8.84810736630505,
+            6.530879934983273,
+            10.33678330822401,
+            8.076004616788275,
+            6.532375256206993
+          ],
+          "ci95": [
+            6.578514652194548,
+            9.816369273352112
+          ],
+          "uncertainty": "crossed seeds and shared UTC days"
+        },
+        "market_rows": {
+          "mean_span": 2.4174624919447223,
+          "per_seed_spans": [
+            1.9863783236119656,
+            1.7135279581425682,
+            2.527780251871095,
+            2.366526246544124,
+            3.493099679553858
+          ],
+          "ci95": [
+            0.8430693765217215,
+            3.8651559974376095
+          ],
+          "uncertainty": "crossed seeds and shared UTC days"
+        },
+        "market_trajectories": {
+          "mean_span": 0.44333943243552804,
+          "per_seed_spans": [
+            0.09443133400645812,
+            0.2619313693956279,
+            0.8900388717268685,
+            1.098590109783567,
+            -0.12829452273488126
+          ],
+          "ci95": [
+            -0.9626784251248913,
+            1.6339218578904893
+          ],
+          "uncertainty": "crossed seeds and shared UTC days"
+        }
+      }
+    },
+    {
+      "case": "null",
+      "n_episodes": 1200,
+      "per_seed": [
+        {
+          "seed": 0,
+          "masking_seed": 0,
+          "background_samples": 256,
+          "unmodified_return": -2.083332379659017,
+          "spans": {
+            "full_observation": 19.639576204617818,
+            "market_rows": 0.0,
+            "market_trajectories": 0.0
+          }
+        },
+        {
+          "seed": 1,
+          "masking_seed": 1,
+          "background_samples": 256,
+          "unmodified_return": -6.265623072783153,
+          "spans": {
+            "full_observation": 4.221040275096893,
+            "market_rows": -0.7362500047683715,
+            "market_trajectories": -0.5466666793823243
+          }
+        },
+        {
+          "seed": 2,
+          "masking_seed": 2,
+          "background_samples": 256,
+          "unmodified_return": -5.499998092651367,
+          "spans": {
+            "full_observation": 4.298540074825286,
+            "market_rows": 0.0,
+            "market_trajectories": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "masking_seed": 3,
+          "background_samples": 256,
+          "unmodified_return": -3.41666571299235,
+          "spans": {
+            "full_observation": 16.76041050752004,
+            "market_rows": 0.0,
+            "market_trajectories": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "masking_seed": 4,
+          "background_samples": 256,
+          "unmodified_return": -5.539373093446096,
+          "spans": {
+            "full_observation": 4.373539788722992,
+            "market_rows": -0.039375000794728596,
+            "market_trajectories": -0.04395833253860473
+          }
+        }
+      ],
+      "interventions": {
+        "full_observation": {
+          "mean_span": 9.858621370156605,
+          "per_seed_spans": [
+            19.639576204617818,
+            4.221040275096893,
+            4.298540074825286,
+            16.76041050752004,
+            4.373539788722992
+          ],
+          "ci95": [
+            4.074704662378629,
+            16.18334671738545
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        },
+        "market_rows": {
+          "mean_span": -0.15512500111262004,
+          "per_seed_spans": [
+            0.0,
+            -0.7362500047683715,
+            0.0,
+            0.0,
+            -0.039375000794728596
+          ],
+          "ci95": [
+            -0.8798822848439215,
+            0.28026353124380093
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        },
+        "market_trajectories": {
+          "mean_span": -0.11812500238418579,
+          "per_seed_spans": [
+            0.0,
+            -0.5466666793823243,
+            0.0,
+            0.0,
+            -0.04395833253860473
+          ],
+          "ci95": [
+            -0.7949468743681908,
+            0.36233749283154737
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        }
+      },
+      "training_corpus_seeds": [
+        600000,
+        600001,
+        600002,
+        600003,
+        600004
+      ],
+      "evaluation_corpus_seed": 700000,
+      "training_updates": 60
+    },
+    {
+      "case": "signal",
+      "n_episodes": 1200,
+      "per_seed": [
+        {
+          "seed": 0,
+          "masking_seed": 0,
+          "background_samples": 256,
+          "unmodified_return": 38.29666795094808,
+          "spans": {
+            "full_observation": 69.0639482108752,
+            "market_rows": 63.113743573824564,
+            "market_trajectories": 45.457916652361554
+          }
+        },
+        {
+          "seed": 1,
+          "masking_seed": 1,
+          "background_samples": 256,
+          "unmodified_return": 44.29083441734314,
+          "spans": {
+            "full_observation": 77.40228139797847,
+            "market_rows": 63.7033269627889,
+            "market_trajectories": 49.564166644414264
+          }
+        },
+        {
+          "seed": 2,
+          "masking_seed": 2,
+          "background_samples": 256,
+          "unmodified_return": 43.30250116666158,
+          "spans": {
+            "full_observation": 75.20769885460535,
+            "market_rows": 61.25499444961548,
+            "market_trajectories": 47.6987499888738
+          }
+        },
+        {
+          "seed": 3,
+          "masking_seed": 3,
+          "background_samples": 256,
+          "unmodified_return": 46.42000106811523,
+          "spans": {
+            "full_observation": 75.85186602036158,
+            "market_rows": 64.48457787672679,
+            "market_trajectories": 47.068749976158145
+          }
+        },
+        {
+          "seed": 4,
+          "masking_seed": 4,
+          "background_samples": 256,
+          "unmodified_return": 45.185834627151486,
+          "spans": {
+            "full_observation": 71.37832534154256,
+            "market_rows": 63.067912481625875,
+            "market_trajectories": 47.105416630109154
+          }
+        }
+      ],
+      "interventions": {
+        "full_observation": {
+          "mean_span": 73.78082396507263,
+          "per_seed_spans": [
+            69.0639482108752,
+            77.40228139797847,
+            75.20769885460535,
+            75.85186602036158,
+            71.37832534154256
+          ],
+          "ci95": [
+            70.54952359915971,
+            76.8056376557072
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        },
+        "market_rows": {
+          "mean_span": 63.12491106891632,
+          "per_seed_spans": [
+            63.113743573824564,
+            63.7033269627889,
+            61.25499444961548,
+            64.48457787672679,
+            63.067912481625875
+          ],
+          "ci95": [
+            61.11356807148456,
+            65.0535838899533
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        },
+        "market_trajectories": {
+          "mean_span": 47.37899997838338,
+          "per_seed_spans": [
+            45.457916652361554,
+            49.564166644414264,
+            47.6987499888738,
+            47.068749976158145,
+            47.105416630109154
+          ],
+          "ci95": [
+            45.16454579548835,
+            49.595970788780846
+          ],
+          "uncertainty": "crossed seeds and shared independent episodes"
+        }
+      },
+      "training_corpus_seeds": [
+        601000,
+        601001,
+        601002,
+        601003,
+        601004
+      ],
+      "evaluation_corpus_seed": 701000,
+      "training_updates": 60
+    }
+  ],
+  "corpus_sha256": "6d2cb4e4c923b946fe4daf7ed682347f47edc4cb75172c7b73d153fc28c53aac",
+  "checkpoint_sha256": {
+    "seed0.pt": "8a45364bb7563936a44c0e3344b92de1b9929fa5c2a7f291546ef9a78e6059c6",
+    "seed1.pt": "117b1cc43d1194423cc6ba11a5cd9ce1a396261d8f9dfdd7bd5225c1f877ee19",
+    "seed2.pt": "bd5a2ebac5c183bce7ce4e86a786bb2a348dbc10e9109bddc9323570784fbc53",
+    "seed3.pt": "4e992f516e598c87735dfebb187a8f56e1b60579507a85f1ea073a793c5c4c20",
+    "seed4.pt": "0335c5b9cf7cb48614828099cc21e55428f5d1d653d358fe60a33f0a41348818"
+  },
+  "limitations": [
+    "fixed masking draws; intervals omit intervention-seed variation",
+    "market replacements retain inventory and time; inventory inputs can reveal market data",
+    "donor sequence support does not establish joint recipient-state consistency",
+    "span is intervention sensitivity, not attribution accuracy or market efficiency"
+  ]
+}

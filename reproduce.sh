@@ -186,16 +186,14 @@ step "return-span comparison against the synthetic reference bank"
 ( cd "$RL" && "$PY" scripts/sanity_check_explanations.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" --updates "$NULL_UPDATES" )
 
-# the same test with every null matched to its own corpus, which is what
-# section 3 actually defines. the step above is kept because the paper reports
-# what was tried before as well as what it settled on.
+# Secondary blinded-reference training retains each underlying environment.
+# Its observed masking draws differ from the primary synthetic-bank analysis.
 step "the null-model test again, with every null matched to its own corpus"
 ( cd "$RL" && "$PY" scripts/matched_null_test.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" --n-null "$N_NULL" )
 
-# the third construction: permute the outcomes and leave everything else, so
-# the null agents stay sighted and the corpus stays fixed. this is the one the
-# paper adopts; the two above are what it rejected on the way.
+# Global settlement permutation changes the joint price/reward law.
+# It is a secondary sensitivity, without a market-efficiency interpretation.
 # the stratified variant, and whether any bucket width makes it usable. costs
 # seconds because it trains nothing: if no window exists there is nothing to
 # run a null test on.
@@ -246,8 +244,8 @@ step "attribution suppression, behaviour and paired return contrasts"
 ( cd "$RL" && "$PY" scripts/steer_explanation.py --corpus "$CORPUS" \
     --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" )
 
-# steering holds return fixed, which is weaker than holding behaviour fixed.
-# measured rather than asserted, because the paper's claim depends on which.
+# The auxiliary single-seed greedy comparison does not establish behavioural
+# equivalence across the main multi-seed steering experiment.
 step "are the steered and unsteered agents the same policy?"
 ( cd "$RL" && "$PY" scripts/behavioural_equivalence.py --corpus "$CORPUS" \
     --out "$REPORTS" --seeds "$STEER_SEEDS" --updates "$EXPLAIN_UPDATES" \
@@ -292,9 +290,8 @@ step "positive control: does the test fire on a learnable REAL task?"
     --out "$REPORTS" --n-null $([ "$QUICK" = 1 ] && echo 4 || echo 24) \
     --seeds "$SEEDS" --budgets $([ "$QUICK" = 1 ] && echo "10 20" || echo "40 100") )
 
-# the paper's headline verdict turned out to depend on this, so it is measured
-# rather than assumed. same agent, same measurement corpus, two null
-# constructions.
+# Compare two reference populations using the same observed agent and
+# measurement corpus, retaining unresolved decisions separately.
 step "which null construction does the market verdict depend on?"
 ( cd "$RL" && "$PY" scripts/null_corpus_check.py --corpus "$CORPUS" \
     --runs "$RUNS" --out "$REPORTS" \
@@ -339,7 +336,7 @@ step "confidence intervals on every reported z-score"
 ( cd "$RL" && "$PY" scripts/bootstrap_z.py --reports "$REPORTS" \
     --out "$REPORTS" --n-boot 10000 )
 
-step "redrawing the paper's figures at publication size"
+step "rendering auxiliary experiment figures"
 ( cd "$RL" && "$PY" scripts/paper_figures.py --reports "$REPORTS" \
     --out "$FIGURES" )
 
@@ -355,8 +352,7 @@ if [ "$EXPLAIN_ONLY" = 0 ]; then
       --run "$RELEASE_VERIFY_VIEW" --out "$REPORTS/rollout_parity.json" )
 fi
 
-# the paper states a wall-clock figure. record the real one rather than leaving
-# it to memory of an earlier run.
+# Record execution time as part of the completed experiment evidence.
 PIPELINE_SECONDS=$(( $(date +%s) - PIPELINE_START ))
 cat > "$REPORTS/pipeline_timing.json" <<JSON
 {
@@ -384,4 +380,4 @@ echo "figures and json in $REPORTS:"
 ls -1 "$REPORTS"
 echo
 echo "publication verification is opt-in with --verify-paper"
-echo "docs/REPORT.md  the trading project"
+echo "docs/REPORT.md  selected evidence and manuscript verification"
