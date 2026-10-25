@@ -48,6 +48,7 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/second_method.py --corpus "$CORPUS" \
   --coefs 0 20 --updates 1 --seeds 2 --n-states 2
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/positive_control.py --corpus "$CORPUS" \
   --out "$OUT/reports" --n-null 2 --seeds 2 --budgets 1 2
+"$PY" scripts/verify_objective_control.py --reports "$OUT/reports" --corpus "$CORPUS"
 "$PY" - "$OUT/reports" <<'PY'
 import json
 import sys
