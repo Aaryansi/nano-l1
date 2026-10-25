@@ -68,7 +68,7 @@ Quick and CI smoke runs check execution with deliberately insufficient scientifi
 
 ## Next scientific tests
 
-1. Repeat calibration across independent reference banks, with enough null trials to constrain rare error rates.
+1. Repeat calibration across independent reference banks, following the separate [bank-replication protocol](docs/REFERENCE_BANK_PROTOCOL.md). The new runner retains replayable models and uses bank-level uncertainty; outputs are not promoted into the selected paper automatically.
 2. Compare reference procedures using competent agents and matched learning budgets, retaining failures.
 3. Validate sequential conditional interventions in a simulator with a known joint path/outcome law.
 4. Freeze a new temporal market holdout before further model selection.

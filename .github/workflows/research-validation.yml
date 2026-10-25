@@ -50,6 +50,10 @@ jobs:
           python services/agent-rl/scripts/verify_release.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz
           python services/agent-rl/scripts/audit_market_rollouts.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz --out "$RUNNER_TEMP/selected-rollout-parity.json"
           python services/agent-rl/scripts/verify_paper_numbers.py
+      - name: Independent-bank execution and checkpoint replay
+        run: |
+          python services/agent-rl/scripts/calibrate_reference_banks.py --out "$RUNNER_TEMP/bank-smoke" --quick --seed 17
+          python services/agent-rl/scripts/calibrate_reference_banks.py --out "$RUNNER_TEMP/bank-smoke" --verify-only --allow-quick --replay-models
       - name: Retain smoke artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -58,5 +62,6 @@ jobs:
           path: |
             ${{ runner.temp }}/research-smoke/reports
             ${{ runner.temp }}/research-smoke/publication
+            ${{ runner.temp }}/bank-smoke
           if-no-files-found: ignore
           retention-days: 7

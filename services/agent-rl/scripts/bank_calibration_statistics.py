@@ -1,0 +1,108 @@
+"""Bank-level uncertainty for replicated synthetic reference experiments.
+
+Trials sharing a bank are dependent marginally. Independent bank averages in
+[0, 1] are the units for the bounded-mean Chernoff interval, including when
+all observed rates are zero. Intervals are pointwise, not simultaneous.
+"""
+from __future__ import annotations
+
+from itertools import combinations
+import math
+
+import numpy as np
+
+METHODS = ("legacy", "greater", "two-sided")
+
+
+def binary_kl(p, q):
+    if not (0 <= p <= 1 and 0 <= q <= 1):
+        raise ValueError("Bernoulli parameters must lie in [0, 1]")
+    if p == q:
+        return 0.
+    if q in (0., 1.):
+        return math.inf
+    return ((p * math.log(p / q) if p else 0.)
+            + ((1 - p) * math.log((1 - p) / (1 - q)) if p < 1 else 0.))
+
+
+def bounded_mean_interval(values, alpha=.05):
+    """Invert n * KL(sample mean, candidate mean) <= log(2/alpha).
+
+    Valid for independent, identically distributed bank averages in [0, 1].
+    It does not assume that a fractional bank average is Bernoulli.
+    """
+    x = np.asarray(values, dtype=float)
+    if x.ndim != 1 or not len(x) or not np.isfinite(x).all() or np.any((x < 0) | (x > 1)):
+        raise ValueError("require finite bank averages in [0, 1]")
+    if not 0 < alpha < 1:
+        raise ValueError("alpha must lie in (0, 1)")
+    mean = float(x.mean())
+    threshold = math.log(2 / alpha) / len(x)
+    low, high = 0., mean
+    for _ in range(70):
+        mid = (low + high) / 2
+        if binary_kl(mean, mid) > threshold:
+            low = mid
+        else:
+            high = mid
+    lower = 0. if mean == 0 else low
+    low, high = mean, 1.
+    for _ in range(70):
+        mid = (low + high) / 2
+        if binary_kl(mean, mid) > threshold:
+            high = mid
+        else:
+            low = mid
+    upper = 1. if mean == 1 else high
+    return [lower, upper]
+
+
+def rate_summary(values):
+    x = np.asarray(values, dtype=float)
+    return {"bank_rates": x.tolist(), "mean": float(x.mean()),
+            "bank_sample_sd": float(x.std(ddof=1)) if len(x) > 1 else None,
+            "ci95_bounded_banks": bounded_mean_interval(x),
+            "n_independent_banks": len(x)}
+
+
+def summarize_banks(banks):
+    if len(banks) < 2 or len({bank["bank"] for bank in banks}) != len(banks):
+        raise ValueError("require at least two distinct banks")
+    strengths = [case["signal_strength"] for case in banks[0]["cases"]]
+    if any([case["signal_strength"] for case in bank["cases"]] != strengths for bank in banks):
+        raise ValueError("bank strength membership differs")
+    results = []
+    for index, strength in enumerate(strengths):
+        cases = [bank["cases"][index] for bank in banks]
+        counts = [len(case["trials"]) for case in cases]
+        if min(counts) < 1 or len(set(counts)) != 1:
+            raise ValueError("each bank must have the same positive trial count")
+        methods, rates = {}, {}
+        for method in METHODS:
+            rows = [[trial["methods"][method] for trial in case["trials"]] for case in cases]
+            flags = [sum(row["flagged"] for row in bank) for bank in rows]
+            unresolved = [sum(not row["resolved"] for row in bank) for bank in rows]
+            if any(row["flagged"] and not row["resolved"] for bank in rows for row in bank):
+                raise ValueError("unresolved results cannot issue flags")
+            rates[method] = [count / len(bank) for count, bank in zip(flags, rows, strict=True)]
+            total, n_flags, n_unresolved = sum(counts), sum(flags), sum(unresolved)
+            methods[method] = {**rate_summary(rates[method]), "n_trials": total,
+                "n_flagged": n_flags, "n_unresolved": n_unresolved,
+                "n_resolved": total - n_unresolved,
+                "flag_fraction_resolved_descriptive": n_flags / (total - n_unresolved)
+                    if total > n_unresolved else None,
+                "unresolved": rate_summary([count / len(bank)
+                    for count, bank in zip(unresolved, rows, strict=True)])}
+        contrasts = {}
+        for a, b in combinations(METHODS, 2):
+            delta = np.asarray(rates[a]) - rates[b]
+            bounds = bounded_mean_interval((delta + 1) / 2)
+            contrasts[f"{a}_minus_{b}"] = {"bank_differences": delta.tolist(),
+                "mean_difference": float(delta.mean()),
+                "ci95_bounded_banks": [2 * bound - 1 for bound in bounds]}
+        results.append({"signal_strength": strength, "methods": methods, "paired_contrasts": contrasts})
+    return {"cases": results,
+            "estimand": "probability the procedure issues a flag over a fresh bank and observed agent",
+            "uncertainty_unit": "independent bank, including its complete set of observed trials",
+            "interval_method": "pointwise bounded-mean Chernoff inversion using Bernoulli KL",
+            "scope": "requires independent banks generated by the same procedure; unresolved is reported separately; no pooled-trial binomial interval or feature-fidelity guarantee"}
