@@ -30,6 +30,8 @@ PY=services/agent-rl/.venv/bin/python
 
 ## Reference interpretation
 
+`calibrate_reference_banks.py` implements the separate [independent-bank study](../../docs/REFERENCE_BANK_PROTOCOL.md). It uses fresh reference and observed corpora per bank, archives both endpoints and saved policies, and verifies hashes, seed membership, decisions and bank-level summaries. Its `--verify-only --replay-models` mode replays every archived policy. `--quick` is an execution check; the full declared study requires committed clean source. `bank_calibration_statistics.py` computes pointwise bounded-mean intervals across banks and paired method contrasts, without pooling dependent trials into a binomial interval.
+
 `nano_rl/explain/sanity.py` retains the legacy reference-centered rank/normal diagnostic with outside, within and unresolved outcomes. A zero-width reference or insufficient rank resolution is unresolved under this rule. Standard upper-tail and pooled-symmetric rank comparators are evaluated on the same synthetic calibration trials. Their marginal rank guarantees require exchangeability; a metadata match alone does not prove that assumption.
 
 Each endpoint span concerns a declared input intervention. Probability attribution, critic attribution, return intervention, feature-level fidelity and task utility are separate targets. See the [protocol](../../docs/EXPERIMENT_PROTOCOL.md), [implemented model](../../docs/MDP.md) and [shared manuscript](../../docs/paper/article.tex).
