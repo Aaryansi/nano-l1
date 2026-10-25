@@ -68,7 +68,8 @@ def alter_hash(output, name):
     ("raw", "endpoint span"), ("seed", "seed plan"), ("decision", "bank decision"),
     ("budget", "training budget"), ("archive_membership", "archive membership"),
     ("extra_file", "artifact membership"), ("incomplete", "has not completed"),
-    ("false_full", "budget flag"), ("source", "source changed"),
+    ("false_full", "budget flag"),
+    ("source", "execution source changed|historical source hash differs"),
     ("reused_corpus", "fingerprints are invalid or reused"),
 ])
 def test_verifier_rejects_altered_evidence_even_after_file_hash_update(completed, tmp_path, change, error):
@@ -119,6 +120,27 @@ def test_verifier_rejects_altered_evidence_even_after_file_hash_update(completed
         study.write(path, manifest)
     with pytest.raises(ValueError, match=error):
         study.verify(output, allow_quick=True)
+
+
+@pytest.mark.parametrize("dirty", [False, True])
+def test_source_hash_tampering_is_rejected_for_clean_and_dirty_runs(tmp_path, monkeypatch, dirty):
+    source = tmp_path / "example.py"
+    source.write_text("value = 1\n")
+    for args in (["init", "--quiet"], ["add", "example.py"],
+                 ["-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                  "commit", "--quiet", "-m", "Initial source"]):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True).strip()
+    provenance = {"commit": commit, "tracked_source_dirty": dirty, "untracked_source": [],
+                  "source_sha256": {"example.py": study.digest(source)}}
+    monkeypatch.setattr(study, "ROOT", tmp_path)
+    monkeypatch.setattr(study, "source_state", lambda: copy.deepcopy(provenance))
+    study.verify_sources(provenance, allow_quick=True)
+    altered = copy.deepcopy(provenance)
+    altered["source_sha256"]["example.py"] = "0" * 64
+    error = "execution source changed" if dirty else "historical source hash differs"
+    with pytest.raises(ValueError, match=error):
+        study.verify_sources(altered, allow_quick=True)
 
 
 def test_checkpoint_replay_detects_wrong_policy_after_hash_update(completed, tmp_path):
