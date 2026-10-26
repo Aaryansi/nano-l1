@@ -53,7 +53,9 @@ jobs:
       - name: Independent-bank execution and checkpoint replay
         run: |
           python services/agent-rl/scripts/calibrate_reference_banks.py --out "$RUNNER_TEMP/bank-smoke" --quick --seed 17
-          python services/agent-rl/scripts/calibrate_reference_banks.py --out "$RUNNER_TEMP/bank-smoke" --verify-only --allow-quick --replay-models
+          python services/agent-rl/scripts/study_archive.py pack --source "$RUNNER_TEMP/bank-smoke" --out "$RUNNER_TEMP/bank-bundle"
+          python services/agent-rl/scripts/objective_study.py --out "$RUNNER_TEMP/objective-replication" --original "$RUNNER_TEMP/research-smoke/reports" --quick
+          python services/agent-rl/scripts/verify_replications.py --banks "$RUNNER_TEMP/bank-bundle" --replay-proof "$RUNNER_TEMP/bank-replay.json" --replay-models --objectives "$RUNNER_TEMP/objective-replication" --original "$RUNNER_TEMP/research-smoke/reports" --allow-quick --out "$RUNNER_TEMP/replication-statistics.json"
       - name: Retain smoke artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -63,5 +65,8 @@ jobs:
             ${{ runner.temp }}/research-smoke/reports
             ${{ runner.temp }}/research-smoke/publication
             ${{ runner.temp }}/bank-smoke
+            ${{ runner.temp }}/bank-replay.json
+            ${{ runner.temp }}/objective-replication
+            ${{ runner.temp }}/replication-statistics.json
           if-no-files-found: ignore
           retention-days: 7
