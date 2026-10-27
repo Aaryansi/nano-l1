@@ -46,4 +46,10 @@ The original release retains its narrower raw-evidence scope. A successful repli
 
 The numerical artifact records independent bank rates and pointwise bounds, unresolved rates, paired method contrasts and trial-level outcome disagreements. It also records the objective replication and its comparison with the original release. Trial agreement is checked directly; equal aggregate rates alone do not imply equal trial outcomes. The artifact identifies each input manifest, the replay proof and the analysis sources.
 
-CI exercises the same workflow with reduced budgets and an explicitly supplied matching execution reference. `objective_study.py --quick` and verification with `--allow-quick` remain execution-only checks. A manuscript must require both full studies explicitly and must not substitute a selected cached study for a missing new experiment.
+CI exercises the same workflow with reduced budgets and an explicitly supplied matching execution reference. `objective_study.py --quick` and verification with `--allow-quick` remain execution-only checks. Manuscript builds verify both full studies. A new-run comparison requires all supplemental paths explicitly and cannot substitute a selected cached study for a missing experiment.
+
+## Selected publication inputs
+
+The manuscript selects [reference_banks_v1](../data/releases/reference_banks_v1/) and [objective_endpoints_v1](../data/releases/objective_endpoints_v1/) together with the original [research_v1](../data/releases/research_v1/) release. Each study preserves its own source snapshot and evidence limits. `verify_paper_numbers.py` reconstructs all inputs and validates publication hashes; the separate CI replay job regenerates every bank endpoint from saved weights.
+
+For an already completed new experiment, pass `--reports`, `--banks`, `--replay-proof` and `--objectives` to `verify_paper_numbers.py`. Generate its objective study using `objective_study.py --original /path/to/new-run/reports --out /path/to/new-objective-study`. This compares against the new run's results rather than silently treating the original release as its replication target. The new experiment's provenance is checked independently before numerical claims are compared.

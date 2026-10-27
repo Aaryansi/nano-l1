@@ -6,6 +6,7 @@ pass publication verification. No execution-only override exists in the CLI.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 from pathlib import Path
 import re
@@ -21,6 +22,12 @@ sys.path.insert(0, str(ROOT / 'services/agent-rl/scripts'))
 from paper_assets import write_assets
 from publication_statistics import derive
 from verify_release import digest, require, verify, verify_hashes
+from verify_replications import derive as derive_replications
+
+SELECTED_RUN = ROOT / 'data/releases/research_v1'
+SELECTED_REPLICATIONS = (ROOT / 'data/releases/reference_banks_v1/bundle',
+                        ROOT / 'data/releases/reference_banks_v1/replay.json',
+                        ROOT / 'data/releases/objective_endpoints_v1/study')
 
 PROFILES = {'full': 'main.tex', 'core': 'core/main.tex', 'workshop': 'workshop.tex'}
 SOURCE_NAMES = ('article.tex', 'main.tex', 'workshop.tex', 'core/main.tex',
@@ -38,13 +45,28 @@ def source_hashes():
             for name in SOURCE_NAMES}
 
 
-def input_statistics(run, corpus):
+def replication_inputs(run, banks, replay_proof, objectives, *, comparison=False):
+    supplied = (banks, replay_proof, objectives)
+    if all(path is not None for path in supplied):
+        return supplied
+    require(not comparison and run.resolve() == SELECTED_RUN.resolve()
+            and all(path is None for path in supplied),
+            'new or custom runs require explicit --banks, --replay-proof and --objectives inputs')
+    return SELECTED_REPLICATIONS
+
+
+def input_statistics(run, corpus, banks=None, replay_proof=None, objectives=None):
     evidence = verify(run, corpus)
+    require(all(path is not None for path in (banks, replay_proof, objectives)),
+            'all supplemental study inputs must be explicit')
     reports = run / 'reports'
-    statistics = {'schema_version': 1, 'verification': evidence,
+    replications = derive_replications(banks, replay_proof, objectives, corpus, reports)
+    require(replications['scientific_budgets_checked'] is True,
+            'supplemental studies require full scientific budgets')
+    statistics = {'schema_version': 2, 'verification': evidence,
                   'input_manifest_sha256': digest(reports / 'run_manifest.json'),
                   'statistics_source_sha256': digest(ROOT / 'services/agent-rl/scripts/publication_statistics.py'),
-                  **derive(reports)}
+                  **derive(reports), 'replications': replications}
     context = {'manifest': load(reports / 'run_manifest.json'),
                'parity': load(reports / 'rollout_parity.json')}
     return statistics, context
@@ -89,6 +111,8 @@ def build_from_statistics(statistics, context, output, targets, *, fixture=False
     require(targets and set(targets) <= set(PROFILES), 'unknown or empty manuscript profiles')
     require(statistics['verification']['scientific_budgets_checked'] is True or fixture,
             'manuscripts require completed scientific budgets')
+    require(statistics.get('replications', {}).get('scientific_budgets_checked') is True or fixture,
+            'manuscripts require completed supplemental scientific budgets')
     manuscript_sources = source_hashes()
     with tempfile.TemporaryDirectory(prefix='nano-l1-manuscript-') as temporary:
         stage = Path(temporary)
@@ -137,8 +161,8 @@ def verify_artifacts(output):
     return manifest
 
 
-def verify_build(run, corpus, output):
-    expected, _ = input_statistics(run, corpus)
+def verify_build(run, corpus, output, banks=None, replay_proof=None, objectives=None):
+    expected, _ = input_statistics(run, corpus, banks, replay_proof, objectives)
     manifest = verify_artifacts(output)
     require(manifest['input_manifest_sha256'] == expected['input_manifest_sha256'],
             'manuscript and selected experiment manifests differ')
@@ -149,8 +173,18 @@ def verify_build(run, corpus, output):
 
 
 def numerical_claims(statistics):
-    return {key: value for key, value in statistics.items()
+    result = copy.deepcopy({key: value for key, value in statistics.items()
             if key not in {'verification', 'input_manifest_sha256', 'statistics_source_sha256'}}
+    )
+    replication = result['replications']
+    replication.pop('analysis_source_sha256')
+    for name in ('reference_banks', 'objective_replication'):
+        row = replication[name]
+        for key in ('verification', 'recorded_checkpoint_replay', 'study_manifest_sha256', 'replay_proof_sha256'):
+            row.pop(key, None)
+    # Worker count changes execution scheduling, not a scientific estimand.
+    replication['reference_banks']['config'].pop('jobs', None)
+    return result
 
 
 def compare_claims(current, published, path='statistics'):
@@ -180,13 +214,17 @@ def main():
     ap.add_argument('--out', type=Path, default=HERE)
     ap.add_argument('--targets', nargs='+', choices=tuple(PROFILES), default=list(PROFILES))
     ap.add_argument('--verify-only', action='store_true')
+    ap.add_argument('--banks', type=Path)
+    ap.add_argument('--replay-proof', type=Path)
+    ap.add_argument('--objectives', type=Path)
     args = ap.parse_args()
+    inputs = replication_inputs(args.run, args.banks, args.replay_proof, args.objectives)
     if args.verify_only:
-        manifest = verify_build(args.run, args.corpus, args.out)
+        manifest = verify_build(args.run, args.corpus, args.out, *inputs)
     else:
-        statistics, context = input_statistics(args.run, args.corpus)
+        statistics, context = input_statistics(args.run, args.corpus, *inputs)
         manifest = build_from_statistics(statistics, context, args.out, args.targets)
-        verify_build(args.run, args.corpus, args.out)
+        verify_build(args.run, args.corpus, args.out, *inputs)
     print(json.dumps({'profiles': manifest['profiles'],
                       'scientific_budgets_checked': manifest['scientific_budgets_checked']}, indent=2))
 

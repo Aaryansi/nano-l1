@@ -39,8 +39,10 @@ variation, raw endpoint returns, failed competence gates and unresolved
 references. In the historical market example, five policies have mean return
 \MarketMean\ dollars per episode with a crossed seed/day interval
 \MarketInterval. Reference comparisons remain descriptive because market
-policies are not exchangeable with the synthetic bank. Conditional synthetic
-calibration and the control-task results are reported with their denominators.
+policies are not exchangeable with the synthetic bank. Across \BankCount{}
+independent synthetic reference banks, the zero-strength flag rate is
+\BankNullRate{} for each rule, but its conservative bank-level upper bound is
+\BankNullUpper. This does not certify five-percent error control.
 The zero-strength population still has positive full-input replacement spans,
 illustrating that return sensitivity can arise without settlement-predictive inputs.
 An exact finite-pool example shows why the legacy reference-centered
@@ -72,7 +74,8 @@ reinforcement learning or a new general rank-test theorem.
 The study is retrospective. Its configuration was fixed for the selected
 rerun after exploratory development on this historical data. Repeating that
 window does not create a prospective holdout. All numerical tables are
-generated from the selected release; the training source is
+generated from the selected primary release and two separately identified
+supplemental studies; the primary training source is
 \texttt{\TrainingCommit}. Reduced-budget execution runs cannot supply these
 tables.
 
@@ -105,6 +108,13 @@ partial-information behaviour at the state being explained, with the original
 policy elsewhere \citep{beechey2025}. Our empirical flat-inventory background
 and repeated replacement at all steps differ in distribution and locality.
 The experiments do not test or refute that theoretical construction.
+FastSVERL provides practical approximations for these distinct behaviour,
+outcome and prediction targets, including sequential and off-policy estimation
+\citep{beecheyfast2025}. Our endpoint audit does not benchmark that method.
+Background selection and the relationship between SHAP feature importance and
+agent performance have also been studied empirically, including exceptions in
+fragile tasks \citep{engelhardt2024}. We claim neither a new discovery of
+background sensitivity nor a general equivalence between importance and return.
 
 \ifdefined\shortversion
 Parameter sensitivity and probability attribution address separate targets;
@@ -230,6 +240,24 @@ that bank, alongside unresolved counts and both standard rank comparators.
 These rates include the specified learning procedure and budget. They do not
 isolate test sensitivity from learning success or quantify bank-to-bank error.
 
+A separate study repeats the experiment across \BankCount{} independent banks,
+each with 24 references and 30 observed trials at each of the three strengths.
+All policies train for 40 updates on fresh 1,200-episode corpora, use their own
+training normalizer and evaluate on a fresh 1,200-episode corpus. Every policy
+has distinct data, training and masking seeds. Unlike the original conditional
+study, masking seeds are separate from policy seeds. This is a declared common
+procedure for all three rules, not a comparison isolating bank reuse alone.
+
+The independent units are $K=\BankCount$ banks. For bank flag fractions
+$X_k\in[0,1]$, we estimate the marginal flag probability by their equally weighted mean. We
+invert the bounded-variable Chernoff bound \citep{hoeffding1963} with threshold
+$\log(2/0.05)/K$ for Bernoulli KL divergence. This yields conservative pointwise
+95\% intervals over banks, including at zero or unit observed rates. It does
+not treat the 600 trials as independent Bernoulli observations. Paired method
+differences use the same bound after mapping $[-1,1]$ to $[0,1]$. Intervals are
+not simultaneous over rules, strengths or contrasts. Unresolved comparisons
+remain in the operational flag-rate denominator and are reported separately.
+
 \subsection{Control tasks and competence gates}
 We evaluate CartPole, Acrobot, MountainCar, Pendulum with nine discrete torques,
 deterministic $4\times4$ FrozenLake, and CliffWalking capped at 200 steps.
@@ -293,7 +321,7 @@ Changing a bank can change its center, width and
 classification while also changing training or evaluation distributions.
 Those differences do not identify a unique information-removal mechanism.
 
-\subsection{Conditional calibration and controls}
+\subsection{Conditional and marginal calibration}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{\paperroot/figures/calibration.png}
@@ -308,6 +336,52 @@ One positive-control success is therefore not a power estimate. The signal
 strength sweep also changes what the learning procedure can acquire within
 its fixed budget.
 
+\begin{table*}[t]
+\centering\small
+\BankTable
+\caption{Independent-bank calibration: \BankCount{} banks with 30 trials per
+strength in each bank. Rates and pointwise bounded-bank intervals are rounded
+to three decimals. All declared trials remain in the denominator. Unres. counts
+unresolved comparisons. The signal alternatives measure learning and comparison
+together, not test power in isolation.}
+\label{tab:banks}
+\end{table*}
+Table~\ref{tab:banks} adds bank-to-bank variation to the audit. The zero-strength
+rate is \BankNullRate{}, but its upper bound is \BankNullUpper. The observed
+rate below 5\% does not certify error control at 5\%. \BankAgreementParagraph{}
+This empirical agreement does not contradict the finite-pool counterexample:
+that example rules out a general guarantee for the legacy rule, rather than
+predicting its error in every population. The bank study retains all \BankModelCount{}
+checkpoints and update logs; both endpoints were reproduced from every saved
+policy after extraction from the distributed archive.
+
+\subsection{Matched objective replication}
+The same market episodes and state transitions support two training objectives:
+trading profit in dollars, or the sum of signed settlement calls at each step,
+with no execution costs in the prediction score. Both objectives train from
+scratch at 40 and 100 updates. Each cell has five observed policies and 24
+Gaussian-blinded references trained under that cell's objective and budget.
+The normalizer uses the original training split, and every policy is evaluated
+on the complete test partition with both full and replaced observations.
+\begin{table}[t]
+\centering\footnotesize
+\ObjectiveTable
+\caption{Matched-budget objective cells. Return and span are means over five
+observed seeds. Reference SD describes 24 blinded policies. Prediction uses
+signed-call score units; trading uses dollars. Cross-objective magnitudes and
+standardized distances do not measure a causal objective effect.}
+\label{tab:objectives}
+\end{table}
+\ObjectiveDecisionParagraph{} Table~\ref{tab:objectives} shows why that shared classification does
+not identify a shared mechanism: reference widths and observed spans change
+with the task and budget. The supplemental replication retains raw full and
+masked endpoints for \ObjectiveObservedCount{} observed and
+\ObjectiveReferenceCount{} reference policies. \ObjectiveMatchParagraph{} This reconstructs
+the new replication's masked endpoints; it does not recover missing original
+arrays or replay original objective checkpoints. No objective-effect
+significance or explanation-fidelity claim follows from these comparisons.
+
+\subsection{Control-task competence and references}
 \begin{table}[t]
 \centering\scriptsize
 \ControlTable
@@ -415,8 +489,9 @@ joint conditional law for paths and outcomes.
 \section{Limitations and next experiments}
 The financial model uses assumed costs and coarse quotes, the market period
 is fixed, and seed/day inference rests on few time blocks. Synthetic
-calibration is conditional on one bank and has limited precision at rare
-error rates. Control competence is configuration-specific; failed tasks remain
+calibration includes a conditional study and an independent-bank study, but
+still has limited precision at rare error rates. Control competence is
+configuration-specific; failed tasks remain
 evidence about training rather than about detection sensitivity. No reference
 width alone identifies an explanatory mechanism.
 
@@ -430,15 +505,22 @@ identification. Complete replay parity, corrected KernelSHAP coalition-size
 mass and exact-game tests strengthen the implementation evidence. They do
 not turn the endpoint sum into a feature-fidelity test. Auxiliary ranking,
 IG and parameter-randomization diagnostics address different targets and
-assumptions. The same applies to secondary objective and reference sensitivities:
-some masked spans retain means without per-episode masked arrays, limiting
-independent endpoint reconstruction.
+assumptions. The same applies to secondary reference sensitivities: some masked
+spans retain means without per-episode masked arrays. The objective supplement
+now retains both endpoints and reproduces the original summaries, but its
+policies have no archived checkpoints or training logs. Historical evidence
+retains its original scope rather than acquiring the replication's additional
+evidence retroactively.
 \fi
 
-The next useful experiments are repeated independent reference banks with
-more null trials, competence-controlled comparisons with matched learning
-budgets, and conditional path randomization in a simulator with a known joint
-law. A separately frozen temporal market holdout would test external
+The next useful experiments are competence-controlled reference comparisons
+with matched learning budgets and conditional path randomization in a simulator
+with a known joint law. Such a benchmark should assess individual feature
+allocations, including deliberately incorrect allocations with the same
+endpoint sum. A larger independent-bank study should choose its sample size
+and precision target before further runs; extra trials within existing banks
+do not create additional independent banks.
+A separately frozen temporal market holdout would test external
 robustness. These additions would strengthen calibration and generalization;
 they are not prerequisites for honestly reporting the present descriptive
 audit.

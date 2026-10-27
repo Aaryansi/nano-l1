@@ -27,7 +27,8 @@ def test_default_build_rejects_incomplete_or_smoke_evidence_before_writing(tmp_p
         "phase": phase, "quick": quick, "tracked_source_dirty": False}))
     output = tmp_path / "paper"
     result = subprocess.run([sys.executable, str(ROOT / "docs/paper/build.py"),
-                             "--run", str(run), "--out", str(output)],
+                             "--run", str(run), "--out", str(output),
+                             "--banks", "missing", "--replay-proof", "missing", "--objectives", "missing"],
                             capture_output=True, text=True)
     assert result.returncode != 0
     assert error in result.stderr
@@ -93,7 +94,8 @@ def test_failed_compilation_does_not_replace_existing_publication(tmp_path, monk
         raise ValueError("failed compilation")
     monkeypatch.setattr(paper, "render_profiles", fail)
     with pytest.raises(ValueError, match="failed compilation"):
-        paper.build_from_statistics({"verification": {"scientific_budgets_checked": True}},
+        paper.build_from_statistics({"verification": {"scientific_budgets_checked": True},
+                                    "replications": {"scientific_budgets_checked": True}},
                                     {}, tmp_path, ["full"])
     assert existing.read_bytes() == b"existing publication"
     assert sorted(path.name for path in tmp_path.iterdir()) == ["main.pdf"]
@@ -125,7 +127,8 @@ def test_source_changes_during_compilation_cannot_publish_old_pdf_with_new_hash(
     monkeypatch.setattr(paper, "render_profiles", render)
     output = tmp_path / "output"
     with pytest.raises(ValueError, match="source changed during compilation"):
-        paper.build_from_statistics({"verification": {"scientific_budgets_checked": True}},
+        paper.build_from_statistics({"verification": {"scientific_budgets_checked": True},
+                                    "replications": {"scientific_budgets_checked": True}},
                                     {}, output, ["full"])
     assert not output.exists()
 
@@ -206,3 +209,53 @@ def test_unresolved_legend_and_intervals_are_drawn_without_changing_their_bounds
     finally:
         for fig in figures.values():
             plt.close(fig)
+
+
+@pytest.mark.parametrize('supplied,comparison,selected', [
+    ((None, None, None), True, True),
+    ((None, None, None), False, False),
+    ((Path('bank'), None, None), False, True),
+])
+def test_new_or_partial_inputs_never_substitute_selected_supplements(supplied, comparison, selected):
+    run = paper.SELECTED_RUN if selected else Path('new-run')
+    with pytest.raises(ValueError, match='require explicit'):
+        paper.replication_inputs(run, *supplied, comparison=comparison)
+    assert paper.replication_inputs(paper.SELECTED_RUN, None, None, None) == paper.SELECTED_REPLICATIONS
+    explicit = tuple(Path(name) for name in ('bank', 'proof', 'objective'))
+    assert paper.replication_inputs(run, *explicit, comparison=True) == explicit
+
+
+@pytest.mark.parametrize('flag', [None, False, 1, 'true'])
+def test_primary_evidence_alone_cannot_build_supplemented_paper(tmp_path, flag):
+    statistics = {'verification': {'scientific_budgets_checked': True},
+                  'replications': {'scientific_budgets_checked': flag}}
+    with pytest.raises(ValueError, match='supplemental scientific budgets'):
+        paper.build_from_statistics(statistics, {}, tmp_path / 'paper', ['full'])
+    with pytest.raises(ValueError, match='supplemental scientific budgets'):
+        assets.write_assets(statistics, {}, tmp_path / 'paper')
+    assert not (tmp_path / 'paper').exists()
+
+
+def test_numeric_comparison_retains_new_science_but_omits_only_execution_provenance():
+    import copy
+    original = {'verification': {}, 'input_manifest_sha256': 'primary', 'statistics_source_sha256': 'source',
+                'mean': 1., 'replications': {'analysis_source_sha256': {'file': 'hash'},
+                    'reference_banks': {'config': {'jobs': 4, 'banks': 20}, 'mean': .02,
+                        'verification': {'source_commit': 'old'}, 'study_manifest_sha256': 'study',
+                        'recorded_checkpoint_replay': {'endpoints_replayed': True}, 'replay_proof_sha256': 'proof'},
+                    'objective_replication': {'mean': 2., 'verification': {'source_commit': 'old'},
+                                              'study_manifest_sha256': 'objective'}}}
+    changed = copy.deepcopy(original)
+    changed['replications']['reference_banks']['config']['jobs'] = 1
+    changed['replications']['objective_replication']['verification']['source_commit'] = 'new'
+    a, b = map(paper.numerical_claims, (original, changed))
+    paper.compare_claims(a, b)
+    assert original['replications']['reference_banks']['config']['jobs'] == 4
+    for section, key in [('reference_banks', 'mean'), ('objective_replication', 'mean')]:
+        altered = copy.deepcopy(b)
+        altered['replications'][section][key] += .1
+        with pytest.raises(ValueError, match='numerical claim'):
+            paper.compare_claims(a, altered)
+    b['replications']['reference_banks']['config']['banks'] = 19
+    with pytest.raises(ValueError, match='numerical claim'):
+        paper.compare_claims(a, b)

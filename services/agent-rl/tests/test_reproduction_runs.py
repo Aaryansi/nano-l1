@@ -16,7 +16,8 @@ SPEC.loader.exec_module(manifest)
 
 def config(*args, **overrides):
     env = {k: v for k, v in os.environ.items()
-           if k not in {"RUN_ROOT", "REPORTS", "FIGURES", "CHECKPOINTS", "CORPUS"}}
+           if k not in {"RUN_ROOT", "REPORTS", "FIGURES", "CHECKPOINTS", "CORPUS",
+                        "BANK_STUDY", "BANK_REPLAY_PROOF", "OBJECTIVE_STUDY"}}
     env.update({k: str(v) for k, v in overrides.items()})
     return subprocess.run(["bash", str(ROOT / "reproduce.sh"), *args, "--print-config"],
                           env=env, capture_output=True, text=True)
@@ -61,7 +62,15 @@ def test_verifier_does_not_fall_back_to_published_artifacts(tmp_path):
     result = subprocess.run([sys.executable, str(ROOT / "services/agent-rl/scripts/verify_paper_numbers.py"),
                              "--reports", str(tmp_path)], capture_output=True, text=True)
     assert result.returncode != 0
-    assert "run_manifest.json" in result.stderr
+    assert "require explicit --banks, --replay-proof and --objectives" in result.stderr
+
+
+def test_full_publication_comparison_requires_explicit_supplemental_inputs():
+    result = config('--verify-paper')
+    assert result.returncode != 0
+    assert 'requires explicit BANK_STUDY, BANK_REPLAY_PROOF and OBJECTIVE_STUDY' in result.stdout
+    result = config('--verify-paper', BANK_STUDY='banks', BANK_REPLAY_PROOF='proof', OBJECTIVE_STUDY='objectives')
+    assert result.returncode == 0
 
 
 def test_raw_return_validation_catches_stale_summary(tmp_path):

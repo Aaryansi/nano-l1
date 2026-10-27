@@ -1,0 +1,11 @@
+{
+  "study_manifest_sha256": "4f3027318610e8231b69b0684f203f9ae459a1a03fa7513f7b82981e3a036485",
+  "verification_source_sha256": "6e35cf079c7d052cb10e05d9bde4bdb4d2aad7ddab04badd7fc92ed0bebbf75e",
+  "verification": {
+    "banks_checked": 20,
+    "models_archived": 2280,
+    "endpoints_replayed": true,
+    "scientific_budgets_checked": true,
+    "source_commit": "770d484cd6baed649de4ea0caa33d368b082990c"
+  }
+}
