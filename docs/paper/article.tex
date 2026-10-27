@@ -363,6 +363,10 @@ scratch at 40 and 100 updates. Each cell has five observed policies and 24
 Gaussian-blinded references trained under that cell's objective and budget.
 The normalizer uses the original training split, and every policy is evaluated
 on the complete test partition with both full and replaced observations.
+This study uses a 192-row flat-inventory background, common masking draws
+across observed agents and reference-specific masking draws. Its replacement
+background and draws differ from the primary 256-row comparison, so those
+span differences cannot be attributed to the objective alone.
 \begin{table}[t]
 \centering\footnotesize
 \ObjectiveTable
