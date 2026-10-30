@@ -117,6 +117,44 @@ def numerical_text(statistics, context):
         f"{ranks['two-sided']['n_rejected']}/{null_case['n_trials']}, respectively. "
         f"Their conditional intervals are {interval(ranks['greater']['rejection_rate_ci95'])} and "
         f"{interval(ranks['two-sided']['rejection_rate_ci95'])}.")
+    replications = statistics['replications']
+    bank = replications['reference_banks']
+    null = next(row for row in bank['cases'] if row['signal_strength'] == 0.)['methods']['legacy']
+    null_methods = next(row for row in bank['cases'] if row['signal_strength'] == 0.)['methods']
+    if any(row['mean'] != null['mean'] or row['ci95_bounded_banks'] != null['ci95_bounded_banks']
+           for row in null_methods.values()):
+        raise ValueError('shared null-rate manuscript sentence requires matching method rates and intervals')
+    macros['BankCount'] = str(bank['config']['banks'])
+    macros['BankModelCount'] = f"{bank['verification']['models_archived']:,}"
+    macros['BankNullRate'] = percent(null['mean'])
+    macros['BankNullUpper'] = percent(null['ci95_bounded_banks'][1])
+    comparisons = [count for row in bank['trial_agreement'] for count in row['trial_disagreements'].values()]
+    total_trials = sum(row['methods']['legacy']['n_trials'] for row in bank['cases'])
+    paired = [row for case in bank['cases'] for row in case['paired_contrasts'].values()]
+    if any(comparisons):
+        agreement = f"Pairwise trial-outcome disagreement counts range from {min(comparisons)} to {max(comparisons)}."
+    else:
+        agreement = f"All three methods give identical trial outcomes across all {total_trials:,} trials."
+    bounds = [min(row['ci95_bounded_banks'][0] for row in paired),
+              max(row['ci95_bounded_banks'][1] for row in paired)]
+    macros['BankAgreementParagraph'] = (agreement + ' This is empirical agreement, not equivalence. '
+        f"The pointwise paired-difference intervals extend as far as {interval(bounds)} in probability units.")
+    proof = replications['objective_replication']['verification']
+    macros['ObjectiveObservedCount'] = str(proof['observed_policies'])
+    macros['ObjectiveReferenceCount'] = str(proof['reference_policies'])
+    macros['ObjectiveRepeatError'] = number(proof['comparison']['maximum_episode_return_difference'], 9)
+    cells = [task for budget in replications['objective_replication']['budget_sweep'] for task in budget['tasks']]
+    total = sum(len(task['recorded_span_comparisons']) for task in cells)
+    outside = sum(row['legacy_verdict'] == 'informative' for task in cells for row in task['recorded_span_comparisons'])
+    unresolved = sum(row['legacy_verdict'] == 'unresolved' for task in cells for row in task['recorded_span_comparisons'])
+    macros['ObjectiveDecisionParagraph'] = (f"Across the objective cells, {outside}/{total} observed agents "
+        f"are outside their respective legacy reference, with {unresolved} unresolved comparisons.")
+    comparison = proof['comparison']
+    exact = comparison['maximum_episode_return_difference'] == comparison['maximum_scalar_roundoff'] == 0.
+    macros['ObjectiveMatchParagraph'] = (
+        'Every original full-return array, observed/reference span, finite comparison and decision reproduces '
+        + ('exactly' if exact else 'within the declared absolute tolerance of $10^{-9}$')
+        + f" (maximum episode-return difference {number(comparison['maximum_episode_return_difference'], 9)}).")
     controls = statistics["controls"]["seeds"]
     units = [unit for task in controls for unit in task["units"]]
     eligible = [unit for unit in units if unit["eligible"]]
@@ -193,6 +231,25 @@ def numerical_tables(statistics):
         for mode, row in case["interventions"].items():
             rows.append([tex(case["case"]), mode_labels[mode], number(row["mean_span"], 2), interval(row["ci95"], 2)])
     result += macro("StateTable", table("llrr", ["Case", "Intervention", "Span", "95\\% CI"], rows))
+    rows = []
+    for case in statistics['replications']['reference_banks']['cases']:
+        for method, label in (('legacy', 'Legacy'), ('greater', 'Upper rank'), ('two-sided', 'Symmetric')):
+            row = case['methods'][method]
+            rows.append([number(case['signal_strength'], 1), label,
+                         f"{row['n_flagged']}/{row['n_trials']}",
+                         number(row['mean']), interval(row['ci95_bounded_banks']), str(row['n_unresolved'])])
+    result += macro('BankTable', table('llrrrr', ['Signal', 'Rule', 'Flags', 'Rate', '95\\% CI', 'Unres.'], rows))
+    rows = []
+    for budget in statistics['replications']['objective_replication']['budget_sweep']:
+        for task in budget['tasks']:
+            spans = task['recorded_span_comparisons']
+            widths = {row['reference_std'] for row in spans}
+            if len(widths) != 1:
+                raise ValueError('objective cell must share one reference bank')
+            rows.append([str(budget['updates']), {'prediction': 'Prediction', 'trading': 'Trading'}[task['task']],
+                         number(task['mean']), number(np.mean([row['span'] for row in spans])),
+                         number(next(iter(widths)))])
+    result += macro('ObjectiveTable', table('rlrrr', ['Updates', 'Objective', 'Return', 'Span', 'Ref. SD'], rows))
     return result
 
 
@@ -280,6 +337,8 @@ def scientific_figures(statistics, output):
 def write_assets(statistics, context, output: Path, *, fixture=False):
     if statistics["verification"]["scientific_budgets_checked"] is not True and not fixture:
         raise ValueError("manuscript assets require verified scientific budgets")
+    if statistics.get('replications', {}).get('scientific_budgets_checked') is not True and not fixture:
+        raise ValueError('manuscript assets require verified supplemental scientific budgets')
     output.mkdir(parents=True, exist_ok=True)
     (output / "metrics.tex").write_text(numerical_text(statistics, context))
     (output / "tables.tex").write_text(numerical_tables(statistics))

@@ -1,0 +1,129 @@
+{
+  "original_objective_json_sha256": "c45d27225673efbf3bcc02ff14e421514b957fb14384deef36aa180ba5dfec7c",
+  "original_objective_returns_sha256": "691ba825b272b7435ca584eaf743951630743cebe111386916573b57730708da",
+  "maximum_episode_return_difference": 0.0,
+  "absolute_tolerance": 1e-09,
+  "accepted_scalar_roundoff_fields": 0,
+  "maximum_scalar_roundoff": 0.0,
+  "contrasts_for_review": [
+    {
+      "updates": 40,
+      "original_recorded_contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -1.2053530034466138
+          },
+          {
+            "seed": 1,
+            "difference": 0.31260414595634245
+          },
+          {
+            "seed": 2,
+            "difference": -3.6072061645816946
+          },
+          {
+            "seed": 3,
+            "difference": 0.30013829154796356
+          },
+          {
+            "seed": 4,
+            "difference": 0.07304628640186062
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -0.8253540888244284,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      },
+      "reconstructed_contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -1.2053530034466138
+          },
+          {
+            "seed": 1,
+            "difference": 0.31260414595634245
+          },
+          {
+            "seed": 2,
+            "difference": -3.6072061645816946
+          },
+          {
+            "seed": 3,
+            "difference": 0.30013829154796356
+          },
+          {
+            "seed": 4,
+            "difference": 0.07304628640186062
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -0.8253540888244284,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      }
+    },
+    {
+      "updates": 100,
+      "original_recorded_contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -53.246413615865706
+          },
+          {
+            "seed": 1,
+            "difference": -39.45401300041981
+          },
+          {
+            "seed": 2,
+            "difference": -58.28762297499846
+          },
+          {
+            "seed": 3,
+            "difference": -45.119335370475326
+          },
+          {
+            "seed": 4,
+            "difference": -45.27509864326403
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -48.27649672100466,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      },
+      "reconstructed_contrast": {
+        "estimand": "prediction minus trading standardized span, conditional on estimated references",
+        "per_seed": [
+          {
+            "seed": 0,
+            "difference": -53.246413615865706
+          },
+          {
+            "seed": 1,
+            "difference": -39.45401300041981
+          },
+          {
+            "seed": 2,
+            "difference": -58.28762297499846
+          },
+          {
+            "seed": 3,
+            "difference": -45.119335370475326
+          },
+          {
+            "seed": 4,
+            "difference": -45.27509864326403
+          }
+        ],
+        "n_defined": 5,
+        "mean_difference": -48.27649672100466,
+        "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+      }
+    }
+  ],
+  "scope": "all original episode returns, observed/reference spans, finite comparisons and decisions; undefined zero-scale diagnostics normalized to null; original contrasts retained for review"
+}

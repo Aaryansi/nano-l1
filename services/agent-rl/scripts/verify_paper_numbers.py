@@ -19,12 +19,18 @@ def main():
                     help='compare this complete run with published numerical claim values')
     ap.add_argument('--paper', type=Path, default=ROOT / 'docs/paper')
     ap.add_argument('--corpus', type=Path, default=ROOT / 'data/releases/market_snapshot_v1/corpus.npz')
+    ap.add_argument('--banks', type=Path)
+    ap.add_argument('--replay-proof', type=Path)
+    ap.add_argument('--objectives', type=Path)
     args = ap.parse_args()
+    run = args.run if args.reports is None else args.reports.parent
+    inputs = paper.replication_inputs(run, args.banks, args.replay_proof, args.objectives,
+                                      comparison=args.reports is not None)
     if args.reports is None:
-        paper.verify_build(args.run, args.corpus, args.paper)
-        print('selected experiment, manuscript statistics, source and PDF hashes verified')
+        paper.verify_build(args.run, args.corpus, args.paper, *inputs)
+        print('primary and supplemental studies, manuscript statistics, source and PDF hashes verified')
     else:
-        current, _ = paper.input_statistics(args.reports.parent, args.corpus)
+        current, _ = paper.input_statistics(run, args.corpus, *inputs)
         paper.verify_artifacts(args.paper)
         published = paper.load(args.paper / 'statistics.json')
         paper.compare_claims(paper.numerical_claims(current), paper.numerical_claims(published))

@@ -74,6 +74,9 @@ fi
 if [ "$EXPLAIN_ONLY" = 1 ] && [ "$VERIFY_PAPER" = 1 ]; then
   echo "explanation-only runs cannot verify the full publication protocol"; exit 1
 fi
+if [ "$VERIFY_PAPER" = 1 ] && { [ -z "${BANK_STUDY:-}" ] || [ -z "${BANK_REPLAY_PROOF:-}" ] || [ -z "${OBJECTIVE_STUDY:-}" ]; }; then
+  echo "publication comparison requires explicit BANK_STUDY, BANK_REPLAY_PROOF and OBJECTIVE_STUDY inputs"; exit 1
+fi
 if [ "$EXPLAIN_ONLY" = 1 ] && [ ! -d "$RUNS" ]; then
   echo "explain-only requires CHECKPOINTS pointing to an existing run"; exit 1
 fi
@@ -371,8 +374,9 @@ step "recording and validating the generated run"
 
 if [ "$VERIFY_PAPER" = 1 ]; then
   step "comparing completed run evidence with the published numerical claims"
-  ( cd "$RL" && "$PY" scripts/verify_paper_numbers.py --reports "$RELEASE_VERIFY_VIEW/reports" \
-      --corpus "$CORPUS" )
+  ( "$PY" "$RL/scripts/verify_paper_numbers.py" --reports "$RELEASE_VERIFY_VIEW/reports" \
+      --corpus "$CORPUS" --banks "$BANK_STUDY" --replay-proof "$BANK_REPLAY_PROOF" \
+      --objectives "$OBJECTIVE_STUDY" )
 fi
 
 step "done in $(( PIPELINE_SECONDS / 60 ))m $(( PIPELINE_SECONDS % 60 ))s"

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "verification": {
     "source_commit": "dcc4e3f31c696f818b339df8fd8879534798abc3",
     "artifacts_checked": 64,
@@ -2067,5 +2067,1414 @@
     "scope": "returns reconstructed from episodes; secondary masked spans retained as recorded means; different reward units are not directly comparable"
   },
   "undefined_convention": "zero-scale standardized distances are null, including a legacy zero score",
-  "seed_spread_convention": "sample standard deviation across training-seed means, ddof=1"
+  "seed_spread_convention": "sample standard deviation across training-seed means, ddof=1",
+  "replications": {
+    "schema_version": 1,
+    "reference_banks": {
+      "config": {
+        "banks": 20,
+        "n_null": 24,
+        "trials": 30,
+        "updates": 40,
+        "episodes": 1200,
+        "strengths": [
+          0.0,
+          0.2,
+          1.0
+        ],
+        "seed": 20261024,
+        "jobs": 4
+      },
+      "procedure": {
+        "steps": 14,
+        "noise": 0.3,
+        "price": 0.5,
+        "spread": 0.02,
+        "max_position": 100.0,
+        "background_samples": 256,
+        "masking_seed_equals_policy_seed": false,
+        "ppo": {
+          "lr": 0.0003,
+          "gamma": 1.0,
+          "gae_lambda": 0.95,
+          "clip_coef": 0.2,
+          "value_coef": 0.5,
+          "entropy_coef": 0.01,
+          "max_grad_norm": 0.5,
+          "episodes_per_batch": 64,
+          "update_epochs": 4,
+          "minibatch_size": 256,
+          "anneal_lr": true,
+          "hidden": 64,
+          "device": "cpu",
+          "invariance_feature": null,
+          "invariance_coef": 0.0
+        },
+        "evaluation": "greedy full versus repeated whole-row replacement",
+        "diagnostic_nulls": "undefined training log metrics and zero-scale legacy scores"
+      },
+      "cases": [
+        {
+          "signal_strength": 0.0,
+          "methods": {
+            "legacy": {
+              "bank_rates": [
+                0.03333333333333333,
+                0.0,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0,
+                0.0,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0
+              ],
+              "mean": 0.02833333333333334,
+              "bank_sample_sd": 0.0223606797749979,
+              "ci95_bounded_banks": [
+                1.5750143992922505e-05,
+                0.24535715395080832
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 17,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.028333333333333332,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "greater": {
+              "bank_rates": [
+                0.03333333333333333,
+                0.0,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0,
+                0.0,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0
+              ],
+              "mean": 0.02833333333333334,
+              "bank_sample_sd": 0.0223606797749979,
+              "ci95_bounded_banks": [
+                1.5750143992922505e-05,
+                0.24535715395080832
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 17,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.028333333333333332,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "two-sided": {
+              "bank_rates": [
+                0.03333333333333333,
+                0.0,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.03333333333333333,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0,
+                0.0,
+                0.06666666666666667,
+                0.0,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.03333333333333333,
+                0.0
+              ],
+              "mean": 0.02833333333333334,
+              "bank_sample_sd": 0.0223606797749979,
+              "ci95_bounded_banks": [
+                1.5750143992922505e-05,
+                0.24535715395080832
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 17,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.028333333333333332,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            }
+          },
+          "paired_contrasts": {
+            "legacy_minus_greater": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "legacy_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "greater_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            }
+          }
+        },
+        {
+          "signal_strength": 0.2,
+          "methods": {
+            "legacy": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                0.9666666666666667,
+                1.0,
+                1.0,
+                0.9666666666666667,
+                0.8666666666666667,
+                0.9333333333333333,
+                1.0,
+                0.9333333333333333,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9666666666666667,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9333333333333333,
+                0.9666666666666667,
+                0.9
+              ],
+              "mean": 0.9583333333333333,
+              "bank_sample_sd": 0.04171050325603066,
+              "ci95_bounded_banks": [
+                0.7287104854720728,
+                0.9998120353630039
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 575,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.9583333333333334,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "greater": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                0.9666666666666667,
+                1.0,
+                1.0,
+                0.9666666666666667,
+                0.8666666666666667,
+                0.9333333333333333,
+                1.0,
+                0.9333333333333333,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9666666666666667,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9333333333333333,
+                0.9666666666666667,
+                0.9
+              ],
+              "mean": 0.9583333333333333,
+              "bank_sample_sd": 0.04171050325603066,
+              "ci95_bounded_banks": [
+                0.7287104854720728,
+                0.9998120353630039
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 575,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.9583333333333334,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "two-sided": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                0.9666666666666667,
+                1.0,
+                1.0,
+                0.9666666666666667,
+                0.8666666666666667,
+                0.9333333333333333,
+                1.0,
+                0.9333333333333333,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9666666666666667,
+                1.0,
+                0.9,
+                0.9666666666666667,
+                0.9333333333333333,
+                0.9666666666666667,
+                0.9
+              ],
+              "mean": 0.9583333333333333,
+              "bank_sample_sd": 0.04171050325603066,
+              "ci95_bounded_banks": [
+                0.7287104854720728,
+                0.9998120353630039
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 575,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 0.9583333333333334,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            }
+          },
+          "paired_contrasts": {
+            "legacy_minus_greater": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "legacy_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "greater_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            }
+          }
+        },
+        {
+          "signal_strength": 1.0,
+          "methods": {
+            "legacy": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "mean": 1.0,
+              "bank_sample_sd": 0.0,
+              "ci95_bounded_banks": [
+                0.8315665290169146,
+                1.0
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 600,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 1.0,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "greater": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "mean": 1.0,
+              "bank_sample_sd": 0.0,
+              "ci95_bounded_banks": [
+                0.8315665290169146,
+                1.0
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 600,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 1.0,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            },
+            "two-sided": {
+              "bank_rates": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "mean": 1.0,
+              "bank_sample_sd": 0.0,
+              "ci95_bounded_banks": [
+                0.8315665290169146,
+                1.0
+              ],
+              "n_independent_banks": 20,
+              "n_trials": 600,
+              "n_flagged": 600,
+              "n_unresolved": 0,
+              "n_resolved": 600,
+              "flag_fraction_resolved_descriptive": 1.0,
+              "unresolved": {
+                "bank_rates": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean": 0.0,
+                "bank_sample_sd": 0.0,
+                "ci95_bounded_banks": [
+                  0.0,
+                  0.16843347098308534
+                ],
+                "n_independent_banks": 20
+              }
+            }
+          },
+          "paired_contrasts": {
+            "legacy_minus_greater": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "legacy_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            },
+            "greater_minus_two-sided": {
+              "bank_differences": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "mean_difference": 0.0,
+              "ci95_bounded_banks": [
+                -0.5554251595118471,
+                0.5554251595118471
+              ]
+            }
+          }
+        }
+      ],
+      "estimand": "probability the procedure issues a flag over a fresh bank and observed agent",
+      "uncertainty_unit": "independent bank, including its complete set of observed trials",
+      "interval_method": "pointwise bounded-mean Chernoff inversion using Bernoulli KL",
+      "scope": "requires independent banks generated by the same procedure; unresolved is reported separately; no pooled-trial binomial interval or feature-fidelity guarantee",
+      "trial_agreement": [
+        {
+          "signal_strength": 0.0,
+          "trial_disagreements": {
+            "legacy_versus_greater": 0,
+            "legacy_versus_two-sided": 0,
+            "greater_versus_two-sided": 0
+          }
+        },
+        {
+          "signal_strength": 0.2,
+          "trial_disagreements": {
+            "legacy_versus_greater": 0,
+            "legacy_versus_two-sided": 0,
+            "greater_versus_two-sided": 0
+          }
+        },
+        {
+          "signal_strength": 1.0,
+          "trial_disagreements": {
+            "legacy_versus_greater": 0,
+            "legacy_versus_two-sided": 0,
+            "greater_versus_two-sided": 0
+          }
+        }
+      ],
+      "verification": {
+        "banks_checked": 20,
+        "models_archived": 2280,
+        "endpoints_replayed": false,
+        "scientific_budgets_checked": true,
+        "source_commit": "770d484cd6baed649de4ea0caa33d368b082990c"
+      },
+      "recorded_checkpoint_replay": {
+        "banks_checked": 20,
+        "models_archived": 2280,
+        "endpoints_replayed": true,
+        "scientific_budgets_checked": true,
+        "source_commit": "770d484cd6baed649de4ea0caa33d368b082990c"
+      },
+      "study_manifest_sha256": "4f3027318610e8231b69b0684f203f9ae459a1a03fa7513f7b82981e3a036485",
+      "replay_proof_sha256": "7880b95376f2e329295cbbf797154f1caa067bbfd24f21a3ea3888a8f7833d31"
+    },
+    "objective_replication": {
+      "budget_sweep": [
+        {
+          "updates": 40,
+          "tasks": [
+            {
+              "task": "prediction",
+              "mean": 7.3193146417445485,
+              "seed_means": [
+                7.406542056074766,
+                7.359813084112149,
+                7.220404984423676,
+                7.3193146417445485,
+                7.290498442367602
+              ],
+              "seed_sd": 0.0704667285014738,
+              "seed_sd_ddof": 1,
+              "n_seeds": 5,
+              "n_episodes": 1284,
+              "recorded_span_comparisons": [
+                {
+                  "span": 7.459501557632398,
+                  "reference_mean": 0.13833722741433027,
+                  "reference_std": 2.4506306598298497,
+                  "standardized_distance": 2.9874613299445074,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.002813048797954849,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.3660436137071645,
+                  "reference_mean": 0.13833722741433027,
+                  "reference_std": 2.4506306598298497,
+                  "standardized_distance": 2.949325047126711,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0031846882905521407,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.1534267912772584,
+                  "reference_mean": 0.13833722741433027,
+                  "reference_std": 2.4506306598298497,
+                  "standardized_distance": 2.8625650037162247,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.004202270513398385,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.325545171339564,
+                  "reference_mean": 0.13833722741433027,
+                  "reference_std": 2.4506306598298497,
+                  "standardized_distance": 2.9327993245723327,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.003359209397573311,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.200155763239875,
+                  "reference_mean": 0.13833722741433027,
+                  "reference_std": 2.4506306598298497,
+                  "standardized_distance": 2.881633145125123,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.003956200488784934,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                }
+              ]
+            },
+            {
+              "task": "trading",
+              "mean": -2.951392453431938,
+              "seed_means": [
+                -4.709548205714934,
+                -3.426074654531877,
+                -3.027445467664741,
+                -2.253839444316723,
+                -1.3400544949314146
+              ],
+              "seed_sd": 1.2654257306664713,
+              "seed_sd_ddof": 1,
+              "n_seeds": 5,
+              "n_episodes": 1284,
+              "recorded_span_comparisons": [
+                {
+                  "span": 10.311292773614582,
+                  "reference_mean": 2.6138778192503365,
+                  "reference_std": 1.8358587674781741,
+                  "standardized_distance": 4.192814333391121,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 2.7551493120360075e-05,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.45452500305691,
+                  "reference_mean": 2.6138778192503365,
+                  "reference_std": 1.8358587674781741,
+                  "standardized_distance": 2.6367209011703685,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.008371167560048841,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 14.491463942147583,
+                  "reference_mean": 2.6138778192503365,
+                  "reference_std": 1.8358587674781741,
+                  "standardized_distance": 6.469771168297919,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 9.815144212892743e-11,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.447071658526271,
+                  "reference_mean": 2.6138778192503365,
+                  "reference_std": 1.8358587674781741,
+                  "standardized_distance": 2.632661033024369,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.008471885129482578,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.770046628061421,
+                  "reference_mean": 2.6138778192503365,
+                  "reference_std": 1.8358587674781741,
+                  "standardized_distance": 2.8085868587232623,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.004975945743196543,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "updates": 100,
+          "tasks": [
+            {
+              "task": "prediction",
+              "mean": 7.386448598130841,
+              "seed_means": [
+                7.40809968847352,
+                7.36214953271028,
+                7.337227414330218,
+                7.378504672897196,
+                7.446261682242991
+              ],
+              "seed_sd": 0.0421978974807962,
+              "seed_sd_ddof": 1,
+              "n_seeds": 5,
+              "n_episodes": 1284,
+              "recorded_span_comparisons": [
+                {
+                  "span": 7.414330218068535,
+                  "reference_mean": -0.08119158878504673,
+                  "reference_std": 2.373155717207287,
+                  "standardized_distance": 3.1584618541906133,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0015860406449542564,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.335669781931464,
+                  "reference_mean": -0.08119158878504673,
+                  "reference_std": 2.373155717207287,
+                  "standardized_distance": 3.125315931414994,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.001776141888109662,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.360591900311526,
+                  "reference_mean": -0.08119158878504673,
+                  "reference_std": 2.373155717207287,
+                  "standardized_distance": 3.1358176099181607,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0017137574837008747,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.372274143302181,
+                  "reference_mean": -0.08119158878504673,
+                  "reference_std": 2.373155717207287,
+                  "standardized_distance": 3.14074027171652,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0016852141073972434,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 7.436915887850468,
+                  "reference_mean": -0.08119158878504673,
+                  "reference_std": 2.373155717207287,
+                  "standardized_distance": 3.167979000334108,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0015350260785470993,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                }
+              ]
+            },
+            {
+              "task": "trading",
+              "mean": -0.7702149946374465,
+              "seed_means": [
+                -0.9600623125083327,
+                -1.254852061044233,
+                -0.7008333608638523,
+                -0.32083342515201985,
+                -0.614493813618794
+              ],
+              "seed_sd": 0.3542321917027968,
+              "seed_sd_ddof": 1,
+              "n_seeds": 5,
+              "n_episodes": 1284,
+              "recorded_span_comparisons": [
+                {
+                  "span": 7.61703254930562,
+                  "reference_mean": 0.01714985742349505,
+                  "reference_std": 0.1347380457548688,
+                  "standardized_distance": 56.40487547005632,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 5.754205427252662,
+                  "reference_mean": 0.01714985742349505,
+                  "reference_std": 0.1347380457548688,
+                  "standardized_distance": 42.57932893183481,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 8.293224205375457,
+                  "reference_mean": 0.01714985742349505,
+                  "reference_std": 0.1347380457548688,
+                  "standardized_distance": 61.42344058491663,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 6.519618137434569,
+                  "reference_mean": 0.01714985742349505,
+                  "reference_std": 0.1347380457548688,
+                  "standardized_distance": 48.26007564219184,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                },
+                {
+                  "span": 6.544275469473283,
+                  "reference_mean": 0.01714985742349505,
+                  "reference_std": 0.1347380457548688,
+                  "standardized_distance": 48.44307764359814,
+                  "legacy_tail_score": 0.04,
+                  "legacy_normal_tail": 0.0,
+                  "legacy_verdict": "informative",
+                  "reference_draws": 24
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "scope": "both endpoints reconstructed for every observed and reference policy; original returns/spans compared; different reward units are not directly comparable; no original checkpoint replay or objective-effect significance test",
+      "verification": {
+        "budgets_checked": 2,
+        "observed_policies": 20,
+        "reference_policies": 96,
+        "episodes_per_endpoint": 1284,
+        "scope": "both raw endpoints, recorded seed/corpus identities and computed summaries/decisions; no training or checkpoint replay",
+        "scientific_budgets_checked": true,
+        "source_commit": "7d14189e442bfe01694954b205778426ce3c9de8",
+        "comparison": {
+          "original_objective_json_sha256": "c45d27225673efbf3bcc02ff14e421514b957fb14384deef36aa180ba5dfec7c",
+          "original_objective_returns_sha256": "691ba825b272b7435ca584eaf743951630743cebe111386916573b57730708da",
+          "maximum_episode_return_difference": 0.0,
+          "absolute_tolerance": 1e-09,
+          "accepted_scalar_roundoff_fields": 0,
+          "maximum_scalar_roundoff": 0.0,
+          "contrasts_for_review": [
+            {
+              "updates": 40,
+              "original_recorded_contrast": {
+                "estimand": "prediction minus trading standardized span, conditional on estimated references",
+                "per_seed": [
+                  {
+                    "seed": 0,
+                    "difference": -1.2053530034466138
+                  },
+                  {
+                    "seed": 1,
+                    "difference": 0.31260414595634245
+                  },
+                  {
+                    "seed": 2,
+                    "difference": -3.6072061645816946
+                  },
+                  {
+                    "seed": 3,
+                    "difference": 0.30013829154796356
+                  },
+                  {
+                    "seed": 4,
+                    "difference": 0.07304628640186062
+                  }
+                ],
+                "n_defined": 5,
+                "mean_difference": -0.8253540888244284,
+                "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+              },
+              "reconstructed_contrast": {
+                "estimand": "prediction minus trading standardized span, conditional on estimated references",
+                "per_seed": [
+                  {
+                    "seed": 0,
+                    "difference": -1.2053530034466138
+                  },
+                  {
+                    "seed": 1,
+                    "difference": 0.31260414595634245
+                  },
+                  {
+                    "seed": 2,
+                    "difference": -3.6072061645816946
+                  },
+                  {
+                    "seed": 3,
+                    "difference": 0.30013829154796356
+                  },
+                  {
+                    "seed": 4,
+                    "difference": 0.07304628640186062
+                  }
+                ],
+                "n_defined": 5,
+                "mean_difference": -0.8253540888244284,
+                "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+              }
+            },
+            {
+              "updates": 100,
+              "original_recorded_contrast": {
+                "estimand": "prediction minus trading standardized span, conditional on estimated references",
+                "per_seed": [
+                  {
+                    "seed": 0,
+                    "difference": -53.246413615865706
+                  },
+                  {
+                    "seed": 1,
+                    "difference": -39.45401300041981
+                  },
+                  {
+                    "seed": 2,
+                    "difference": -58.28762297499846
+                  },
+                  {
+                    "seed": 3,
+                    "difference": -45.119335370475326
+                  },
+                  {
+                    "seed": 4,
+                    "difference": -45.27509864326403
+                  }
+                ],
+                "n_defined": 5,
+                "mean_difference": -48.27649672100466,
+                "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+              },
+              "reconstructed_contrast": {
+                "estimand": "prediction minus trading standardized span, conditional on estimated references",
+                "per_seed": [
+                  {
+                    "seed": 0,
+                    "difference": -53.246413615865706
+                  },
+                  {
+                    "seed": 1,
+                    "difference": -39.45401300041981
+                  },
+                  {
+                    "seed": 2,
+                    "difference": -58.28762297499846
+                  },
+                  {
+                    "seed": 3,
+                    "difference": -45.119335370475326
+                  },
+                  {
+                    "seed": 4,
+                    "difference": -45.27509864326403
+                  }
+                ],
+                "n_defined": 5,
+                "mean_difference": -48.27649672100466,
+                "interpretation": "descriptive contrast; differing arm-wise verdicts are not a significant objective effect"
+              }
+            }
+          ],
+          "scope": "all original episode returns, observed/reference spans, finite comparisons and decisions; undefined zero-scale diagnostics normalized to null; original contrasts retained for review"
+        }
+      },
+      "study_manifest_sha256": "861935175edf70d9ec3a488b56f76d7d86b7fa2425d4f67468a7d32311ab0071"
+    },
+    "scientific_budgets_checked": true,
+    "analysis_source_sha256": {
+      "services/agent-rl/scripts/verify_replications.py": "376aa173f8a4781dbee65348011a439c36809f678f78104285bc4b2cdbd620f3",
+      "services/agent-rl/scripts/objective_study.py": "8801c07e5a3599e1b473b8d059929548dfa83999837077c059fe9f9209d68dbb",
+      "services/agent-rl/scripts/study_archive.py": "9fdddefed2f85a64cf567cdfac1d5e149b894dafe7de98ab40896d0cd132c8a7",
+      "services/agent-rl/scripts/publication_statistics.py": "ea8f5b0332887d62ec77fa7c629079c429c16a10bd407feb5caa05717538037b"
+    }
+  }
 }
