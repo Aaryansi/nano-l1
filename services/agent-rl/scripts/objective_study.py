@@ -96,7 +96,11 @@ def verify(run, corpus, original, *, allow_quick=False):
     require(manifest["corpus_sha256"] == digest(corpus), "objective study corpus hash differs")
     provenance = manifest["provenance"]
     verify_sources(provenance, allow_quick)
-    for name in ("positive_control.py", "verify_objective_control.py"):
+    # Historical reader bytes are checked against the training commit by
+    # verify_sources. The current reader may receive validation-only repairs;
+    # its hash is separately bound in derived publication provenance.
+    # The numerical producer and all model/environment code remain frozen.
+    for name in ("positive_control.py",):
         path = "services/agent-rl/scripts/" + name
         require(digest(ROOT / path) == provenance["source_sha256"][path],
                 "objective reconstruction source differs: " + name)

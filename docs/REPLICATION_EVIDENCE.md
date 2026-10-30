@@ -34,6 +34,10 @@ The runner records clean public source, package/runtime settings and corpus iden
 
 The original release retains its narrower raw-evidence scope. A successful replication supports the repeated quantities; it does not retroactively create original masked arrays or establish feature fidelity. Changed data or an unmatching result is a separate experiment, not a verified numerical reproduction. Failed runs remain failed and cannot pass the publication gate.
 
+The objective reader checks train-only normalization separately from endpoint results. A float32 `log1p(volume)` can vary with the CPU math kernel before the feature block is promoted to float64. For this feature's mean and unguarded standard deviation only, the reader permits the maximum input spacing plus 1e-9 absolute roundoff. On the selected corpus that bound is about 9.55e-7; the observed Linux mean difference was 3.10e-8. All other moments and endpoint summaries retain the 1e-9 gate, and shapes, decisions, identities and near-zero variance guards remain strict. This allowance changes neither stored normalization nor policy evaluation. NumPy documents its [runtime CPU dispatch](https://numpy.org/doc/2.1/reference/simd/how-it-works.html).
+
+Historical source, including the original objective reader, is checked byte for byte against the recorded training commit. The objective producer and model/environment code must also match the current reconstruction source. The current objective reader can receive validation repairs and is separately hashed in `analysis_source_sha256`; its identity is bound into the generated manuscript statistics. Original evidence remains immutable.
+
 ## Combined reconstruction
 
 ```sh

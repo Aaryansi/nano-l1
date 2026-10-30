@@ -50,6 +50,27 @@ jobs:
           python services/agent-rl/scripts/verify_release.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz
           python services/agent-rl/scripts/audit_market_rollouts.py --run data/releases/research_v1 --corpus data/releases/market_snapshot_v1/corpus.npz --out "$RUNNER_TEMP/selected-rollout-parity.json"
           python services/agent-rl/scripts/verify_paper_numbers.py
+      - name: Verify objective evidence across CPU dispatch modes
+        run: |
+          for disabled in "" "AVX512F"; do
+            NPY_DISABLE_CPU_FEATURES="$disabled" python - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+          import numpy as np
+          sys.path.insert(0, 'services/agent-rl/scripts')
+          from verify_objective_control import verify, walk_forward_split, EpisodeBatch
+          reports = Path('data/releases/objective_endpoints_v1/study/reports')
+          corpus = Path('data/releases/market_snapshot_v1/corpus.npz')
+          actual = walk_forward_split(EpisodeBatch.load(str(corpus))).normalizer.state_dict()
+          recorded = json.loads((reports / 'positive_control.json').read_text())['normalizer']
+          differences = {key: (np.asarray(actual[key]) - recorded[key]).tolist() for key in actual}
+          print('Disabled CPU features:', os.environ['NPY_DISABLE_CPU_FEATURES'])
+          print('Normalizer differences:', json.dumps(differences))
+          print(json.dumps(verify(reports, corpus)))
+          PY
+          done
       - name: Independent-bank execution and checkpoint replay
         run: |
           python services/agent-rl/scripts/calibrate_reference_banks.py --out "$RUNNER_TEMP/bank-smoke" --quick --seed 17
