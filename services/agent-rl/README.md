@@ -28,7 +28,7 @@ PY=services/agent-rl/.venv/bin/python
 
 New `positive_control.py` runs retain full and masked episode returns for both objective arms, every observed agent and every blinded reference at each budget. They record corpus and archive hashes, train-only normalization, episode identities and policy/masking seeds. The producer rejects a corpus changed during execution and runs `verify_objective_control.py` before returning successfully. To repeat this read-only check, use `"$PY" services/agent-rl/scripts/verify_objective_control.py --reports RUN/reports --corpus CORPUS`. It reconstructs spans, reference widths, decisions and descriptive paired contrasts. It checks recorded identities and computations, without replaying training or saved policies. Existing objective evidence is refused rather than overwritten. The selected `research_v1` predates this schema and retains its documented narrower reconstruction scope.
 
-`verify_paper_numbers.py` checks the selected experiment against the generated manuscript and all publication hashes. Its `--reports PATH` mode compares a separate completed full run with the published numerical claims. It never falls back to another run's results. [docs/paper/build.py](../../docs/paper/build.py) builds all profiles from the shared article, using verified full-budget data.
+`verify_paper_numbers.py` checks the selected experiment against the generated manuscript and all publication hashes. Its `--reports PATH` mode compares a separate completed full run with the published numerical claims and requires explicit `--banks`, `--replay-proof` and `--objectives` inputs for that comparison. It never falls back to another run's results. [docs/paper/build.py](../../docs/paper/build.py) builds all profiles from the shared article, using verified full-budget data.
 
 ## Reference interpretation
 
@@ -39,6 +39,10 @@ New `positive_control.py` runs retain full and masked episode returns for both o
 Each endpoint span concerns a declared input intervention. Probability attribution, critic attribution, return intervention, feature-level fidelity and task utility are separate targets. See the [protocol](../../docs/EXPERIMENT_PROTOCOL.md), [implemented model](../../docs/MDP.md) and [shared manuscript](../../docs/paper/article.tex).
 
 ## Auxiliary tools
+
+`faithfulness.py` produces descriptive decoy-attribution and ranked-deletion diagnostics. The held-out decoy is independent of settlement in the generator, but this does not establish learned feature reliance or zero attribution to an input-replacement return game. Trading costs, state dependence and coalition interactions still matter. Probability and return attributions explain different targets. Deletion areas summarize return sensitivity under the specified replacement intervention; one random ranking supplies no uncertainty estimate or general fidelity guarantee. Neither diagnostic has exact feature-contribution ground truth.
+
+New `faithfulness.json` outputs use schema version 2: `decoy.rank_pattern_observed` records the former top-five/lower-return-rank pattern as a boolean, and `deletion.lowest_deletion_auc` names the ranking with the lowest measured area. Numeric fields and calculations are unchanged. Historical releases retain the old `verdict` and `most_faithful` keys; those labels do not establish feature-level fidelity. The paper figure reader uses the unchanged shares and ranks and accepts both schemas.
 
 Historical ingestion and exploratory training tools remain available for new experiments, including `verify_kalshi_data.py`, `verify_kalshi_candles.py`, `smoke_episode.py`, `diagnose_null.py`, `diagnose_ppo.py` and `sweep_abstention.py`. They are outside the fixed release protocol and do not establish the manuscript's numerical claims. Downloading a new API window produces a new dataset.
 
