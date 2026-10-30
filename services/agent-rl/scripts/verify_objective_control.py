@@ -16,6 +16,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nano_rl.data.splits import walk_forward_split
 from nano_rl.env.binary_market import EpisodeBatch
+from nano_rl.env.features import MARKET_FEATURES
 from nano_rl.explain.sanity import short_verdict, test_span_against_null
 from portable_validation import reconstructed
 from positive_control import direct_contrast
@@ -47,6 +48,37 @@ def comparison_record(span, nulls):
     return result, record
 
 
+def verify_normalizer(split, recorded):
+    """Permit float32 log1p dispatch roundoff only in the volume moments.
+
+    The volume feature is evaluated before concatenation promotes it to
+    float64. CPU math kernels can differ at float32 precision. A one-ULP
+    pointwise allowance bounds the mean error and the population standard
+    deviation error by the maximum allowance. Other features, metadata and
+    all endpoint summaries retain the ordinary 1e-9 reconstruction gate.
+    This is a validation tolerance, not a change to the fitted normalizer.
+    """
+    actual = split.normalizer.state_dict()
+    volume = np.log1p(np.maximum(split.train.volume, 0.0))
+    tolerance = 1e-9
+    if volume.dtype == np.dtype("float32"):
+        tolerance += float(np.max(np.spacing(volume)))
+    index = MARKET_FEATURES.index("volume_rate")
+    require(isinstance(recorded, dict) and recorded.keys() == actual.keys(),
+            "objective normalizer keys differ")
+    for key in actual:
+        values = recorded[key]
+        require(isinstance(values, list) and len(values) == len(actual[key])
+                and all(type(value) is float and np.isfinite(value) for value in values),
+                "objective normalizer shape, type or finiteness differs")
+        # Do not hide a discontinuity in the near-zero variance guard.
+        bound = tolerance if key == "mean" or actual["std"][index] != 1.0 else 1e-9
+        require(abs(actual[key][index] - values[index]) <= bound,
+                "objective volume normalizer differs beyond input precision")
+        actual[key][index] = values[index]
+    reconstructed(actual, recorded, "objective train-only normalizer")
+
+
 def verify(reports, corpus):
     payload = read(reports / "positive_control.json")
     require(type(payload.get("endpoint_schema_version")) is int and payload["endpoint_schema_version"] == 2,
@@ -58,7 +90,7 @@ def verify(reports, corpus):
     require(type(payload["n_train"]) is int and payload["n_train"] == len(split.train)
             and type(payload["n_test"]) is int and payload["n_test"] == len(split.test),
             "objective split counts differ")
-    reconstructed(split.normalizer.state_dict(), payload["normalizer"], "objective train-only normalizer")
+    verify_normalizer(split, payload["normalizer"])
     seed, n_null = payload["seed"], payload["n_null"]
     require(type(seed) is int and seed >= 0 and type(n_null) is int and n_null >= 2,
             "invalid objective seed or reference count")

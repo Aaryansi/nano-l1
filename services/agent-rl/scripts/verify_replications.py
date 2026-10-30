@@ -82,6 +82,7 @@ def derive(bank_path, proof_path, objective_path, corpus, original, *, allow_qui
                 and objective["scientific_budgets_checked"],
             "analysis_source_sha256": {str(Path(p).relative_to(ROOT)): digest(Path(p)) for p in
                 (__file__, objective_study.__file__, str(ROOT / "services/agent-rl/scripts/study_archive.py"),
+                 str(ROOT / "services/agent-rl/scripts/verify_objective_control.py"),
                  str(ROOT / "services/agent-rl/scripts/publication_statistics.py"))}}
 
 

@@ -29,12 +29,12 @@
   "artifacts_sha256": {
     "metrics.tex": "5c9d38d5e682cc81b471a7be4c9255fca6a26628387ca48a66d5e3c2d97384b7",
     "tables.tex": "b4b8977b93286ca36d0844dbad9ff41767828c7089494bd3c19eec8e8f873191",
-    "statistics.json": "237df07787250960741e8d8b9d47962b25c8f6ac1c61dc750474c692505d5f55",
+    "statistics.json": "62a5d8b1e6f832f1f2ed89d8f89a8ff5d20d9513a6f2fa60f4a9a7bf0fb5c2df",
     "figures/calibration.png": "9de55e5e0c1753a59bbe242b91653d721c4ace7a785ad80575dbfcd3d2be9d8b",
     "figures/state_interventions.png": "0b445c01077352fb597955b85ba4a758845c0454af8e138af123c858c4473d44",
     "figures/steering.png": "38580943740d864e7264bde85c7e15985ddf8c14e04418d71ec383a8de28cca6",
-    "main.pdf": "1df8d52879cb60d3ecf45a061e730409f0d82b9699e3548e69a1272fdc8d6d56",
-    "core/main.pdf": "0da9718a1eedae0eb6a95b315a7284f9422f1f88cab6146fb75595b93caa8f7d",
-    "workshop.pdf": "c55a8fe6172994e1839390107a2aeaa4e8e5cfc158ccb34eb50952fa76813b8e"
+    "main.pdf": "d3ae72907851ed8b3839ff1203826c8122a3ee720fbb7d7e7f7cf647b89531e2",
+    "core/main.pdf": "ec44dc80f7db9dded1d1a6dbb833742c6d32c2c48045d304bbfc0158a8b1281f",
+    "workshop.pdf": "2f32d3e6e854ecdeb2a247c92e108dee496cbb47d3a79154a659316e96e00b54"
   }
 }
