@@ -49,6 +49,7 @@ ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/second_method.py --corpus "$CORPUS" \
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/positive_control.py --corpus "$CORPUS" \
   --out "$OUT/reports" --n-null 2 --seeds 2 --budgets 1 2
 "$PY" scripts/verify_objective_control.py --reports "$OUT/reports" --corpus "$CORPUS"
+"$PY" scripts/faithfulness.py --updates 1 --seed 0 --out "$OUT/reports"
 "$PY" - "$OUT/reports" <<'PY'
 import json
 import sys
@@ -73,6 +74,23 @@ parameter = json.loads((root / "parameter_randomization.json").read_text(),
                        parse_constant=reject_constant)
 assert "separates_agents" not in parameter
 assert "outcome_target_agrees_with_behaviour" not in parameter
+auxiliary = json.loads((root / "faithfulness.json").read_text(),
+                       parse_constant=reject_constant)
+assert auxiliary["schema_version"] == 2
+decoy = auxiliary["decoy"]
+assert decoy["rank_pattern_observed"] is (
+    decoy["decoy_naive_rank"] <= 5
+    and decoy["decoy_trajectory_rank"] > decoy["decoy_naive_rank"]
+)
+deletion = auxiliary["deletion"]
+assert deletion["lowest_deletion_auc"] == min(deletion["auc"], key=deletion["auc"].get)
+for name, curve in deletion["curves"].items():
+    assert len(curve) == 9
+    assert np.isfinite(curve).all()
+    assert np.isclose(np.trapezoid(curve), deletion["auc"][name])
+sys.path.insert(0, str(Path("scripts").resolve()))
+from paper_figures import fig_decoy
+fig_decoy(auxiliary, root)
 PY
 ALLOW_UNRESOLVED_NULLS=1 "$PY" scripts/generalize_gym.py --envs FrozenLake-v1 CliffWalking-v0 --jobs 2 \
   --trainer sb3 --steps 512 --null-steps 512 --n-null 2 --agent-seeds 2 \

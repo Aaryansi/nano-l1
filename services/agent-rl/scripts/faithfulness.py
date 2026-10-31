@@ -1,22 +1,16 @@
-"""does per-decision attribution mislead, and can we measure that?
+"""Descriptive decoy attribution and return-deletion diagnostics.
 
-phase 5 showed the two attribution targets rank features differently. that on
-its own is not a finding: two methods can disagree and both be defensible. this
-script settles it two ways, both with ground truth.
+The decoy generator removes settlement dependence in its held-out population.
+That design does not establish what a trained policy learned or supply exact
+feature contributions to an input-replacement return game. Policy actions,
+trading costs, state dependence, finite backgrounds and coalition interactions
+can matter even when a feature does not predict settlement. Probability and
+return attributions also explain different targets.
 
-  A. THE DECOY. train an agent on a corpus where one feature is strongly
-     predictive in-sample and pure noise out-of-sample, then explain it on the
-     held-out part. the policy genuinely keys on the decoy, so per-decision
-     attribution SHOULD credit it, and that credit is a true statement about
-     behaviour and a misleading one about value. trajectory-aware attribution
-     should give it approximately nothing, because on those episodes acting on
-     it earns nothing and pays fees. the correct answer is known by
-     construction.
-
-  B. DELETION CURVES. the standard faithfulness test. remove features in the
-     order a ranking calls important and measure how fast return degrades. a
-     ranking that finds genuinely load-bearing features degrades performance
-     faster. a random ranking is the control.
+Deletion curves compare return sensitivity under the specified replacement
+intervention. Their area ranks these measured curves, not explanation fidelity
+in general. The random ranking is one comparison, not an uncertainty estimate.
+Neither experiment supplies exact coalition-value ground truth.
 
 usage:
     python scripts/faithfulness.py --out reports
@@ -107,7 +101,7 @@ def deletion_curve(
 
 # ------------------------------------------------------------------- part A
 def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
-    banner("A. THE DECOY: a feature that drives the policy but earns nothing")
+    banner("A. THE DECOY: compare attribution targets after a distribution shift")
 
     n_episodes, train_frac = 3000, 0.6
     batch = make_decoy_corpus(
@@ -124,7 +118,8 @@ def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
           f"{np.corrcoef(d[:n_train], batch.settlement[:n_train])[0, 1]:+.4f}")
     print(f"    correlation with settlement, held-out  : "
           f"{np.corrcoef(d[n_train:], batch.settlement[n_train:])[0, 1]:+.4f}")
-    print("    so on the held-out episodes it is provably uninformative.\n")
+    print("    the generator makes the held-out decoy independent of settlement.")
+    print("    sample correlation does not identify its return contribution.\n")
 
     norm = fit_normalizer(in_sample)
     agent = train_on(in_sample, norm, updates, seed)
@@ -140,7 +135,7 @@ def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
     out_ret, out_tr = perf(held_out)
     print(f"  agent return in-sample : {in_ret:+8.2f}  ({in_tr:.2f} trades/ep)")
     print(f"  agent return held-out  : {out_ret:+8.2f}  ({out_tr:.2f} trades/ep)")
-    print("  it learned the decoy, and the edge does not survive out of sample.\n")
+    print("  these returns alone do not establish learned feature reliance.\n")
 
     roll = VectorizedRollout(held_out, normalizer=norm, max_position=100.0)
     background = build_background(roll, n_samples=256, seed=seed)
@@ -210,25 +205,19 @@ def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
           f"{traj.values[DECOY_OBS_IDX]:>+10.4f}{share(traj):>8.1%}"
           f"{rank(traj):>7}")
     print()
-    print("  ground truth: the decoy is pure noise on these episodes, so the")
-    print("  correct attribution of RETURN to it is approximately zero.")
+    print("  settlement independence does not supply an exact return attribution.")
+    print("  these targets and units differ; neither ranking validates the other.")
 
-    # the claim under test: the policy relies on the decoy (so per-decision
-    # attribution ranks it high) while it earns nothing (so trajectory-aware
-    # attribution ranks it low).
-    verdict = (
-        "PASS"
-        if rank(naive) <= 5 and rank(traj) > rank(naive)
-        else "INCONCLUSIVE"
-    )
-    print(f"\n  verdict: {verdict}")
+    # Retain the original ranking pattern as a descriptive observation only.
+    rank_pattern = rank(naive) <= 5 and rank(traj) > rank(naive)
+    print(f"\n  top-five behaviour rank and lower return rank observed: {rank_pattern}")
 
     plots.attribution_comparison(
         list(FEATURE_NAMES), naive.values, traj.values,
         out / "attribution_decoy.png",
-        title="a feature that drives the policy but earns nothing",
-        subtitle=f"held-out episodes where `{DECOY_NAME}` is provably "
-                 f"uninformative (corr {np.corrcoef(d[n_train:], batch.settlement[n_train:])[0,1]:+.3f})",
+        title="decoy shares under different attribution targets",
+        subtitle=f"held-out decoy/settlement sample correlation "
+                 f"{np.corrcoef(d[n_train:], batch.settlement[n_train:])[0,1]:+.3f}; not a fidelity test",
     )
 
     return {
@@ -238,7 +227,8 @@ def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
         "decoy_trajectory_share": share(traj),
         "decoy_naive_rank": rank(naive),
         "decoy_trajectory_rank": rank(traj),
-        "verdict": verdict,
+        "rank_pattern_observed": rank_pattern,
+        "scope": "descriptive target comparison; no exact return-attribution ground truth or fidelity verdict",
         "agent": agent,
         "held_out": held_out,
         "norm": norm,
@@ -250,10 +240,10 @@ def decoy_experiment(out: Path, updates: int, seed: int) -> dict:
 
 # ------------------------------------------------------------------- part B
 def deletion_experiment(out: Path, updates: int, seed: int) -> dict:
-    banner("B. DELETION CURVES: which ranking finds the load-bearing features?")
+    banner("B. DELETION CURVES: return sensitivity to ranked input replacement")
     print("  features are removed in the order each ranking calls important.")
-    print("  the ranking that degrades return FASTER is the more faithful one.")
-    print("  a random ranking is the control.\n")
+    print("  lower area measures greater return reduction under this intervention.")
+    print("  one random ranking is a comparison, not an uncertainty estimate.\n")
 
     pair = synthetic_train_eval(make_learnable_corpus, n_episodes=1500, seed=seed)
     batch = pair.train
@@ -297,21 +287,23 @@ def deletion_experiment(out: Path, updates: int, seed: int) -> dict:
     for k in range(max_remove + 1):
         print(f"  {k:>10} " + " ".join(f"{c[k]:>18.2f}" for c in curves.values()))
 
-    # area under the curve: lower means the ranking removed what mattered
+    # Area summarizes this measured intervention curve in return-step units.
     aucs = {n: float(np.trapezoid(c)) for n, c in curves.items()}
-    print("\n  area under the deletion curve (lower = more faithful ranking):")
+    print("\n  area under the measured deletion curve:")
     for n, a in sorted(aucs.items(), key=lambda kv: kv[1]):
         print(f"    {n:<20} {a:>10.1f}")
 
     better = min(aucs, key=aucs.get)
-    print(f"\n  most faithful ranking: {better}")
+    print(f"\n  ranking with lowest measured deletion area: {better}")
 
     plots.deletion_curves(
         curves,
         out / "deletion_curves.png",
-        subtitle="synthetic corpus with a known signal; lower is a better ranking",
+        title="return after replacing the top-k ranked features",
+        subtitle="specified input replacement; lower area is not a general fidelity guarantee",
     )
-    return {"auc": aucs, "most_faithful": better,
+    return {"auc": aucs, "lowest_deletion_auc": better,
+            "scope": "descriptive return sensitivity; targets differ; one random ranking; no fidelity guarantee",
             "curves": {k: v.tolist() for k, v in curves.items()}}
 
 
@@ -329,6 +321,7 @@ def main() -> None:
     deletion = deletion_experiment(out, args.updates, args.seed)
 
     payload = {
+        "schema_version": 2,
         "decoy": {k: v for k, v in decoy.items()
                   if k not in ("agent", "held_out", "norm", "background",
                                "naive", "traj")},
