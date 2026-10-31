@@ -14,13 +14,67 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from nano_rl.env.synthetic import make_learnable_corpus
 from run_manifest import digest
-from verify_objective_control import verify
+from verify_objective_control import verify, verify_normalizer
+from nano_rl.data.splits import walk_forward_split
 import positive_control as producer
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "services/agent-rl/scripts/positive_control.py"
 ENV = os.environ | {"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "PYTHONHASHSEED": "0",
                     "ALLOW_UNRESOLVED_NULLS": "1"}
+
+
+@pytest.fixture
+def float32_split():
+    batch = make_learnable_corpus(n_episodes=48, n_steps=6, seed=17)
+    batch.volume = np.linspace(100, 100000, batch.volume.size, dtype=np.float32).reshape(batch.volume.shape)
+    return walk_forward_split(batch)
+
+
+@pytest.mark.parametrize("key", ["mean", "std"])
+def test_float32_volume_moments_accept_small_dispatch_roundoff_without_mutation(float32_split, key):
+    original = float32_split.normalizer.state_dict()
+    recorded = copy.deepcopy(original)
+    recorded[key][6] += 3.0966666e-8  # Magnitude observed on the Linux publication reader.
+    retained = copy.deepcopy(recorded)
+    verify_normalizer(float32_split, recorded)
+    assert recorded == retained
+    assert float32_split.normalizer.state_dict() == original
+
+
+@pytest.mark.parametrize("key", ["mean", "std"])
+@pytest.mark.parametrize("index", [0, 5, 6, 8, 13])
+def test_normalizer_tolerance_stays_local_and_bounded(float32_split, key, index):
+    recorded = float32_split.normalizer.state_dict()
+    recorded[key][index] += 1e-4 if index == 6 else 3.0966666e-8
+    with pytest.raises(ValueError, match="normalizer"):
+        verify_normalizer(float32_split, recorded)
+
+
+@pytest.mark.parametrize("change", ["key", "length", "bool", "nan", "inf", "guard"])
+def test_normalizer_metadata_and_variance_guard_are_not_relaxed(float32_split, change):
+    recorded = float32_split.normalizer.state_dict()
+    if change == "key":
+        recorded["other"] = []
+    elif change == "length":
+        recorded["mean"].pop()
+    elif change == "guard":
+        float32_split.normalizer.std[6] = 1.0
+        recorded["std"][6] = 1.0 + 3e-8
+    else:
+        recorded["mean"][6] = {"bool": True, "nan": float("nan"), "inf": float("inf")}[change]
+    with pytest.raises(ValueError, match="normalizer"):
+        verify_normalizer(float32_split, recorded)
+
+
+def test_float64_volume_does_not_receive_float32_allowance():
+    batch = make_learnable_corpus(n_episodes=48, n_steps=6, seed=17)
+    batch.volume = batch.volume.astype(np.float64)
+    split = walk_forward_split(batch)
+    recorded = split.normalizer.state_dict()
+    recorded["mean"][6] += 3e-8
+    with pytest.raises(ValueError, match="normalizer"):
+        verify_normalizer(split, recorded)
 
 
 @pytest.fixture(scope="module")

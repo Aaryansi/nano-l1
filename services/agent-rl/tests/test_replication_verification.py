@@ -52,6 +52,8 @@ def test_complete_execution_studies_are_explicitly_insufficient_for_science(comp
     assert result["reference_banks"]["recorded_checkpoint_replay"]["endpoints_replayed"] is True
     assert result["reference_banks"]["verification"]["endpoints_replayed"] is False
     assert result["objective_replication"]["verification"]["comparison"]["maximum_episode_return_difference"] == 0.
+    reader = "services/agent-rl/scripts/verify_objective_control.py"
+    assert result["analysis_source_sha256"][reader] == objective.digest(ROOT / reader)
     with pytest.raises(ValueError, match="full declared budgets"):
         objective.verify(study, corpus, original)
     with pytest.raises(ValueError, match="full scientific protocol"):
@@ -121,6 +123,15 @@ def test_full_objective_run_refuses_dirty_source_before_training(tmp_path, monke
     with pytest.raises(ValueError, match="clean committed source"):
         objective.execute(tmp_path / "run", tmp_path / "corpus", tmp_path / "original")
     assert not (tmp_path / "run").exists()
+
+
+def test_objective_producer_must_still_match_its_recorded_source(completed, monkeypatch):
+    study, corpus, original, _, _ = completed
+    digest = objective.digest
+    monkeypatch.setattr(objective, "digest", lambda path: "0" * 64
+                        if Path(path).name == "positive_control.py" else digest(path))
+    with pytest.raises(ValueError, match="reconstruction source differs: positive_control"):
+        objective.verify(study, corpus, original, allow_quick=True)
 
 
 def test_replay_proof_cannot_be_written_inside_archive_bundle(completed):

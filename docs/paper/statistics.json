@@ -3471,9 +3471,10 @@
     },
     "scientific_budgets_checked": true,
     "analysis_source_sha256": {
-      "services/agent-rl/scripts/verify_replications.py": "376aa173f8a4781dbee65348011a439c36809f678f78104285bc4b2cdbd620f3",
-      "services/agent-rl/scripts/objective_study.py": "8801c07e5a3599e1b473b8d059929548dfa83999837077c059fe9f9209d68dbb",
+      "services/agent-rl/scripts/verify_replications.py": "4c577317bbaa2adef94015c9a381cfcafe7a25c0520aaba5a951ad106e60936e",
+      "services/agent-rl/scripts/objective_study.py": "3d0987a00e57c8770b836c487be067687814542d634a27b39223e828bbd3d4dd",
       "services/agent-rl/scripts/study_archive.py": "9fdddefed2f85a64cf567cdfac1d5e149b894dafe7de98ab40896d0cd132c8a7",
+      "services/agent-rl/scripts/verify_objective_control.py": "b7929e69a044b6751259eb8f835635d7deba5ad4c826c931f542d931fae1153a",
       "services/agent-rl/scripts/publication_statistics.py": "ea8f5b0332887d62ec77fa7c629079c429c16a10bd407feb5caa05717538037b"
     }
   }
