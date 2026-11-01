@@ -2,13 +2,18 @@
 \usepackage[margin=0.78in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern,microtype,amsmath,amssymb,amsthm,booktabs,graphicx}
+\usepackage[raggedright]{titlesec}
 \usepackage[round,authoryear]{natbib}
 \usepackage{xcolor,xurl}
 \usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{caption}
+\captionsetup{skip=6pt}
+\captionsetup[table]{position=top}
 \setlength{\columnsep}{0.25in}
 \setlength{\parindent}{1em}
 \setlength{\parskip}{0pt}
 \setlength{\emergencystretch}{1.5em}
+\setlength{\bibsep}{0pt plus 0.3ex}
 \ifdefined\layoutfixture
 \usepackage{fancyhdr}
 \pagestyle{fancy}\fancyhf{}
@@ -20,8 +25,10 @@
 \newcommand{\R}{\mathbb{R}}
 \input{\paperroot/metrics.tex}
 \input{\paperroot/tables.tex}
-\title{Auditing Reference Distributions for\newline Observation-Replacement Return Spans}
-\author{Aaryan Singh\\\small\texttt{singha9@rose-hulman.edu}}
+\title{Auditing Reference Distributions for\\ Observation-Replacement Return Spans}
+\author{Aaryan Singh\\
+\small\texttt{singha9@rose-hulman.edu}\\
+\small Code and data: \url{https://github.com/Aaryansi/nano-l1}}
 \date{}
 \begin{document}
 \raggedbottom
@@ -290,12 +297,12 @@ All failed and unresolved cases remain in the results.
 \subsection{Historical market and primary references}
 \begin{table}[t]
 \centering\small
-\MarketTable
 \caption{Held-out market return in dollars per episode. Seed spread is the
 sample SD across seed means, not episode SD or a standard error. Cost and
 zero-cost agents were trained separately. The primary crossed seed/day
 interval is \MarketInterval. Non-rejection would not establish equivalence.}
 \label{tab:market}
+\MarketTable
 \end{table}
 The market policies have mean return \MarketMean\ dollars per episode
 (Table~\ref{tab:market}). The primary centered-bootstrap probability is
@@ -307,11 +314,11 @@ information or makes a policy's explanation meaningless.
 
 \begin{table}[t]
 \centering\small
-\HeadlineTable
 \caption{Primary synthetic-bank diagnostics. ``Outside'' denotes the legacy
 two-part classification, not a finding of explanation fidelity. Market
 comparisons are descriptive. Undefined distances are shown explicitly.}
 \label{tab:headline}
+\HeadlineTable
 \end{table}
 Table~\ref{tab:headline} compares the fixed primary cases against the declared
 bank. All five market-seed comparisons and the larger-bank sensitivity are
@@ -330,7 +337,8 @@ reference bank. A standard rank guarantee under exchangeability is marginal
 over banks; these intervals do not establish such a guarantee on the market.}
 \label{fig:calibration}
 \end{figure}
-\CalibrationParagraph{}
+\CalibrationParagraph{} Figure~\ref{fig:calibration} plots these rates and
+their intervals.
 With 30 trials, even zero flags leave a substantial upper uncertainty bound.
 One positive-control success is therefore not a power estimate. The signal
 strength sweep also changes what the learning procedure can acquire within
@@ -338,13 +346,13 @@ its fixed budget.
 
 \begin{table*}[t]
 \centering\small
-\BankTable
 \caption{Independent-bank calibration: \BankCount{} banks with 30 trials per
 strength in each bank. Rates and pointwise bounded-bank intervals are rounded
 to three decimals. All declared trials remain in the denominator. Unres. counts
 unresolved comparisons. The signal alternatives measure learning and comparison
 together, not test power in isolation.}
 \label{tab:banks}
+\BankTable
 \end{table*}
 Table~\ref{tab:banks} adds bank-to-bank variation to the audit. The zero-strength
 rate is \BankNullRate{}, but its upper bound is \BankNullUpper. The observed
@@ -368,13 +376,13 @@ across observed agents and reference-specific masking draws. Its replacement
 background and draws differ from the primary 256-row comparison, so those
 span differences cannot be attributed to the objective alone.
 \begin{table}[t]
-\centering\footnotesize
-\ObjectiveTable
+\centering\small
 \caption{Matched-budget objective cells. Return and span are means over five
 observed seeds. Reference SD describes 24 blinded policies. Prediction uses
 signed-call score units; trading uses dollars. Cross-objective magnitudes and
 standardized distances do not measure a causal objective effect.}
 \label{tab:objectives}
+\ObjectiveTable
 \end{table}
 \ObjectiveDecisionParagraph{} Table~\ref{tab:objectives} shows why that shared classification does
 not identify a shared mechanism: reference widths and observed spans change
@@ -387,16 +395,17 @@ significance or explanation-fidelity claim follows from these comparisons.
 
 \subsection{Control-task competence and references}
 \begin{table}[t]
-\centering\scriptsize
-\ControlTable
+\centering\footnotesize
 \caption{Independent control seeds. Eligibility requires both the declared
 return gate and measured endpoint dependence. Classification counts retain
 all seeds and report unresolved references separately. Each task uses its
 native reward units. O/U denotes outside/unresolved counts out of five seeds.}
 \label{tab:controls}
+\ControlTable
 \end{table}
 \ControlParagraph{}
-This table supports statements about these configurations and reference banks.
+Table~\ref{tab:controls} supports statements about these configurations and
+reference banks.
 It does not establish a universal ranking of reference constructions. A
 reference can collapse when its policies have identical returns, and the
 legacy normal-scale rule then cannot decide. That outcome differs from a
@@ -420,7 +429,7 @@ cross training seeds and common UTC-day blocks, conditional on fixed masking
 draws. Differences do not isolate inventory as their sole cause.}
 \label{fig:state}
 \end{figure}
-\StateParagraph{}
+\StateParagraph{} Figure~\ref{fig:state} compares the three interventions.
 These runs fix masking draws within each analysis; their recorded seeds differ
 from the primary comparison's draws for some policies. \NullStateParagraph{}
 Positive sensitivity in this generator need not indicate settlement-predictive
@@ -446,7 +455,8 @@ The penalty targets the expiry clock in the market and the planted
 signal in the synthetic case, with ten seeds and penalty 20 fixed for the
 reported comparison. Each steering policy trains for 60 updates. Synthetic
 training and independent evaluation each use 1,500 episodes; market evaluation
-uses the complete test partition. All penalties are retained. \SteeringParagraph{}
+uses the complete test partition. All penalties are retained and shown in
+Figure~\ref{fig:steering}. \SteeringParagraph{}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{\paperroot/figures/steering.png}
@@ -535,35 +545,35 @@ hashes, records numerical runtime and package versions, and verifies source
 against the training commit. The full runner and release verifier are separate
 from execution-only smoke checks. Manuscript tables, figures and summaries
 share one derived statistics artifact; the three document profiles share this
-source. No claim of compliance with a particular venue's format is made.
+source.
 
 \ifdefined\extendedversion
 \appendix
 \section{Additional numerical records}
 \begin{table}[!ht]
 \centering\small
-\MarketSeedTable
 \caption{Every market-seed comparison against the primary bank. These remain
 descriptive comparisons with a synthetic reference population.}
+\MarketSeedTable
 \end{table}
 \begin{table}[!ht]
 \centering\small
-\BaselineTable
 \caption{Descriptive cost-enabled baseline returns on the same held-out
 episodes. A lower mean is not a statement about which model has a faithful
 explanation. The momentum fallback is labeled explicitly.}
-\end{table}
-\begin{table}[!ht]
-\centering\scriptsize
-\SteeringTable
-\caption{All steering penalties. Attribution shares concern the specified
-behaviour proxy. Return differences use common evaluation blocks and paired
-training seeds. An interval containing zero does not establish equivalence.}
+\BaselineTable
 \end{table}
 \begin{table}[!ht]
 \centering\small
-\StateTable
+\caption{All steering penalties. Attribution shares concern the specified
+behaviour proxy. Return differences use common evaluation blocks and paired
+training seeds. An interval containing zero does not establish equivalence.}
+\SteeringTable
+\end{table}
+\begin{table}[!ht]
+\centering\small
 \caption{State-preservation spans and crossed seed/block intervals.}
+\StateTable
 \end{table}
 \paragraph{Stored auxiliary analyses.}
 The release also retains the reference-training budget sweep, the larger-bank
